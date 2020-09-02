@@ -34,6 +34,14 @@ typedef struct PToken PToken;    /* A single token */
 typedef struct PElem PElem;      /* A single element */
 typedef struct PEList PEList;    /* A list of elements */
 typedef struct PClass PClass;    /* Description of elements types */
+typedef double PNum;             /* Numeric value */
+typedef struct PPoint PPoint;    /* A position in 2-D space */
+
+
+/* An object to hold a position in 2-D space */
+struct PPoint {
+  PNum x, y;               /* X and Y coordinates */
+};
 
 /* A single token in the parser input stream
 */
@@ -90,6 +98,7 @@ static void pic_render(Pic*,PEList*);
 static PEList *pic_elist_append(Pic*,PEList*,PElem*);
 static PElem *pic_elem_new(Pic*,PToken*,PToken*,PEList*);
 static void pic_elem_setname(Pic*,PElem*,PToken*);
+static void pic_debug_print_expr(Pic*,PNum);
 
 
 } // end %include
@@ -107,6 +116,7 @@ static void pic_elem_setname(Pic*,PElem*,PToken*);
 %destructor unnamed_element {pic_elem_free(p,$$);}
 %type basetype {PElem*}
 %destructor basetype {pic_elem_free(p,$$);}
+%type expr {PNum}
 
 
 document ::= element_list(X).  {pic_render(p,X);}
@@ -120,6 +130,7 @@ element_list(A) ::= element_list(B) EOL element(X).
 element(A) ::= .   { A = 0; }
 element(A) ::= direction.  { A = 0; }
 element(A) ::= ID ASSIGN expr. {A = 0;}
+element(A) ::= PRINT expr(X). {pic_debug_print_expr(p,X); A=0;}
 element(A) ::= PLACENAME(N) COLON unnamed_element(X).
                { A = X;  pic_elem_setname(p,X,&N); }
 element(A) ::= unnamed_element(X).  {A = X;}
@@ -226,15 +237,22 @@ nth ::= LAST LB RB.
 %left STAR SLASH PERCENT.
 %right UMINUS.
 
-expr ::= expr PLUS expr.
-expr ::= expr MINUS expr.
-expr ::= expr STAR expr.
-expr ::= expr SLASH expr.
-expr ::= MINUS expr. [UMINUS]
-expr ::= PLUS expr. [UMINUS]
-expr ::= LP expr RP.
+expr(A) ::= expr(X) PLUS expr(Y).     {A=X+Y;}
+expr(A) ::= expr(X) MINUS expr(Y).    {A=X-Y;}
+expr(A) ::= expr(X) STAR expr(Y).     {A=X*Y;}
+expr(A) ::= expr(X) SLASH(E) expr(Y).    {
+  if( Y==0.0 ){
+    pic_error(p, &E, "division by zero");
+    A = 0.0;
+  }else{
+    A = X/Y;
+  }
+}
+expr(A) ::= MINUS expr(X). [UMINUS]  {A=-X;}
+expr(A) ::= PLUS expr(X). [UMINUS]   {A=X;}
+expr(A) ::= LP expr(X) RP.           {A=X;}
+expr(A) ::= NUMBER(N).               {A=atof(N.z);}
 expr ::= ID.
-expr ::= NUMBER.
 expr ::= HEXRGB.
 expr ::= object DOT_L locproperty.
 expr ::= object DOT_L numproperty.
@@ -353,6 +371,15 @@ static void pic_error(Pic *p, PToken *pErr, const char *zMsg){
   pic_append(p, "\n</pre></div>\n", -1);
 }
 
+/* Output an expresion value in a comment for debugging purposes */
+static void pic_debug_print_expr(Pic *p, PNum x){
+  char zBuf[100];
+  pic_append(p, "<!-- ", -1);
+  snprintf(zBuf, sizeof(zBuf)-1, "%g", (double)x);
+  pic_append(p, zBuf, -1);
+  pic_append(p, " -->\n", -1);
+}
+
 
 /* Free a complete list of elements */
 static void pic_elist_free(Pic *p, PEList *pEList){
@@ -461,14 +488,18 @@ static void pic_elem_setname(Pic *p, PElem *pElem, PToken *pName){
 */
 static void pic_elem_render(Pic *p, PElem *pElem){
   if( pElem==0 ) return;
-  if( pElem->zName ) printf("%s: ", pElem->zName);
+  if( pElem->zName ){
+    pic_append_text(p, pElem->zName, -1);
+    pic_append(p, ": ", 2);
+  }
   if( pElem->pSublist ){
-    printf("[\n");
+    pic_append(p, "[\n", 2);
     pic_render(p,pElem->pSublist);
     pElem->pSublist = 0;
-    printf("]\n");
+    pic_append(p, "]\n", 2);
   }else{
-    printf("%s\n", pElem->type->zName);
+    pic_append_text(p, pElem->type->zName, -1);
+    pic_append(p, "\n", 1);
   }
 }
 
@@ -478,8 +509,10 @@ static void pic_elem_render(Pic *p, PElem *pElem){
 static void pic_render(Pic *p, PEList *pEList){
   int i;
   if( pEList==0 ) return;
-  for(i=0; i<pEList->n; i++){
-    pic_elem_render(p, pEList->a[i]);
+  if( p->nErr==0 ){
+    for(i=0; i<pEList->n; i++){
+      pic_elem_render(p, pEList->a[i]);
+    }
   }
   pic_elist_free(p, pEList);
 }
@@ -539,6 +572,7 @@ static struct PicWordlist pic_keywords[] = {
   { "ne",         2,   T_EDGE      },
   { "nw",         2,   T_EDGE      },
   { "of",         2,   T_OF        },
+  { "print",      5,   T_PRINT     },
   { "radius",     6,   T_RADIUS    },
   { "right",      5,   T_RIGHT     },
   { "rjust",      5,   T_RJUST     },
