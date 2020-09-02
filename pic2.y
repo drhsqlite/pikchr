@@ -29,8 +29,10 @@
 #include <math.h>
 #define count(X) (sizeof(X)/sizeof(X[0]))
 
-typedef struct Pic Pic;
-typedef struct PToken PToken;
+typedef struct Pic Pic;          /* Complete parsing context */
+typedef struct PToken PToken;    /* A single token */
+typedef struct PElem PElem;      /* A single element */
+typedef struct PEList PEList;    /* A list of elements */
 
 /* A single token in the parser input stream
 */
@@ -44,6 +46,18 @@ struct PToken {
 #define T_WHITESPACE 1000
 #define T_ERROR      1001
 
+/* A single element */
+struct PElem {
+  int eType;               /* Element type */
+};
+
+/* A list of elements */
+struct PEList {
+  int n;          /* Number of elements in the list */
+  int nAlloc;     /* Allocated slots in a[] */
+  PElem *a;       /* Pointers to individual elements */
+};
+
 /* Each call to the pic() subroutine uses an instance of the following
 ** object to pass around context to all of its subroutines.
 */
@@ -55,7 +69,16 @@ struct Pic {
   unsigned int nOut;       /* Bytes written to zOut[] so far */
   unsigned int nOutAlloc;  /* Space allocated to zOut[] */
   int eDir;                /* Current direction */
+  PElem *cur;              /* Element under construction */
 };
+
+/* Forward declarations */
+static void pic_elist_free(Pic*,PEList*);
+static void pic_elem_free(Pic*,PElem*);
+static void pic_render(Pic*,PEList*);
+static PEList *pic_elist_append(Pic*,PEList*,PElem*);
+static PElem *pic_elem_new(Pic*,PToken*,PToken*,PEList*);
+static void pic_elem_setname(Pic*,PElem*,PToken*);
 
 
 } // end %include
@@ -65,21 +88,36 @@ struct Pic {
 %token_type {PToken}
 %extra_context {Pic *p}
 
+%type element_list {PEList*}
+%destructor element_list {pic_elist_free(p,$$);}
+%type element {PElem*}
+%destructor element {pic_elem_free(p,$$);}
+%type unnamed_element {PElem*}
+%destructor unnamed_element {pic_elem_free(p,$$);}
+%type basetype {PElem*}
+%destructor basetype {pic_elem_free(p,$$);}
 
-document ::= element_list.
 
-element_list ::= element.
-element_list ::= element_list EOL element.
-element ::= .
-element ::= direction.
-element ::= ID ASSIGN expr.
-element ::= PLACENAME COLON unnamed_element.
-element ::= unnamed_element.
-unnamed_element ::= basetype attribute_list.
+document ::= element_list(X).  {pic_render(p,X);}
 
-basetype ::= ID.
-basetype ::= STRING.
-basetype ::= LB element_list RB.
+
+element_list(A) ::= element(X).   { A = pic_elist_append(p,0,X); }
+element_list(A) ::= element_list(B) EOL element(X).
+                      { A = pic_elist_append(p,B,X); }
+
+
+element(A) ::= .   { A = 0; }
+element(A) ::= direction.  { A = 0; }
+element(A) ::= ID ASSIGN expr. {A = 0;}
+element(A) ::= PLACENAME(N) COLON unnamed_element(X).
+               { A = X;  pic_elem_setname(p,X,&N); }
+element(A) ::= unnamed_element(X).  {A = X;}
+
+unnamed_element(A) ::= basetype(X) attribute_list.  {A = X;}
+
+basetype(A) ::= ID(N).                  {A = pic_elem_new(p,&N,0,0); }
+basetype(A) ::= STRING(N).              {A = pic_elem_new(p,0,&N,0); }
+basetype(A) ::= LB element_list(X) RB.  {A = pic_elem_new(p,0,0,X);}
 
 direction ::= UP.
 direction ::= DOWN.
@@ -209,6 +247,48 @@ locproperty ::= RIGHT.
 
 
 %code {
+
+
+/* Free a complete list of elements */
+static void pic_elist_free(Pic *p, PEList *PEList){
+  return;
+}
+
+/* Free a single element, and its substructure */
+static void pic_elem_free(Pic *p, PElem *pElem){
+  return;
+}
+
+/* Render a list of elements.  Write the SVG into p->zOut.
+** Delete the input element_list before returnning.
+*/
+static void pic_render(Pic *p, PEList *pEList){
+  pic_elist_free(p, pEList);
+}
+
+/* Append a new element onto the end of an element_list.  The
+** element_list is created if it does not already exist.  Return
+** the new element list.
+*/
+static PEList *pic_elist_append(Pic *p, PEList *pEList, PElem *pElem){
+  pic_elist_free(p, pEList);
+  pic_elem_free(p, pElem);
+  return 0;
+}
+
+/* Allocate and return a new PElem object.
+*/
+static PElem *pic_elem_new(Pic *p, PToken *pId, PToken *pStr, PEList *pSublist){
+  pic_elist_free(p, pSublist);
+  return 0;
+}
+
+/* Attach a name to an element
+*/
+static void pic_elem_setname(Pic *p, PElem *pElem, PToken *pName){
+  return;
+}
+
 
 /*
 ** An array of this structure defines a list of keywords.
