@@ -33,6 +33,7 @@ typedef struct Pic Pic;          /* Complete parsing context */
 typedef struct PToken PToken;    /* A single token */
 typedef struct PElem PElem;      /* A single element */
 typedef struct PEList PEList;    /* A list of elements */
+typedef struct PClass PClass;    /* Description of elements types */
 
 /* A single token in the parser input stream
 */
@@ -46,16 +47,23 @@ struct PToken {
 #define T_WHITESPACE 1000
 #define T_ERROR      1001
 
+/* Different types of elements */
+struct PClass {
+  const char *zName;
+};
+
 /* A single element */
 struct PElem {
-  int eType;               /* Element type */
+  const PClass *type;      /* Element type */
+  PEList *pSublist;        /* Substructure for [] elements */
+  char *zName;             /* Name assigned to this element */
 };
 
 /* A list of elements */
 struct PEList {
   int n;          /* Number of elements in the list */
   int nAlloc;     /* Allocated slots in a[] */
-  PElem *a;       /* Pointers to individual elements */
+  PElem **a;      /* Pointers to individual elements */
 };
 
 /* Each call to the pic() subroutine uses an instance of the following
@@ -73,6 +81,9 @@ struct Pic {
 };
 
 /* Forward declarations */
+static void pic_append(Pic*, const char*,int);
+static void pic_append_text(Pic*,const char*,int);
+static void pic_error(Pic*,PToken*,const char*);
 static void pic_elist_free(Pic*,PEList*);
 static void pic_elem_free(Pic*,PElem*);
 static void pic_render(Pic*,PEList*);
@@ -248,46 +259,231 @@ locproperty ::= RIGHT.
 
 %code {
 
+/*
+** The following array holds all the different kinds of named
+** elements.  The special STRING and [] elements are separate.
+*/
+static const PClass aClass[] = {
+   {  "box",      },
+   {  "arrow",    },
+   {  "circle",   },
+   {  "ellipse",  },
+   {  "arc",      },
+   {  "line",     },
+   {  "spline",   },
+   {  "move",     },
+   {  "cylinder", },
+   {  "document", },
+   {  "folder",   }
+};
+static const PClass sublistClass = { "[]", };
+static const PClass textClass = { "TEXT", };
+
+
+/*
+** Append raw text to zOut
+*/
+static void pic_append(Pic *p, const char *zText, int n){
+  if( n<0 ) n = (int)strlen(zText);
+  if( p->nOut+n>=p->nOutAlloc ){
+    int nNew = (p->nOut+n)*2 + 1;
+    char *z = realloc(p->zOut, nNew);
+    if( z==0 ){
+      pic_error(p, 0, 0);
+      return;
+    }
+    p->zOut = z;
+    p->nOutAlloc = n;
+  }
+  memcpy(p->zOut+p->nOut, zText, n);
+  p->nOut += n;
+  p->zOut[p->nOut] = 0;
+}
+
+/*
+** Append text to zOut with HTML characters escaped.
+*/
+static void pic_append_text(Pic *p, const char *zText, int n){
+  int i;
+  char c;
+  if( n<0 ) n = (int)strlen(zText);
+  while( n>0 ){
+    for(i=0; i<n && (c=zText[i])!='<' && c!='>' && c!='&' && c!='"'; i++){}
+    if( i ) pic_append(p, zText, i);
+    if( i==n ) break;
+    switch( c ){
+      case '<': {  pic_append(p, "&lt;", 4);  break;  }
+      case '>': {  pic_append(p, "&gt;", 4);  break;  }
+      case '&': {  pic_append(p, "&amp;", 5);  break;  }
+      case '"': {  pic_append(p, "&quote;", 7);  break;  }
+    }
+    i++;
+    n -= i;
+    zText += i;
+    i = 0;
+  }
+}
+
+/*
+** Generate an error message for the output.  pErr is the token at which
+** the error should point.  zMsg is the text of the error message. If
+** either pErr or zMsg is NULL, generate an out-of-memory error message.
+**
+** This routine is a no-op if there has already been an error reported.
+*/
+static void pic_error(Pic *p, PToken *pErr, const char *zMsg){
+  int i;
+  if( p->nErr ) return;
+  p->nErr++;
+  p->nOut = 0;
+  i = (int)(pErr->z - p->zIn);
+  if( pErr==0 || zMsg==0 ){
+    pic_append_text(p, "<div><p class='err'>Out of memory</p></div>\n", -1);
+    return;
+  }
+  pic_append(p, "<div><pre>\n", -1);
+  pic_append_text(p, p->zIn, i);
+  pic_append(p, "<span class='err'>&rarr;", -1);
+  pic_append_text(p, p->zIn+i, pErr->n);
+  pic_append(p, "&larr;", -1);
+  pic_append_text(p, zMsg, -1);
+  pic_append(p, "</span>", -1);
+  i += pErr->n;
+  pic_append_text(p,  p->zIn+i, -1);
+  pic_append(p, "\n</pre></div>\n", -1);
+}
+
 
 /* Free a complete list of elements */
-static void pic_elist_free(Pic *p, PEList *PEList){
+static void pic_elist_free(Pic *p, PEList *pEList){
+  int i;
+  if( pEList==0 ) return;
+  for(i=0; i<pEList->n; i++){
+    pic_elem_free(p, pEList->a[i]);
+  }
+  free(pEList->a);
+  free(pEList);
   return;
 }
 
 /* Free a single element, and its substructure */
 static void pic_elem_free(Pic *p, PElem *pElem){
-  return;
+  if( pElem==0 ) return;
+  free(pElem->zName);
+  pic_elist_free(p, pElem->pSublist);
+  free(pElem);
 }
 
-/* Render a list of elements.  Write the SVG into p->zOut.
-** Delete the input element_list before returnning.
-*/
-static void pic_render(Pic *p, PEList *pEList){
-  pic_elist_free(p, pEList);
-}
 
 /* Append a new element onto the end of an element_list.  The
 ** element_list is created if it does not already exist.  Return
 ** the new element list.
 */
 static PEList *pic_elist_append(Pic *p, PEList *pEList, PElem *pElem){
-  pic_elist_free(p, pEList);
-  pic_elem_free(p, pElem);
-  return 0;
+  if( pElem==0 ) return pEList;
+  if( pEList==0 ){
+    pEList = malloc(sizeof(*pEList));
+    if( pEList==0 ){
+      pic_error(p, 0, 0);
+      pic_elem_free(p, pElem);
+      return 0;
+    }
+    memset(pEList, 0, sizeof(*pEList));
+  }
+  if( pEList->n>=pEList->nAlloc ){
+    int nNew = (pEList->n+5)*2;
+    PElem **pNew = realloc(pEList->a, sizeof(PElem*)*nNew);
+    if( pNew==0 ){
+      pic_error(p, 0, 0);
+      pic_elem_free(p, pElem);
+      return pEList;
+    }
+    pEList->a = pNew;
+  }
+  pEList->a[pEList->n++] = pElem;   
+  return pEList;
 }
 
 /* Allocate and return a new PElem object.
 */
 static PElem *pic_elem_new(Pic *p, PToken *pId, PToken *pStr, PEList *pSublist){
-  pic_elist_free(p, pSublist);
+  PElem *pNew;
+
+  pNew = malloc( sizeof(*pNew) );
+  if( pNew==0 ){
+    pic_error(p,0,0);
+    pic_elist_free(p, pSublist);
+    return 0;
+  }
+  memset(pNew, 0, sizeof(*pNew));
+  if( pSublist ){
+    pNew->type = &sublistClass;
+    pNew->pSublist = pSublist;
+    return pNew;
+  }
+  if( pStr ){
+    pNew->type = &textClass;
+    return pNew;
+  }
+  if( pId ){
+    int i;
+    for(i=0; i<count(aClass); i++){
+      if( strncmp(aClass[i].zName, pId->z, pId->n)==0 
+       && aClass[i].zName[pId->n]==0
+      ){
+        pNew->type = &aClass[i];
+        return pNew;
+      }
+    }
+    pic_error(p, pId, "unknown element type");
+  }
+  pic_elem_free(p, pNew);
   return 0;
 }
 
 /* Attach a name to an element
 */
 static void pic_elem_setname(Pic *p, PElem *pElem, PToken *pName){
+  if( pElem==0 ) return;
+  if( pName==0 ) return;
+  free(pElem->zName);
+  pElem->zName = malloc(pName->n+1);
+  if( pElem->zName==0 ){
+    pic_error(p,0,0);
+  }else{
+    memcpy(pElem->zName,pName->z,pName->n);
+    pElem->zName[pName->n] = 0;
+  }
   return;
 }
+
+/* Render a single element
+*/
+static void pic_elem_render(Pic *p, PElem *pElem){
+  if( pElem==0 ) return;
+  if( pElem->zName ) printf("%s: ", pElem->zName);
+  if( pElem->pSublist ){
+    printf("[\n");
+    pic_render(p,pElem->pSublist);
+    pElem->pSublist = 0;
+    printf("]\n");
+  }else{
+    printf("%s\n", pElem->type->zName);
+  }
+}
+
+/* Render a list of elements.  Write the SVG into p->zOut.
+** Delete the input element_list before returnning.
+*/
+static void pic_render(Pic *p, PEList *pEList){
+  int i;
+  if( pEList==0 ) return;
+  for(i=0; i<pEList->n; i++){
+    pic_elem_render(p, pEList->a[i]);
+  }
+  pic_elist_free(p, pEList);
+}
+
 
 
 /*
@@ -570,11 +766,14 @@ char *pic(const char *zText, int *pnErr){
   PToken token;
   Pic s;
   yyParser sParse;
+
   memset(&s, 0, sizeof(s));
   s.zIn = zText;
   s.nIn = (unsigned int)strlen(zText);
   pic_parserInit(&sParse, &s);
+#if 0
   pic_parserTrace(stdout, "parser: ");
+#endif
   for(i=0; zText[i] && s.nErr==0; i+=sz){
     sz = pic_token_length(zText+i, &eType);
     if( eType==T_ERROR ){
@@ -584,8 +783,11 @@ char *pic(const char *zText, int *pnErr){
       token.z = zText + i;
       token.n = sz;
       token.eCode = eType;
-printf("******** Token %s (%d): \"%.*s\" **************\n",
- yyTokenName[eType], eType, isspace(token.z[0]) ? 0 : token.n, token.z);
+#if 0
+      printf("******** Token %s (%d): \"%.*s\" **************\n",
+             yyTokenName[eType], eType,
+             isspace(token.z[0]) ? 0 : token.n, token.z);
+#endif
       pic_parser(&sParse, eType, token);
     }
   }
