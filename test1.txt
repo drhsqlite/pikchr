@@ -1,0 +1,25 @@
+circle "C0"
+arrow
+circle "C1"
+arrow
+C2: circle "C2"
+arrow
+circle "C4"
+arrow
+C6: circle "C6"
+C3: circle "C3" at distance 0.8 angle 60 from C3
+arrow
+circle "C5"
+C3b: circle "C3'" at distance 0.8 angle 60 from C6
+arrow
+C5B: circle "C5'"
+arrow from C2.ne to C3.sw
+arrow from C6.ne to C3b.sw
+y1 = (C2.y + C3.y)/2
+y2 = y1 + 2*(C3.y - y1)
+y0 = y1 - (y2 - y1)
+x0 = C0.x - C0.radius
+x1 = C3.x - C3.radius
+x2 = C5b.x + C5b.radius
+box from x0,y0 to x2,y1 fill lightblue thickness 0 behind C0
+box from x1,y1 to x2,y2 fill blue thickness 0 behind C0
