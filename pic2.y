@@ -36,11 +36,19 @@ typedef struct PEList PEList;    /* A list of elements */
 typedef struct PClass PClass;    /* Description of elements types */
 typedef double PNum;             /* Numeric value */
 typedef struct PPoint PPoint;    /* A position in 2-D space */
+typedef struct PVar PVar;        /* script-defined variable */
 
 
 /* An object to hold a position in 2-D space */
 struct PPoint {
   PNum x, y;               /* X and Y coordinates */
+};
+
+/* A variable created by the ID = EXPR construct of the PIC script */
+struct PVar {
+  const char *zName;       /* Name of the variable */
+  PNum val;                /* Value of the variable */
+  PVar *pNext;             /* Next variable in a list of them all */
 };
 
 /* A single token in the parser input stream
@@ -86,6 +94,7 @@ struct Pic {
   unsigned int nOutAlloc;  /* Space allocated to zOut[] */
   int eDir;                /* Current direction */
   PElem *cur;              /* Element under construction */
+  PVar *pVar;              /* Application-defined variables */
 };
 
 /* Forward declarations */
@@ -99,6 +108,9 @@ static PEList *pic_elist_append(Pic*,PEList*,PElem*);
 static PElem *pic_elem_new(Pic*,PToken*,PToken*,PEList*);
 static void pic_elem_setname(Pic*,PElem*,PToken*);
 static void pic_debug_print_expr(Pic*,PNum);
+static void pic_set_var(Pic*,PToken*,PNum);
+static PNum pic_get_var(Pic*,PToken*);
+static PNum pic_color_to_num(Pic*,const char*,int);
 
 
 } // end %include
@@ -129,7 +141,7 @@ element_list(A) ::= element_list(B) EOL element(X).
 
 element(A) ::= .   { A = 0; }
 element(A) ::= direction.  { A = 0; }
-element(A) ::= ID ASSIGN expr. {A = 0;}
+element(A) ::= ID(N) ASSIGN expr(X). {pic_set_var(p,&N,X); A = 0;}
 element(A) ::= PRINT expr(X). {pic_debug_print_expr(p,X); A=0;}
 element(A) ::= PLACENAME(N) COLON unnamed_element(X).
                { A = X;  pic_elem_setname(p,X,&N); }
@@ -252,8 +264,8 @@ expr(A) ::= MINUS expr(X). [UMINUS]  {A=-X;}
 expr(A) ::= PLUS expr(X). [UMINUS]   {A=X;}
 expr(A) ::= LP expr(X) RP.           {A=X;}
 expr(A) ::= NUMBER(N).               {A=atof(N.z);}
-expr ::= ID.
-expr ::= HEXRGB.
+expr(A) ::= ID(N).                   {A=pic_get_var(p,&N);}
+expr(A) ::= HEXRGB(X).               {A=pic_color_to_num(p,X.z,X.n);}
 expr ::= object DOT_L locproperty.
 expr ::= object DOT_L numproperty.
 expr ::= object DOT_L dashproperty.
@@ -276,6 +288,175 @@ locproperty ::= RIGHT.
 
 
 %code {
+
+/* Chart of the 140 official HTML color names */
+static const struct {
+  const char *zName;  /* Name of the color */
+  unsigned int val;   /* RGB value */
+} aColor[] = {
+  { "AliceBlue",                   0xf0f8ff },
+  { "AntiqueWhite",                0xfaebd7 },
+  { "Aqua",                        0x00ffff },
+  { "AquaMarine",                  0x7fffd4 },
+  { "Azure",                       0xf0ffff },
+  { "Beige",                       0xf5f5dc },
+  { "Bisque",                      0xffe4c4 },
+  { "Black",                       0x000000 },
+  { "BlanchedAlmond",              0xffebcd },
+  { "Blue",                        0x0000ff },
+  { "BlueViolet",                  0x8a2be2 },
+  { "Brown",                       0xa52a2a },
+  { "BurlyWood",                   0xdeb887 },
+  { "CadetBlue",                   0x5f9ea0 },
+  { "Chartreuse",                  0x7fff00 },
+  { "Chocolate",                   0xd2691e },
+  { "Coral",                       0xff7f50 },
+  { "CornFlowerBlue",              0x6495ed },
+  { "Cornsilk",                    0xfff8dc },
+  { "Crimson",                     0xdc143c },
+  { "Cyan",                        0x00ffff },
+  { "DarkBlue",                    0x00008b },
+  { "DarkCyan",                    0x008b8b },
+  { "DarkGoldenRod",               0xb8860b },
+  { "DarkGray",                    0xa9a9a9 },
+  { "DarkGreen",                   0x006400 },
+  { "DarkKhaki",                   0xbdb76b },
+  { "DarkMagenta",                 0x8b008b },
+  { "DarkOliveGreen",              0x556b2f },
+  { "DarkOrange",                  0xff8c00 },
+  { "DarkOrchid",                  0x9932cc },
+  { "DarkRed",                     0x8b0000 },
+  { "DarkSalmon",                  0xe9967a },
+  { "DarkSeaGreen",                0x8fbc8f },
+  { "DarkSlateBlue",               0x483d8b },
+  { "DarkSlateGray",               0x2f4f4f },
+  { "DarkTurquoise",               0x00ced1 },
+  { "DarkViolet",                  0x9400d3 },
+  { "DeepPink",                    0xff1493 },
+  { "DeepSkyBlue",                 0x00bfff },
+  { "DimGray",                     0x696969 },
+  { "DodgerBlue",                  0x1e90ff },
+  { "FireBrick",                   0xb22222 },
+  { "FloralWhite",                 0xfffaf0 },
+  { "ForestGreen",                 0x228b22 },
+  { "Fuchsia",                     0xff00ff },
+  { "Gainsboro",                   0xdcdcdc },
+  { "GhostWhite",                  0xf8f8ff },
+  { "Gold",                        0xffd700 },
+  { "GoldenRod",                   0xdaa520 },
+  { "Gray",                        0x808080 },
+  { "Green",                       0x008000 },
+  { "GreenYellow",                 0xadff2f },
+  { "HoneyDew",                    0xf0fff0 },
+  { "HotPink",                     0xff69b4 },
+  { "IndianRed",                   0xcd5c5c },
+  { "Indigo",                      0x4b0082 },
+  { "Ivory",                       0xfffff0 },
+  { "Khaki",                       0xf0e68c },
+  { "Lavender",                    0xe6e6fa },
+  { "LavenderBlush",               0xfff0f5 },
+  { "LawnGreen",                   0x7cfc00 },
+  { "LemonChiffon",                0xfffacd },
+  { "LightBlue",                   0xadd8e6 },
+  { "LightCoral",                  0xf08080 },
+  { "LightCyan",                   0xe0ffff },
+  { "LightGoldenrodYellow",        0xfafad2 },
+  { "LightGray",                   0xd3d3d3 },
+  { "LightGreen",                  0x90ee90 },
+  { "LightPink",                   0xffb6c1 },
+  { "LightSalmon",                 0xffa07a },
+  { "LightSeaGreen",               0x20b2aa },
+  { "LightSkyBlue",                0x87cefa },
+  { "LightSlateGray",              0x778899 },
+  { "LightSteelBlue",              0xb0c4de },
+  { "LightYellow",                 0xffffe0 },
+  { "Lime",                        0x00ff00 },
+  { "LimeGreen",                   0x32cd32 },
+  { "Linen",                       0xfaf0e6 },
+  { "Magenta",                     0xff00ff },
+  { "Maroon",                      0x800000 },
+  { "MediumAquaMarine",            0x66cdaa },
+  { "MediumBlue",                  0x0000cd },
+  { "MediumOrchid",                0xba55d3 },
+  { "MediumPurple",                0x9370d8 },
+  { "MediumSeaGreen",              0x3cb371 },
+  { "MediumSlateBlue",             0x7b68ee },
+  { "MediumSpringGreen",           0x00fa9a },
+  { "MediumTurquoise",             0x48d1cc },
+  { "MediumVioletRed",             0xc71585 },
+  { "MidnightBlue",                0x191970 },
+  { "MintCream",                   0xf5fffa },
+  { "MistyRose",                   0xffe4e1 },
+  { "Moccasin",                    0xffe4b5 },
+  { "NavajoWhite",                 0xffdead },
+  { "Navy",                        0x000080 },
+  { "OldLace",                     0xfdf5e6 },
+  { "Olive",                       0x808000 },
+  { "OliveDrab",                   0x6b8e23 },
+  { "Orange",                      0xffa500 },
+  { "OrangeRed",                   0xff4500 },
+  { "Orchid",                      0xda70d6 },
+  { "PaleGoldenRod",               0xeee8aa },
+  { "PaleGreen",                   0x98fb98 },
+  { "PaleTurquoise",               0xafeeee },
+  { "PaleVioletRed",               0xdb7093 },
+  { "PapayaWhip",                  0xffefd5 },
+  { "PeachPuff",                   0xffdab9 },
+  { "Peru",                        0xcd853f },
+  { "Pink",                        0xffc0cb },
+  { "Plum",                        0xdda0dd },
+  { "PowderBlue",                  0xb0e0e6 },
+  { "Purple",                      0x800080 },
+  { "Red",                         0xff0000 },
+  { "RosyBrown",                   0xbc8f8f },
+  { "RoyalBlue",                   0x4169e1 },
+  { "SaddleBrown",                 0x8b4513 },
+  { "Salmon",                      0xfa8072 },
+  { "SandyBrown",                  0xf4a460 },
+  { "SeaGreen",                    0x2e8b57 },
+  { "SeaShell",                    0xfff5ee },
+  { "Sienna",                      0xa0522d },
+  { "Silver",                      0xc0c0c0 },
+  { "SkyBlue",                     0x87ceeb },
+  { "SlateBlue",                   0x6a5acd },
+  { "SlateGray",                   0x708090 },
+  { "Snow",                        0xfffafa },
+  { "SpringGreen",                 0x00ff7f },
+  { "SteelBlue",                   0x4682b4 },
+  { "Tan",                         0xd2b48c },
+  { "Teal",                        0x008080 },
+  { "Thistle",                     0xd8bfd8 },
+  { "Tomato",                      0xff6347 },
+  { "Turquoise",                   0x40e0d0 },
+  { "Violet",                      0xee82ee },
+  { "Wheat",                       0xf5deb3 },
+  { "White",                       0xffffff },
+  { "WhiteSmoke",                  0xf5f5f5 },
+  { "Yellow",                      0xffff00 },
+  { "YellowGreen",                 0x9acd32 },
+};
+
+/* Built-in variable names */
+static const struct { const char *zName; PNum val; } aBuiltin[] = {
+  { "arcrad",      0.25 },
+  { "arrowhead",   2.0  },
+  { "arrowht",     0.1  },
+  { "arrowwid",    0.05 },
+  { "boxht",       0.5  },
+  { "boxwid",      0.75 },
+  { "circlerad",   0.25 },
+  { "dashwid",     0.1  },
+  { "ellipseht",   0.5  },
+  { "ellipsewid",  0.75 },
+  { "lineht",      0.5  },
+  { "linewid",     0.5  },
+  { "movewid",     0.5  },
+  { "scale",       1.0  },
+  { "textht",      0.5  },
+  { "textwid",     0.0  },
+};
+
+
 
 /*
 ** The following array holds all the different kinds of named
@@ -375,7 +556,7 @@ static void pic_error(Pic *p, PToken *pErr, const char *zMsg){
 static void pic_debug_print_expr(Pic *p, PNum x){
   char zBuf[100];
   pic_append(p, "<!-- ", -1);
-  snprintf(zBuf, sizeof(zBuf)-1, "%g", (double)x);
+  snprintf(zBuf, sizeof(zBuf)-1, "%.10g", (double)x);
   pic_append(p, zBuf, -1);
   pic_append(p, " -->\n", -1);
 }
@@ -466,6 +647,119 @@ static PElem *pic_elem_new(Pic *p, PToken *pId, PToken *pStr, PEList *pSublist){
   }
   pic_elem_free(p, pNew);
   return 0;
+}
+
+/* Set a local variable name to "val".
+**
+** The name might be a built-in variable or a color name.  In either case,
+** a new application-defined variable is set.  Since app-defined variables
+** are searched first, this will override any built-in variables.
+*/
+static void pic_set_var(Pic *p, PToken *pId, PNum val){
+  PVar *pVar = p->pVar;
+  while( pVar ){
+    if( strncmp(pVar->zName,pId->z,pId->n)==0 && pVar->zName[pId->n]==0 ) break;
+    pVar = pVar->pNext;
+  }
+  if( pVar==0 ){
+    char *z;
+    pVar = malloc( pId->n+1 + sizeof(*pVar) );
+    if( pVar==0 ){
+      pic_error(p, 0, 0);
+      return;
+    }
+    pVar->zName = z = (char*)&pVar[1];
+    memcpy(z, pId->z, pId->n);
+    z[pId->n] = 0;
+    pVar->pNext = p->pVar;
+    p->pVar = pVar;
+  }
+  pVar->val = val;
+}
+
+/* Get the value of a variable.
+**
+** Search in order:
+**
+**    *  Application defined variables
+**    *  Built-in variables
+**    *  Color names
+*/
+static PNum pic_get_var(Pic *p, PToken *pId){
+  PVar *pVar;
+  int first, last, mid, c;
+  for(pVar=p->pVar; pVar; pVar=pVar->pNext){
+    if( strncmp(pVar->zName,pId->z,pId->n)==0 && pVar->zName[pId->n]==0 ){
+      return pVar->val;
+    }
+  }
+  first = 0;
+  last = count(aBuiltin)-1;
+  while( first<=last ){
+    mid = (first+last)/2;
+    c = strncmp(pId->z,aBuiltin[mid].zName,pId->n);
+    if( c==0 && aBuiltin[mid].zName[pId->n] ) c = 1;
+    if( c==0 ) return aBuiltin[mid].val;
+    if( c>0 ){
+      first = mid+1;
+    }else{
+      last = mid-1;
+    }
+  }
+  first = 0;
+  last = count(aColor)-1;
+  while( first<=last ){
+    const char *zClr;
+    int c1, c2, i;
+    mid = (first+last)/2;
+    zClr = aColor[mid].zName;
+    for(i=0; i<pId->n; i++){
+      c1 = zClr[i]&0x7f;
+      if( isupper(c1) ) c1 = tolower(c1);
+      c2 = pId->z[i]&0x7f;
+      if( isupper(c2) ) c2 = tolower(c2);
+      c = c2 - c1;
+      if( c ) break;
+    }
+    if( c==0 && aColor[mid].zName[pId->n] ) c = 1;
+    if( c==0 ) return (double)aColor[mid].val;
+    if( c>0 ){
+      first = mid+1;
+    }else{
+      last = mid-1;
+    }
+  }
+  pic_error(p,pId,"no such variable");
+  return 0.0;
+}
+
+/*
+** Convert a hex digit into an integer
+*/
+static int pic_hexval(char c){
+  if( c>='0' && c<='9' ) return c - '0';
+  if( c>='a' && c<='f' ) return (c - 'a')+10;
+  if( c>='A' && c<='F' ) return (c - 'A')+10;
+  return 0;
+}
+
+/*
+** Convert an RGV color value of the form #HHH or #HHHHHH into
+** a PNum.
+*/
+static PNum pic_color_to_num(Pic *p, const char *z, int n){
+  int x;
+  if( n==4 ){
+    x = pic_hexval(z[1])*0x110000 
+         + pic_hexval(z[2])*0x1100
+         + pic_hexval(z[3])*0x11;
+  }else if( n==7 ){
+    int i;
+    for(i=1, x=0; i<=6; i++){
+      x = x*16 + pic_hexval(z[i]);
+    }
+  }
+  return (PNum)x;
 }
 
 /* Attach a name to an element
@@ -830,6 +1124,11 @@ char *pic(const char *zText, int *pnErr){
     pic_parser(&sParse, 0, token);
   }
   pic_parserFinalize(&sParse);
+  while( s.pVar ){
+    PVar *pNext = s.pVar->pNext;
+    free(s.pVar);
+    s.pVar = pNext;
+  }
   if( pnErr ) *pnErr = s.nErr;
   if( s.zOut ){
     s.zOut[s.nOut] = 0;
