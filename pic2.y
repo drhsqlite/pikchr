@@ -150,11 +150,13 @@ struct Pic {
   PElem *cur;              /* Element under construction */
   PEList *list;            /* Element list under construction */
   PVar *pVar;              /* Application-defined variables */
+  char inDebug;            /* True if inside debugging print statement */
 };
 
 /* Forward declarations */
 static void pic_append(Pic*, const char*,int);
-static void pic_append_text(Pic*,const char*,int);
+static void pic_append_text(Pic*,const char*,int,int);
+static void pic_append_num(Pic*,PNum);
 static void pic_error(Pic*,PToken*,const char*);
 static void pic_elist_free(Pic*,PEList*);
 static void pic_elem_free(Pic*,PElem*);
@@ -162,7 +164,6 @@ static void pic_render(Pic*,PEList*);
 static PEList *pic_elist_append(Pic*,PEList*,PElem*);
 static PElem *pic_elem_new(Pic*,PToken*,PToken*,PEList*);
 static void pic_elem_setname(Pic*,PElem*,PToken*);
-static void pic_debug_print_expr(Pic*,PNum);
 static void pic_set_var(Pic*,PToken*,PNum);
 static PNum pic_value(Pic*,const char*,int,int*);
 static PNum pic_get_var(Pic*,PToken*);
@@ -175,6 +176,7 @@ static void pic_then(Pic*,PToken*,PElem*);
 static void pic_add_direction(Pic*,PToken*,PNum*);
 static void pic_set_from(Pic*,PElem*,PToken*,PPoint*);
 static void pic_add_to(Pic*,PElem*,PToken*,PPoint*);
+static void pic_set_at(Pic*,PToken*,PPoint*,PToken*);
 static short int pic_nth_value(Pic*,PToken*);
 static PElem *pic_find_nth(Pic*,PElem*,PToken*);
 static PElem *pic_find_byname(Pic*,PElem*,PToken*);
@@ -205,6 +207,13 @@ static PPoint pic_place_of_elem(Pic*,PElem*,PToken*);
 %type objectname {PElem*}
 %type nth {PToken}
 
+%syntax_error {
+  if( TOKEN.z && TOKEN.z[0] ){
+    pic_error(p, &TOKEN, "syntax error");
+  }else{
+    pic_error(p, 0, "syntax error");
+  }
+}
 
 document ::= element_list(X).  {pic_render(p,X);}
 
@@ -217,10 +226,17 @@ element_list(A) ::= element_list(B) EOL element(X).
 element(A) ::= .   { A = 0; }
 element(A) ::= direction(D).  { p->eDir = D.eType;  A=0; }
 element(A) ::= ID(N) ASSIGN expr(X). {pic_set_var(p,&N,X); A = 0;}
-element(A) ::= PRINT expr(X). {pic_debug_print_expr(p,X); A=0;}
 element(A) ::= PLACENAME(N) COLON unnamed_element(X).
                { A = X;  pic_elem_setname(p,X,&N); }
 element(A) ::= unnamed_element(X).  {A = X;}
+
+element(A) ::= print prlist.  {pic_append(p," -->\n",5); A=0; p->inDebug=0;}
+
+print ::= PRINT.  {pic_append(p,"<!-- ",5); p->inDebug = 1;}
+prlist ::= pritem.
+prlist ::= prlist COMMA pritem.
+pritem ::= expr(X).   {pic_append_num(p,X);}
+pritem ::= STRING(S). {pic_append_text(p,S.z+1,S.n-2,0);}
 
 unnamed_element(A) ::= basetype(X) attribute_list.  
                           {A = X; pic_after_adding_attributes(p,A);}
@@ -253,9 +269,9 @@ attribute ::= FROM(T) position(X).  { pic_set_from(p,p->cur,&T,&X); }
 attribute ::= TO(T) position(X).    { pic_add_to(p,p->cur,&T,&X); }
 attribute ::= THEN(T).              { pic_then(p, &T, p->cur); }
 attribute ::= boolproperty.
-attribute ::= AT position.
-attribute ::= WITH DOT_E EDGE AT position.
-attribute ::= WITH EDGE AT position.
+attribute ::= AT(A) position(P).                    { pic_set_at(p,0,&P,&A); }
+attribute ::= WITH DOT_E EDGE(E) AT(A) position(P). { pic_set_at(p,&E,&P,&A); }
+attribute ::= WITH EDGE(E) AT(A) position(P).       { pic_set_at(p,&E,&P,&A); }
 attribute ::= SAME.
 attribute ::= SAME AS object.
 attribute ::= BEHIND object.
@@ -274,12 +290,12 @@ colorproperty ::= FILL.
 colorproperty ::= COLOR.
 
 // Properties with no argument
-boolproperty ::= CW.
-boolproperty ::= CCW.
-boolproperty ::= LARROW.
-boolproperty ::= RARROW.
-boolproperty ::= LRARROW.
-boolproperty ::= INVIS.
+boolproperty ::= CW.          {p->cur->prop.cw = 1;}
+boolproperty ::= CCW.         {p->cur->prop.cw = 0;}
+boolproperty ::= LARROW.      {p->cur->prop.larrow=1; p->cur->prop.rarrow=0; }
+boolproperty ::= RARROW.      {p->cur->prop.larrow=0; p->cur->prop.rarrow=1; }
+boolproperty ::= LRARROW.     {p->cur->prop.larrow=1; p->cur->prop.rarrow=1; }
+boolproperty ::= INVIS.       {p->cur->prop.sw = 0.0;}
 
 textposition ::= .
 textposition ::= textposition CENTER|LJUST|RJUST|ABOVE|BELOW.
@@ -295,13 +311,26 @@ position(A) ::= place(B) MINUS LP expr(X) COMMA expr(Y) RP.
                                                       {A.x=B.x+X; A.y=B.y+Y;}
 position(A) ::= LP position(X) COMMA position(Y) RP.  {A.x=X.x; A.y=Y.y;}
 position(A) ::= LP position(X) RP.                    {A=X;}
-position ::= expr OF THE WAY BETWEEN position AND position.
-position ::= expr BETWEEN position AND position.
-position ::= direction expr FROM position.
-position ::= expr ABOVE position.
-position ::= expr BELOW position.
-position ::= expr LEFT OF position.
-position ::= expr RIGHT OF position.
+position(A) ::= expr(X) OF THE WAY BETWEEN position(P1) AND position(P2). {
+   PNum r1 = X, r2;
+   if( r1<0.0 ) r1 = 0.0;
+   if( r1>1.0 ) r1 = 1.0;
+   r2 = 1.0 - r1;
+   A.x = P1.x*r1 + P2.x*r2;
+   A.y = P1.y*r1 + P2.y*r2;
+}
+position(A) ::= expr(X) BETWEEN position(P1) AND position(P2). {
+   PNum r1 = X, r2;
+   if( r1<0.0 ) r1 = 0.0;
+   if( r1>1.0 ) r1 = 1.0;
+   r2 = 1.0 - r1;
+   A.x = P1.x*r1 + P2.x*r2;
+   A.y = P1.y*r1 + P2.y*r2;
+}
+position(A) ::= expr(X) ABOVE position(B).    {A=B; A.y += X;}
+position(A) ::= expr(X) BELOW position(B).    {A=B; A.y -= X;}
+position(A) ::= expr(X) LEFT OF position(B).  {A=B; A.x -= X;}
+position(A) ::= expr(X) RIGHT OF position(B). {A=B; A.x += X;}
 position ::= expr EDGE OF position.
 position ::= expr ANGLE expr FROM position.
 
@@ -380,12 +409,12 @@ expr ::= object DOT_L locproperty.
 expr ::= object DOT_L numproperty.
 expr ::= object DOT_L dashproperty.
 expr ::= object DOT_L colorproperty.
+expr(A) ::= object(O) DOT_E EDGE(E) DOT_L X. {A= pic_place_of_elem(p,O,&E).x;}
+expr(A) ::= object(O) DOT_E EDGE(E) DOT_L Y. {A= pic_place_of_elem(p,O,&E).y;}
 expr ::= LP locproperty OF object RP.
 expr ::= LP dashproperty OF object RP.
 expr ::= LP numproperty OF object RP.
 expr ::= LP colorproperty OF object RP.
-expr ::= object DOT_E EDGE DOT_L X.
-expr ::= object DOT_E EDGE DOT_L Y.
 
 locproperty ::= X.
 locproperty ::= Y.
@@ -805,25 +834,35 @@ static void pic_append(Pic *p, const char *zText, int n){
 /*
 ** Append text to zOut with HTML characters escaped.
 */
-static void pic_append_text(Pic *p, const char *zText, int n){
+static void pic_append_text(Pic *p, const char *zText, int n, int bStrict){
   int i;
   char c;
+  if( bStrict ) bStrict = '"';
   if( n<0 ) n = (int)strlen(zText);
   while( n>0 ){
-    for(i=0; i<n && (c=zText[i])!='<' && c!='>' && c!='&' && c!='"'; i++){}
+    for(i=0; i<n && (c=zText[i])!='<' && c!='>' && c!='&' && c!=bStrict; i++){}
     if( i ) pic_append(p, zText, i);
     if( i==n ) break;
     switch( c ){
       case '<': {  pic_append(p, "&lt;", 4);  break;  }
       case '>': {  pic_append(p, "&gt;", 4);  break;  }
       case '&': {  pic_append(p, "&amp;", 5);  break;  }
-      case '"': {  pic_append(p, "&quote;", 7);  break;  }
+      case '"': {  pic_append(p, "&quot;", 6);  break;  }
     }
     i++;
     n -= i;
     zText += i;
     i = 0;
   }
+}
+
+/* Append a PNum value
+*/
+static void pic_append_num(Pic *p, PNum v){
+  char buf[100];
+  snprintf(buf, sizeof(buf)-1, "%.10g", (double)v);
+  buf[sizeof(buf)-1] = 0;
+  pic_append(p, buf, -1);
 }
 
 /*
@@ -834,35 +873,34 @@ static void pic_append_text(Pic *p, const char *zText, int n){
 ** This routine is a no-op if there has already been an error reported.
 */
 static void pic_error(Pic *p, PToken *pErr, const char *zMsg){
-  int i;
+  int i, j;
+  int iCol;
+  int nExtra;
+  char c;
   if( p->nErr ) return;
   p->nErr++;
+  if( p->inDebug ){
+    pic_append(p," -->\n", 5);
+    p->inDebug = 0;
+  }
   i = (int)(pErr->z - p->zIn);
   if( pErr==0 || zMsg==0 ){
-    pic_append_text(p, "\n<div><p class='err'>Out of memory</p></div>\n", -1);
+    pic_append_text(p, "\n<div><p>Out of memory</p></div>\n", -1, 0);
     return;
   }
+  for(j=i; j>0 && p->zIn[j-1]!='\n'; j--){}
+  iCol = i - j;
+  for(nExtra=0; (c = p->zIn[i+nExtra])!=0 && c!='\n'; nExtra++){}
   pic_append(p, "<div><pre>\n", -1);
-  pic_append_text(p, p->zIn, i);
-  pic_append(p, "<span class='err'>&rarr;", -1);
-  pic_append_text(p, p->zIn+i, pErr->n);
-  pic_append(p, "&larr;", -1);
-  pic_append_text(p, zMsg, -1);
-  pic_append(p, "</span>", -1);
-  i += pErr->n;
-  pic_append_text(p,  p->zIn+i, -1);
+  pic_append_text(p, p->zIn, i+nExtra, 0);
+  pic_append(p, "\n", 1);
+  for(i=0; i<iCol; i++){ pic_append(p, " ", 1); }
+  for(i=0; i<pErr->n; i++) pic_append(p, "^", 1);
+  pic_append(p, "\nERROR: ", -1);
+  pic_append_text(p, zMsg, -1, 0);
+  pic_append(p, "\n", 1);
   pic_append(p, "\n</pre></div>\n", -1);
 }
-
-/* Output an expresion value in a comment for debugging purposes */
-static void pic_debug_print_expr(Pic *p, PNum x){
-  char zBuf[100];
-  pic_append(p, "<!-- ", -1);
-  snprintf(zBuf, sizeof(zBuf)-1, "%.10g", (double)x);
-  pic_append(p, zBuf, -1);
-  pic_append(p, " -->\n", -1);
-}
-
 
 /* Free a complete list of elements */
 static void pic_elist_free(Pic *p, PEList *pEList){
@@ -1079,6 +1117,18 @@ static void pic_add_direction(Pic *p, PToken *pDir, PNum *pVal){
   }
 }
 
+/*
+** Compute the relative office of a edge from the reference for a
+** an element.
+*/
+static PPoint pic_elem_offset(Pic *p, PElem *pElem, int cp){
+  if( pElem->type->xOffset==0 ){
+    return boxOffset(p, pElem, cp);
+  }else{
+    return pElem->type->xOffset(p, pElem, cp);
+  }
+}
+
 /* Set the "from" of an element
 */
 static void pic_set_from(Pic *p, PElem *pElem, PToken *pTk, PPoint *pPt){
@@ -1112,6 +1162,34 @@ static void pic_add_to(Pic *p, PElem *pElem, PToken *pTk, PPoint *pPt){
   pElem->seenVert = 1;
   pElem->seenHorz = 1;
 }
+
+/* Set the "at" of an element
+*/
+static void pic_set_at(Pic *p, PToken *pEdge, PPoint *pAt, PToken *pErrTok){
+  const PClass *pClass;
+  PElem *pElem;
+  if( p->nErr ) return;
+  pElem = p->cur;
+  pClass = pElem->type;
+  if( pClass->isLine ){
+    pic_error(p, pErrTok, "cannot possition a line this way - "
+                          "use \"from\" and \"to\" instead");
+    return;
+  }
+  if( pElem->bAt ){
+    pic_error(p, pErrTok, "position cannot be changed");
+    return;
+  }
+  if( pEdge ){
+    PPoint ofst = pic_elem_offset(p,pElem,pEdge->eCode);
+    pElem->ptAt.x = pAt->x - ofst.x;
+    pElem->ptAt.y = pAt->y - ofst.y;
+  }else{   
+    pElem->ptAt = *pAt;
+  }
+  pElem->bAt = 1;
+}
+
 
 /* Set a local variable name to "val".
 **
@@ -1400,18 +1478,29 @@ static void pic_after_adding_attributes(Pic *p, PElem *pElem){
 static void pic_elem_render(Pic *p, PElem *pElem){
   if( pElem==0 ) return;
   if( pElem->zName ){
-    pic_append_text(p, pElem->zName, -1);
+    pic_append_text(p, pElem->zName, -1, 0);
     pic_append(p, ": ", 2);
   }
   if( pElem->pSublist ){
     pic_append(p, "[\n", 2);
     pic_render(p,pElem->pSublist);
     pElem->pSublist = 0;
-    pic_append(p, "]\n", 2);
+    pic_append(p, "]", 1);
   }else{
-    pic_append_text(p, pElem->type->zName, -1);
-    pic_append(p, "\n", 1);
+    pic_append_text(p, pElem->type->zName, -1, 0);
   }
+  if( pElem->type->isLine ){
+  }else{
+    pic_append(p, " width ", 7);
+    pic_append_num(p, pElem->prop.w);
+    pic_append(p, " height ", 8);
+    pic_append_num(p, pElem->prop.h);
+    pic_append(p, " at ", 4);
+    pic_append_num(p, pElem->ptAt.x);
+    pic_append(p, ",", 1);
+    pic_append_num(p, pElem->ptAt.y);
+  }
+  pic_append(p, "\n", 1);
 }
 
 /* Render a list of elements.  Write the SVG into p->zOut.
