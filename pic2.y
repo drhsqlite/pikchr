@@ -39,14 +39,15 @@ typedef struct PPoint PPoint;    /* A position in 2-D space */
 typedef struct PVar PVar;        /* script-defined variable */
 
 /* Compass points */
-#define CP_N     1
-#define CP_NE    2
-#define CP_E     3
-#define CP_SE    4
-#define CP_S     5
-#define CP_SW    6
-#define CP_W     7
-#define CP_NW    8
+#define CP_CENTER 0
+#define CP_N      1
+#define CP_NE     2
+#define CP_E      3
+#define CP_SE     4
+#define CP_S      5
+#define CP_SW     6
+#define CP_W      7
+#define CP_NW     8
 
 /* Built-in functions */
 #define FN_COS    0
@@ -81,16 +82,31 @@ struct PToken {
 #define T_WHITESPACE 1000
 #define T_ERROR      1001
 
-/* Different types of elements */
-struct PClass {
-  const char *zName;
-};
 
 /* A single element */
 struct PElem {
   const PClass *type;      /* Element type */
   PEList *pSublist;        /* Substructure for [] elements */
   char *zName;             /* Name assigned to this element */
+  struct {
+    PNum w;                /* width */
+    PNum h;                /* height */
+    PNum rx;               /* x-radius */
+    PNum ry;               /* y-radius */
+    PNum sw;               /* stroke width ("thinkness") */
+    PNum dotted;           /* dotted:  <=0.0 for off */
+    PNum dashed;           /* dashed:  <=0.0 for off */
+    PNum chop1, chop2;     /* chop:    <=0.0 for off */
+    PNum fill;             /* fill color.  Negative for off */
+    PNum color;            /* Stroke color */
+    char cw;               /* True for clockwise arc */
+    char larrow;           /* Arrow at beginning */
+    char rarrow;           /* Arrow at end */
+  } prop;
+  PPoint ptFrom, ptTo;     /* From and to points */
+  char haveFrom;           /* True if "form" or "at" seen */
+  int nExtra;              /* Number of extra points */
+  PPoint *aExtra;          /* Array of extra points */
 };
 
 /* A list of elements */
@@ -127,6 +143,7 @@ static PElem *pic_elem_new(Pic*,PToken*,PToken*,PEList*);
 static void pic_elem_setname(Pic*,PElem*,PToken*);
 static void pic_debug_print_expr(Pic*,PNum);
 static void pic_set_var(Pic*,PToken*,PNum);
+static PNum pic_value(Pic*,const char*,int,int*);
 static PNum pic_get_var(Pic*,PToken*);
 static PNum pic_color_to_num(Pic*,const char*,int);
 
@@ -147,6 +164,7 @@ static PNum pic_color_to_num(Pic*,const char*,int);
 %type basetype {PElem*}
 %destructor basetype {pic_elem_free(p,$$);}
 %type expr {PNum}
+%type numproperty {int}
 
 
 document ::= element_list(X).  {pic_render(p,X);}
@@ -171,10 +189,10 @@ basetype(A) ::= ID(N).                  {A = pic_elem_new(p,&N,0,0); }
 basetype(A) ::= STRING(N).              {A = pic_elem_new(p,0,&N,0); }
 basetype(A) ::= LB element_list(X) RB.  {A = pic_elem_new(p,0,0,X);}
 
-direction ::= UP.
-direction ::= DOWN.
-direction ::= LEFT.
-direction ::= RIGHT.
+direction ::= UP(D).      {p->eDir = D.eType;}
+direction ::= DOWN(D).    {p->eDir = D.eType;}
+direction ::= LEFT(D).    {p->eDir = D.eType;}
+direction ::= RIGHT(D).   {p->eDir = D.eType;}
 
 attribute_list ::=.
 attribute_list ::= attribute_list attribute.
@@ -198,13 +216,8 @@ attribute ::= BEHIND object.
 attribute ::= STRING textposition.
 
 // Properties that require an argument
-numproperty ::= HEIGHT.
-numproperty ::= WIDTH.
-numproperty ::= RADIUS.
-numproperty ::= RX.
-numproperty ::= RY.
-numproperty ::= DIAMETER.
-numproperty ::= THICKNESS.
+numproperty(A) ::= HEIGHT|WIDTH|RADIUS|RX|RY|DIAMETER|THICKNESS(P).
+                        {A = P.eCode;}
 
 // Properties with optional arguments
 dashproperty ::= DOTTED.
@@ -499,26 +512,192 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
 };
 
 
+/* Methods for the "arc" class */
+static void arcInit(Pic *p, PElem *pElem){
+  pElem->prop.w = pic_value(p, "arcrad",6,0);
+  pElem->prop.h = pElem->prop.w;
+}
+
+/* Methods for the "arrow" class */
+static void arrowInit(Pic *p, PElem *pElem){
+  pElem->prop.w = pic_value(p, "linewid",7,0);
+  pElem->prop.h = pic_value(p, "lineht",6,0);
+  pElem->prop.rarrow = 1;
+}
+
+
+/* Methods for the "box" class */
+static void boxInit(Pic *p, PElem *pElem){
+  pElem->prop.w = pic_value(p, "boxwid",6,0);
+  pElem->prop.h = pic_value(p, "boxht",5,0);
+}
+
+/* Methods for the "circle" class */
+static void circleInit(Pic *p, PElem *pElem){
+  pElem->prop.w = pic_value(p, "circlerad",9,0)*2;
+  pElem->prop.h = pElem->prop.w;
+}
+
+/* Methods for the "cylinder" class */
+static void cylinderInit(Pic *p, PElem *pElem){
+  pElem->prop.w = pic_value(p, "boxwid",6,0);
+  pElem->prop.h = pic_value(p, "boxht",5,0)*2;
+}
+
+/* Methods for the "document" class */
+static void documentInit(Pic *p, PElem *pElem){
+  pElem->prop.w = pic_value(p, "boxwid",6,0);
+  pElem->prop.h = pic_value(p, "boxht",5,0)*2;
+}
+
+/* Methods for the "ellipse" class */
+static void ellipseInit(Pic *p, PElem *pElem){
+  pElem->prop.w = pic_value(p, "ellipsewid",10,0);
+  pElem->prop.h = pic_value(p, "ellipseht",9,0);
+}
+
+/* Methods for the "folder" class */
+static void folderInit(Pic *p, PElem *pElem){
+  pElem->prop.w = pic_value(p, "boxwid",6,0);
+  pElem->prop.h = pic_value(p, "boxht",5,0)*1.5;
+}
+
+/* Methods for the "line" class */
+static void lineInit(Pic *p, PElem *pElem){
+  pElem->prop.w = pic_value(p, "linewid",7,0);
+  pElem->prop.h = pic_value(p, "lineht",6,0);
+}
+
+/* Methods for the "move" class */
+static void moveInit(Pic *p, PElem *pElem){
+  pElem->prop.w = pic_value(p, "movewid",7,0);
+  pElem->prop.h = pic_value(p, "moveht",6,0);
+}
+
+/* Methods for the "spline" class */
+static void splineInit(Pic *p, PElem *pElem){
+  pElem->prop.w = pic_value(p, "linewid",7,0);
+  pElem->prop.h = pic_value(p, "lineht",6,0);
+}
+
+/* Methods for the "text" class */
+static void textInit(Pic *p, PElem *pElem){
+  pElem->prop.w = pic_value(p, "textwid",7,0);
+  pElem->prop.h = pic_value(p, "textht",6,0);
+}
+
+/* Methods for the "sublist" class */
+static void sublistInit(Pic *p, PElem *pElem){
+  return;
+}
 
 /*
 ** The following array holds all the different kinds of named
 ** elements.  The special STRING and [] elements are separate.
 */
-static const PClass aClass[] = {
-   {  "box",      },
-   {  "arrow",    },
-   {  "circle",   },
-   {  "ellipse",  },
-   {  "arc",      },
-   {  "line",     },
-   {  "spline",   },
-   {  "move",     },
-   {  "cylinder", },
-   {  "document", },
-   {  "folder",   }
+struct PClass {
+  const char *zName;                 /* Name of class */
+  char isLine;                       /* True if a line class */
+  void (*xInit)(Pic*,PElem*);        /* Initializer */
+  void (*xAfter)(Pic*,PElem*);       /* Processing after attributes rcvd */
+  PPoint (*xFindCP)(Pic*,PElem*,int); /* Compute offset to compass point */
+  void (*xRender)(Pic*,PElem*);      /* Render */
 };
-static const PClass sublistClass = { "[]", };
-static const PClass textClass = { "TEXT", };
+static const PClass aClass[] = {
+   {  /* name */          "arc",
+      /* isline */        0,
+      /* xInit */         arcInit,
+      /* xAfter */        0,
+      /* xFindCP */       0,
+      /* xRender */       0 
+   },
+   {  /* name */          "arrow",
+      /* isline */        1,
+      /* xInit */         arrowInit,
+      /* xAfter */        0,
+      /* xFindCP */       0,
+      /* xRender */       0 
+   },
+   {  /* name */          "box",
+      /* isline */        0,
+      /* xInit */         boxInit,
+      /* xAfter */        0,
+      /* xFindCP */       0,
+      /* xRender */       0 
+   },
+   {  /* name */          "circle",
+      /* isline */        0,
+      /* xInit */         circleInit,
+      /* xAfter */        0,
+      /* xFindCP */       0,
+      /* xRender */       0 
+   },
+   {  /* name */          "cylinder",
+      /* isline */        0,
+      /* xInit */         cylinderInit,
+      /* xAfter */        0,
+      /* xFindCP */       0,
+      /* xRender */       0 
+   },
+   {  /* name */          "document",
+      /* isline */        0,
+      /* xInit */         documentInit,
+      /* xAfter */        0,
+      /* xFindCP */       0,
+      /* xRender */       0 
+   },
+   {  /* name */          "ellipse",
+      /* isline */        0,
+      /* xInit */         ellipseInit,
+      /* xAfter */        0,
+      /* xFindCP */       0,
+      /* xRender */       0 
+   },
+   {  /* name */          "folder",
+      /* isline */        0,
+      /* xInit */         folderInit,
+      /* xAfter */        0,
+      /* xFindCP */       0,
+      /* xRender */       0 
+   },
+   {  /* name */          "line",
+      /* isline */        1,
+      /* xInit */         lineInit,
+      /* xAfter */        0,
+      /* xFindCP */       0,
+      /* xRender */       0 
+   },
+   {  /* name */          "move",
+      /* isline */        0,
+      /* xInit */         moveInit,
+      /* xAfter */        0,
+      /* xFindCP */       0,
+      /* xRender */       0 
+   },
+   {  /* name */          "spline",
+      /* isline */        1,
+      /* xInit */         splineInit,
+      /* xAfter */        0,
+      /* xFindCP */       0,
+      /* xRender */       0 
+   },
+};
+static const PClass sublistClass = 
+   {  /* name */          "[]",
+      /* isline */        0,
+      /* xInit */         sublistInit,
+      /* xAfter */        0,
+      /* xFindCP */       0,
+      /* xRender */       0 
+   };
+static const PClass textClass = 
+   {  /* name */          "TEXT",
+      /* isline */        0,
+      /* xInit */         textInit,
+      /* xAfter */        0,
+      /* xFindCP */       0,
+      /* xRender */       0 
+   };
 
 
 /*
@@ -620,6 +799,7 @@ static void pic_elem_free(Pic *p, PElem *pElem){
   if( pElem==0 ) return;
   free(pElem->zName);
   pic_elist_free(p, pElem->pSublist);
+  free(pElem->aExtra);
   free(pElem);
 }
 
@@ -668,10 +848,12 @@ static PElem *pic_elem_new(Pic *p, PToken *pId, PToken *pStr, PEList *pSublist){
   if( pSublist ){
     pNew->type = &sublistClass;
     pNew->pSublist = pSublist;
+    sublistClass.xInit(p,pNew);
     return pNew;
   }
   if( pStr ){
     pNew->type = &textClass;
+    textClass.xInit(p, pNew);
     return pNew;
   }
   if( pId ){
@@ -681,6 +863,7 @@ static PElem *pic_elem_new(Pic *p, PToken *pId, PToken *pStr, PEList *pSublist){
        && aClass[i].zName[pId->n]==0
       ){
         pNew->type = &aClass[i];
+        aClass[i].xInit(p, pNew);
         return pNew;
       }
     }
@@ -726,11 +909,11 @@ static void pic_set_var(Pic *p, PToken *pId, PNum val){
 **    *  Built-in variables
 **    *  Color names
 */
-static PNum pic_get_var(Pic *p, PToken *pId){
+static PNum pic_value(Pic *p, const char *z, int n, int *pMiss){
   PVar *pVar;
   int first, last, mid, c;
   for(pVar=p->pVar; pVar; pVar=pVar->pNext){
-    if( strncmp(pVar->zName,pId->z,pId->n)==0 && pVar->zName[pId->n]==0 ){
+    if( strncmp(pVar->zName,z,n)==0 && pVar->zName[n]==0 ){
       return pVar->val;
     }
   }
@@ -738,8 +921,8 @@ static PNum pic_get_var(Pic *p, PToken *pId){
   last = count(aBuiltin)-1;
   while( first<=last ){
     mid = (first+last)/2;
-    c = strncmp(pId->z,aBuiltin[mid].zName,pId->n);
-    if( c==0 && aBuiltin[mid].zName[pId->n] ) c = 1;
+    c = strncmp(z,aBuiltin[mid].zName,n);
+    if( c==0 && aBuiltin[mid].zName[n] ) c = 1;
     if( c==0 ) return aBuiltin[mid].val;
     if( c>0 ){
       first = mid+1;
@@ -747,6 +930,14 @@ static PNum pic_get_var(Pic *p, PToken *pId){
       last = mid-1;
     }
   }
+  if( pMiss ) *pMiss = 1;
+  return 0.0;
+}
+static PNum pic_get_var(Pic *p, PToken *pId){
+  int miss = 0;
+  int first, last, mid, c;
+  PNum v = pic_value(p, pId->z, pId->n, &miss);
+  if( miss==0 ) return v;
   first = 0;
   last = count(aColor)-1;
   while( first<=last ){
@@ -846,7 +1037,11 @@ static void pic_render(Pic *p, PEList *pEList){
   if( pEList==0 ) return;
   if( p->nErr==0 ){
     for(i=0; i<pEList->n; i++){
-      pic_elem_render(p, pEList->a[i]);
+      PElem *pElem = pEList->a[i];
+      void (*xRender)(Pic*,PElem*);
+      xRender = pElem->type->xRender;
+      if( xRender==0 ) xRender = pic_elem_render;
+      xRender(p, pElem);
     }
   }
   pic_elist_free(p, pEList);
