@@ -151,6 +151,7 @@ struct Pic {
   PEList *list;            /* Element list under construction */
   PVar *pVar;              /* Application-defined variables */
   PBox bbox;               /* Bounding box around all elements */
+  PNum rScale;             /* Multiple to convert inches to pixels */
   char inDebug;            /* True if inside debugging print statement */
 };
 
@@ -160,8 +161,10 @@ static void pic_append_text(Pic*,const char*,int,int);
 static void pic_append_num(Pic*,PNum);
 static void pic_append_x(Pic*,const char*,PNum,const char*);
 static void pic_append_y(Pic*,const char*,PNum,const char*);
+static void pic_append_xy(Pic*,const char*,PNum,PNum);
 static void pic_append_dis(Pic*,const char*,PNum,const char*);
 static void pic_append_clr(Pic*,const char*,PNum,const char*);
+static void pic_append_style(Pic*,PElem*);
 static void pic_error(Pic*,PToken*,const char*);
 static void pic_elist_free(Pic*,PEList*);
 static void pic_elem_free(Pic*,PElem*);
@@ -198,6 +201,8 @@ static void pic_bbox_addpt(PBox*,PPoint*);
 %token_prefix T_
 %token_type {PToken}
 %extra_context {Pic *p}
+
+%fallback ID FILL COLOR EDGE.
 
 %type element_list {PEList*}
 %destructor element_list {pic_elist_free(p,$$);}
@@ -591,16 +596,19 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
   { "arrowwid",    0.05 },
   { "boxht",       0.5  },
   { "boxwid",      0.75 },
+  { "color",       0.0  },
   { "circlerad",   0.25 },
   { "dashwid",     0.1  },
   { "ellipseht",   0.5  },
   { "ellipsewid",  0.75 },
+  { "fill",        -1.0 },
   { "lineht",      0.5  },
   { "linewid",     0.5  },
   { "movewid",     0.5  },
   { "scale",       1.0  },
   { "textht",      0.5  },
   { "textwid",     0.0  },
+  { "thickness",   0.01 },
 };
 
 
@@ -652,13 +660,18 @@ static PPoint boxEntry(Pic *p, PElem *pElem, int eDir){
   return pt;
 }
 static void boxRender(Pic *p, PElem *pElem){
-  PNum w = pElem->prop.w;
-  PNum h = pElem->prop.h;
-  pic_append_dis(p, "<rect width=\"",w,"\"");
-  pic_append_dis(p, " height=\"",h,"\"");
-  pic_append_x(p," x=\"", pElem->ptAt.x-w/2, "\"");
-  pic_append_y(p," y=\"", pElem->ptAt.y+h/2, "\"");
-  pic_append(p," />\n",-1);
+  PNum w2 = 0.5*pElem->prop.w;
+  PNum h2 = 0.5*pElem->prop.h;
+  PPoint pt = pElem->ptAt;
+  if( pElem->prop.sw>0.0 ){
+    pic_append_xy(p,"<path d=\"M", pt.x-w2,pt.y-h2);
+    pic_append_xy(p,"L", pt.x+w2,pt.y-h2);
+    pic_append_xy(p,"L", pt.x+w2,pt.y+h2);
+    pic_append_xy(p,"L", pt.x-w2,pt.y+h2);
+    pic_append(p,"Z\" ",-1);
+    pic_append_style(p,pElem);
+    pic_append(p,"\" />\n", -1);
+  }
 }
 
 /* Methods for the "circle" class */
@@ -889,20 +902,29 @@ static void pic_append_num(Pic *p, PNum v){
 static void pic_append_x(Pic *p, const char *z1, PNum v, const char *z2){
   char buf[200];
   v -= p->bbox.sw.x;
-  snprintf(buf, sizeof(buf)-1, "%s%d%s", z1, (int)(95*v), z2);
+  snprintf(buf, sizeof(buf)-1, "%s%d%s", z1, (int)(p->rScale*v), z2);
   buf[sizeof(buf)-1] = 0;
   pic_append(p, buf, -1);
 }
 static void pic_append_y(Pic *p, const char *z1, PNum v, const char *z2){
   char buf[200];
   v = p->bbox.ne.y - v;
-  snprintf(buf, sizeof(buf)-1, "%s%d%s", z1, (int)(95*v), z2);
+  snprintf(buf, sizeof(buf)-1, "%s%d%s", z1, (int)(p->rScale*v), z2);
+  buf[sizeof(buf)-1] = 0;
+  pic_append(p, buf, -1);
+}
+static void pic_append_xy(Pic *p, const char *z1, PNum x, PNum y){
+  char buf[200];
+  x = x - p->bbox.sw.x;
+  y = p->bbox.ne.y - y;
+  snprintf(buf, sizeof(buf)-1, "%s%d,%d", z1,
+       (int)(p->rScale*x), (int)(p->rScale*y));
   buf[sizeof(buf)-1] = 0;
   pic_append(p, buf, -1);
 }
 static void pic_append_dis(Pic *p, const char *z1, PNum v, const char *z2){
   char buf[200];
-  snprintf(buf, sizeof(buf)-1, "%s%d%s", z1, (int)(95*v), z2);
+  snprintf(buf, sizeof(buf)-1, "%s%d%s", z1, (int)(p->rScale*v), z2);
   buf[sizeof(buf)-1] = 0;
   pic_append(p, buf, -1);
 }
@@ -915,6 +937,24 @@ static void pic_append_clr(Pic *p, const char *z1, PNum v, const char *z2){
   snprintf(buf, sizeof(buf)-1, "%srgb(%d,%d,%d)%s", z1, r, g, b, z2);
   buf[sizeof(buf)-1] = 0;
   pic_append(p, buf, -1);
+}
+
+/* Append a style="..." text.  But, leave the quote unterminated, in case
+** the caller wants to add some more.
+*/
+static void pic_append_style(Pic *p, PElem *pElem){
+  pic_append(p, "style=\"", -1);
+  if( pElem->prop.fill>=0 ){
+    pic_append_clr(p, "fill:", pElem->prop.fill, ";");
+  }else{
+    pic_append(p,"fill:none;",-1);
+  }
+  if( pElem->prop.sw>0.0 ){
+    PNum sw = pElem->prop.sw;
+    if( sw*p->rScale<1.0 ) sw = 1.1/p->rScale;
+    pic_append_dis(p, "stroke-width:", sw, ";");
+    pic_append_clr(p, "stroke:",pElem->prop.color,";");
+  }
 }
 
 /*
@@ -1097,6 +1137,9 @@ static PElem *pic_elem_new(Pic *p, PToken *pId, PToken *pStr, PEList *pSublist){
     const PClass *pClass = pic_find_class(pId);
     if( pClass ){
       pNew->type = pClass;
+      pNew->prop.sw = pic_value(p, "thickness",9,0);
+      pNew->prop.fill = pic_value(p, "fill",4,0);
+      pNew->prop.color = pic_value(p, "color",5,0);
       pClass->xInit(p, pNew);
       return pNew;
     }
@@ -1650,6 +1693,8 @@ static void pic_render(Pic *p, PEList *pEList){
       PElem *pElem = pEList->a[i];
       pic_elem_bbox_add(p, pElem, &p->bbox);
     }
+    p->rScale = 95.0*pic_value(p,"scale",5,0);
+    if( p->rScale<5.0 ) p->rScale = 5.0;
     pic_append_dis(p, "<svg width=\"", p->bbox.ne.x - p->bbox.sw.x, "\"");
     pic_append_dis(p, " height=\"",p->bbox.ne.y - p->bbox.sw.y,"\">\n");
     pic_elist_render(p, pEList);
