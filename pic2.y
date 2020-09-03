@@ -150,6 +150,7 @@ struct Pic {
   PElem *cur;              /* Element under construction */
   PEList *list;            /* Element list under construction */
   PVar *pVar;              /* Application-defined variables */
+  PBox bbox;               /* Bounding box around all elements */
   char inDebug;            /* True if inside debugging print statement */
 };
 
@@ -157,6 +158,10 @@ struct Pic {
 static void pic_append(Pic*, const char*,int);
 static void pic_append_text(Pic*,const char*,int,int);
 static void pic_append_num(Pic*,PNum);
+static void pic_append_x(Pic*,const char*,PNum,const char*);
+static void pic_append_y(Pic*,const char*,PNum,const char*);
+static void pic_append_dis(Pic*,const char*,PNum,const char*);
+static void pic_append_clr(Pic*,const char*,PNum,const char*);
 static void pic_error(Pic*,PToken*,const char*);
 static void pic_elist_free(Pic*,PEList*);
 static void pic_elem_free(Pic*,PElem*);
@@ -181,6 +186,10 @@ static short int pic_nth_value(Pic*,PToken*);
 static PElem *pic_find_nth(Pic*,PElem*,PToken*);
 static PElem *pic_find_byname(Pic*,PElem*,PToken*);
 static PPoint pic_place_of_elem(Pic*,PElem*,PToken*);
+static int pic_bbox_isempty(PBox*);
+static void pic_bbox_init(PBox*);
+static void pic_bbox_addbox(PBox*,PBox*);
+static void pic_bbox_addpt(PBox*,PPoint*);
 
 
 } // end %include
@@ -642,6 +651,15 @@ static PPoint boxEntry(Pic *p, PElem *pElem, int eDir){
   pt.y += pElem->ptAt.y;
   return pt;
 }
+static void boxRender(Pic *p, PElem *pElem){
+  PNum w = pElem->prop.w;
+  PNum h = pElem->prop.h;
+  pic_append_dis(p, "<rect width=\"",w,"\"");
+  pic_append_dis(p, " height=\"",h,"\"");
+  pic_append_x(p," x=\"", pElem->ptAt.x-w/2, "\"");
+  pic_append_y(p," y=\"", pElem->ptAt.y+h/2, "\"");
+  pic_append(p," />\n",-1);
+}
 
 /* Methods for the "circle" class */
 static void circleInit(Pic *p, PElem *pElem){
@@ -734,7 +752,7 @@ static const PClass aClass[] = {
       /* xInit */         boxInit,
       /* xAfter */        0,
       /* xOffset */       0,
-      /* xRender */       0 
+      /* xRender */       boxRender 
    },
    {  /* name */          "circle",
       /* isline */        0,
@@ -865,6 +883,40 @@ static void pic_append_num(Pic *p, PNum v){
   pic_append(p, buf, -1);
 }
 
+/* Append a PNum value surrounded by text.  Do coordinate transformations
+** on the value.
+*/
+static void pic_append_x(Pic *p, const char *z1, PNum v, const char *z2){
+  char buf[200];
+  v -= p->bbox.sw.x;
+  snprintf(buf, sizeof(buf)-1, "%s%d%s", z1, (int)(95*v), z2);
+  buf[sizeof(buf)-1] = 0;
+  pic_append(p, buf, -1);
+}
+static void pic_append_y(Pic *p, const char *z1, PNum v, const char *z2){
+  char buf[200];
+  v = p->bbox.ne.y - v;
+  snprintf(buf, sizeof(buf)-1, "%s%d%s", z1, (int)(95*v), z2);
+  buf[sizeof(buf)-1] = 0;
+  pic_append(p, buf, -1);
+}
+static void pic_append_dis(Pic *p, const char *z1, PNum v, const char *z2){
+  char buf[200];
+  snprintf(buf, sizeof(buf)-1, "%s%d%s", z1, (int)(95*v), z2);
+  buf[sizeof(buf)-1] = 0;
+  pic_append(p, buf, -1);
+}
+static void pic_append_clr(Pic *p, const char *z1, PNum v, const char *z2){
+  char buf[200];
+  int x = (int)v;
+  int r = (x>>16) & 0xff;
+  int g = (x>>8) & 0xff;
+  int b = x & 0xff;
+  snprintf(buf, sizeof(buf)-1, "%srgb(%d,%d,%d)%s", z1, r, g, b, z2);
+  buf[sizeof(buf)-1] = 0;
+  pic_append(p, buf, -1);
+}
+
 /*
 ** Generate an error message for the output.  pErr is the token at which
 ** the error should point.  zMsg is the text of the error message. If
@@ -922,6 +974,51 @@ static void pic_elem_free(Pic *p, PElem *pElem){
   free(pElem->aPath);
   free(pElem);
 }
+
+/* Return true if a bounding box is empty.
+*/
+static int pic_bbox_isempty(PBox *p){
+  return p->sw.x>p->ne.x;
+}
+
+/* Initialize a bounding box to an empty container
+*/
+static void pic_bbox_init(PBox *p){
+  p->sw.x = 1.0;
+  p->sw.y = 1.0;
+  p->ne.x = 0.0;
+  p->ne.y = 0.0;
+}
+
+/* Enlarge the PBox of the first argument so that it fully
+** covers the second PBox
+*/
+static void pic_bbox_addbox(PBox *pA, PBox *pB){
+  if( pic_bbox_isempty(pA) ){
+    *pA = *pB;
+  }
+  if( pic_bbox_isempty(pB) ) return;
+  if( pA->sw.x>pB->sw.x ) pA->sw.x = pB->sw.x;
+  if( pA->sw.y>pB->sw.y ) pA->sw.y = pB->sw.y;
+  if( pA->ne.x<pB->ne.x ) pA->ne.x = pB->ne.x;
+  if( pA->ne.y<pB->ne.y ) pA->ne.y = pB->ne.y;
+}
+
+/* Enlarge the PBox of the first argument, if necessary, so that
+** it contains the PPoint in the second argument
+*/
+static void pic_bbox_addpt(PBox *pA, PPoint *pPt){
+  if( pic_bbox_isempty(pA) ){
+    pA->ne = *pPt;
+    pA->sw = *pPt;
+    return;
+  }
+  if( pA->sw.x>pPt->x ) pA->sw.x = pPt->x;
+  if( pA->sw.y>pPt->y ) pA->sw.y = pPt->y;
+  if( pA->ne.x<pPt->x ) pA->ne.x = pPt->x;
+  if( pA->ne.y<pPt->y ) pA->ne.y = pPt->y;
+}
+
 
 
 /* Append a new element onto the end of an element_list.  The
@@ -1473,6 +1570,34 @@ static void pic_after_adding_attributes(Pic *p, PElem *pElem){
   
 }
 
+/*
+** Increase the size of bounding box *pBox so that it covers
+** the element *pElem.
+*/
+static void pic_elem_bbox_add(Pic *p, PElem *pElem, PBox *pBox){
+  if( pElem->type->isLine ){
+    int i;
+    pic_bbox_addpt(pBox, &pElem->ptFrom);
+    pic_bbox_addpt(pBox, &pElem->ptTo);
+    for(i=0; i<pElem->nPath; i++){
+      pic_bbox_addpt(pBox, &pElem->aPath[i]);
+    }
+  }else{
+    PBox b;
+    PNum m = pElem->prop.w/2.0 + pElem->prop.sw;
+    b.sw.x = pElem->ptAt.x - m;
+    b.ne.x = pElem->ptAt.x + m;
+    m = pElem->prop.h/2.0 + pElem->prop.sw;
+    b.sw.y = pElem->ptAt.y - m;
+    b.ne.y = pElem->ptAt.y + m;
+    pic_bbox_addbox(pBox, &b);
+  }
+}
+
+/* Forward reference */
+static void pic_elist_render(Pic*,PEList*);
+
+
 /* Render a single element
 */
 static void pic_elem_render(Pic *p, PElem *pElem){
@@ -1482,10 +1607,7 @@ static void pic_elem_render(Pic *p, PElem *pElem){
     pic_append(p, ": ", 2);
   }
   if( pElem->pSublist ){
-    pic_append(p, "[\n", 2);
-    pic_render(p,pElem->pSublist);
-    pElem->pSublist = 0;
-    pic_append(p, "]", 1);
+    pic_elist_render(p,pElem->pSublist);
   }else{
     pic_append_text(p, pElem->type->zName, -1, 0);
   }
@@ -1503,6 +1625,19 @@ static void pic_elem_render(Pic *p, PElem *pElem){
   pic_append(p, "\n", 1);
 }
 
+/* Render a list of elements
+*/
+void pic_elist_render(Pic *p, PEList *pEList){
+  int i;
+  for(i=0; i<pEList->n; i++){
+    PElem *pElem = pEList->a[i];
+    void (*xRender)(Pic*,PElem*);
+    xRender = pElem->type->xRender;
+    if( xRender==0 ) xRender = pic_elem_render;
+    xRender(p, pElem);
+  }
+}
+
 /* Render a list of elements.  Write the SVG into p->zOut.
 ** Delete the input element_list before returnning.
 */
@@ -1510,13 +1645,15 @@ static void pic_render(Pic *p, PEList *pEList){
   int i;
   if( pEList==0 ) return;
   if( p->nErr==0 ){
+    pic_bbox_init(&p->bbox);
     for(i=0; i<pEList->n; i++){
       PElem *pElem = pEList->a[i];
-      void (*xRender)(Pic*,PElem*);
-      xRender = pElem->type->xRender;
-      if( xRender==0 ) xRender = pic_elem_render;
-      xRender(p, pElem);
+      pic_elem_bbox_add(p, pElem, &p->bbox);
     }
+    pic_append_dis(p, "<svg width=\"", p->bbox.ne.x - p->bbox.sw.x, "\"");
+    pic_append_dis(p, " height=\"",p->bbox.ne.y - p->bbox.sw.y,"\">\n");
+    pic_elist_render(p, pEList);
+    pic_append(p,"</svg>\n", -1);
   }
   pic_elist_free(p, pEList);
 }
