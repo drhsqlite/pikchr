@@ -178,6 +178,7 @@ static void pic_add_to(Pic*,PElem*,PToken*,PPoint*);
 static short int pic_nth_value(Pic*,PToken*);
 static PElem *pic_find_nth(Pic*,PElem*,PToken*);
 static PElem *pic_find_byname(Pic*,PElem*,PToken*);
+static PPoint pic_place_of_elem(Pic*,PElem*,PToken*);
 
 
 } // end %include
@@ -304,13 +305,13 @@ position ::= expr RIGHT OF position.
 position ::= expr EDGE OF position.
 position ::= expr ANGLE expr FROM position.
 
-place ::= object.
-place ::= object DOT_E EDGE.
-place ::= object DOT_L START.
-place ::= object DOT_L END.
-place ::= START OF object.
-place ::= END OF object.
-place ::= EDGE OF object.
+place(A) ::= object(O).                 {A = pic_place_of_elem(p,O,0);}
+place(A) ::= object(O) DOT_E EDGE(X).   {A = pic_place_of_elem(p,O,&X);}
+place(A) ::= object(O) DOT_L START(X).  {A = pic_place_of_elem(p,O,&X);}
+place(A) ::= object(O) DOT_L END(X).    {A = pic_place_of_elem(p,O,&X);}
+place(A) ::= START(X) OF object(O).     {A = pic_place_of_elem(p,O,&X);}
+place(A) ::= END(X) OF object(O).       {A = pic_place_of_elem(p,O,&X);}
+place(A) ::= EDGE(X) OF object(O).      {A = pic_place_of_elem(p,O,&X);}
 
 object(A) ::= objectname(A).
 object(A) ::= nth(N).                     {A = pic_find_nth(p,0,&N);}
@@ -1329,6 +1330,46 @@ static PElem *pic_find_byname(Pic *p, PElem *pBasis, PToken *pName){
   }
   pic_error(p, pName, "no such object");
   return 0;
+}
+
+/* Return a "Place" associated with element pElem.  If pEdge is NULL
+** return the center of the object.  Otherwise, return the corner
+** described by pEdge.
+*/
+static PPoint pic_place_of_elem(Pic *p, PElem *pElem, PToken *pEdge){
+  PPoint pt;
+  const PClass *pClass;
+  pt.x = 0.0;
+  pt.y = 0.0;
+  if( pElem==0 ) return pt;
+  if( pEdge==0 ){
+    return pElem->ptAt;
+  }
+  pClass = pElem->type;
+  if( pEdge->eType==T_EDGE ){
+    if( pClass->isLine ){
+      pic_error(0, pEdge,
+          "line objects have only \"start\" and \"end\" points");
+      return pt;
+    }
+    if( pClass->xOffset==0 ){
+      pt = boxOffset(p, pElem, pEdge->eCode);
+    }else{
+      pt = pClass->xOffset(p, pElem, pEdge->eCode);
+    }
+    pt.x += pElem->ptAt.x;
+    pt.y += pElem->ptAt.y;
+    return pt;
+  }
+  if( !pClass->isLine ){
+    pic_error(0, pEdge,
+          "only line objects have \"start\" and \"end\" points");
+    return pt;
+  }
+  if( pEdge->eType==T_START ){
+    return pElem->ptAt;
+  }
+  return pElem->ptTo;  
 }
 
 /* Attach a name to an element
