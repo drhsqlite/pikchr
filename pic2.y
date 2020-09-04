@@ -127,16 +127,12 @@ struct PElem {
   } prop;
   PToken aTxt[3];          /* Text with .eCode holding TP flags */
   PPoint ptAt;             /* Reference point for the object */
-//  PPoint ptFrom, ptTo;     /* previous and current points on path */
   int inDir, outDir;       /* Entry and exit directions */
   unsigned char nTxt;      /* Number of text values */
-//  char bAt;                /* The reference point has been computed */
-//  char seenVert;           /* Seen an "up" or "down" */
-//  char seenHorz;           /* Seen a "right" or "left" */
-//  char seenFrom;           /* Seen a "from" */
-//  char toAbs;              /* ptTo is expressed in absolute coordinates */
   int nPath;               /* Number of path points */
   PPoint *aPath;           /* Array of path points */
+  PBox bbox;               /* Bounding box */
+  PPoint ptEnter, ptExit;  /* Entry and exit points */
 };
 
 /* A list of elements */
@@ -868,14 +864,14 @@ static const PClass aClass[] = {
       /* xInit */         moveInit,
       /* xAfter */        0,
       /* xOffset */       0,
-      /* xRender */       0 
+      /* xRender */       0
    },
    {  /* name */          "spline",
       /* isline */        1,
       /* xInit */         splineInit,
       /* xAfter */        0,
       /* xOffset */       0,
-      /* xRender */       0 
+      /* xRender */       lineRender
    },
 };
 static const PClass sublistClass = 
@@ -1072,7 +1068,7 @@ static void pic_append_txt(Pic *p, PElem *pElem){
       pic_append(p, " text-anchor=\"middle\"", -1);
     }
     if( pElem->prop.color>0 ){
-      pic_append_clr(p, "fill=\"", pElem->prop.color, "\"");
+      pic_append_clr(p, " fill=\"", pElem->prop.color, "\"");
     }
     pic_append(p, " dominant-baseline=\"central\">", -1);
     z = t->z+1;
@@ -1288,12 +1284,28 @@ static PElem *pic_elem_new(Pic *p, PToken *pId, PToken *pStr,PEList *pSublist){
   return 0;
 }
 
+/*
+** Set the output direction and exit point for an element.
+*/
+static void pic_elem_set_exit(Pic *p, PElem *pElem, int eDir){
+  pElem->outDir = eDir;
+  if( !pElem->type->isLine ){
+    pElem->ptExit = pElem->ptAt;
+    switch( pElem->outDir ){
+      default:       pElem->ptExit.x += pElem->prop.w*0.5;  break;
+      case T_LEFT:   pElem->ptExit.x -= pElem->prop.w*0.5;  break;
+      case T_UP:     pElem->ptExit.y += pElem->prop.h*0.5;  break;
+      case T_DOWN:   pElem->ptExit.y -= pElem->prop.h*0.5;  break;
+    }
+  }
+}
+
 /* Change the direction of travel
 */
 static void pic_set_direction(Pic *p, int eDir){
   p->eDir = eDir;
   if( p->list && p->list->n ){
-    p->list->a[p->list->n-1]->outDir = eDir;
+    pic_elem_set_exit(p, p->list->a[p->list->n-1], eDir);
   }
 }
 
@@ -1834,51 +1846,51 @@ static void pic_elem_setname(Pic *p, PElem *pElem, PToken *pName){
   return;
 }
 
-/* Return the exit point for an object
-*/
-static PPoint pic_exit_point(Pic *p, PElem *pElem){
-  PPoint pt;
-  if( pElem->type->isLine ){
-    return pElem->aPath[pElem->nPath-1];
-  }
-  pt = pElem->ptAt;
-  switch( pElem->outDir ){
-    default:       pt.x += pElem->prop.w/2.0;  break;
-    case T_LEFT:   pt.x -= pElem->prop.w/2.0;  break;
-    case T_UP:     pt.y += pElem->prop.h/2.0;  break;
-    case T_DOWN:   pt.y -= pElem->prop.h/2.0;  break;
-  }
-  return pt;
-}
-
 /* This routine runs after all attributes have been received
 ** on an element.
 */
 static void pic_after_adding_attributes(Pic *p, PElem *pElem){
   int i;
+  int isConnected;
+
+  /* Convert the starting point to absolute coordinates.  If
+  ** the starting point is currently relative (meaning that it
+  ** is unspecified by attributes) then make the starting point
+  ** equal to the exit point of the previous object.
+  */
   if( p->aRPath[0].isRel ){
     PPoint ptStart;
     if( p->list==0 || p->list->n==0 ){
       ptStart = p->ptStart;
     }else{
       PElem *pPrior = p->list->a[p->list->n-1];
-      ptStart = pic_exit_point(p, pPrior);
+      ptStart = pPrior->ptExit;
     }
     p->aRPath[0].pt.x += ptStart.x;
     p->aRPath[0].pt.y += ptStart.y;
     p->aRPath[0].isRel = 0;
+    isConnected = 1;
+  }else{
+    /* Absolute location was specified */
+    isConnected = 0;
   }
+
+  /* For a line object with no movement specified, a single movement
+  ** of the default length in the current direction
+  */
   if( pElem->type->isLine && p->nRPath<2 ){
     PPoint *pPt = &p->aRPath[1].pt;
     p->nRPath = 2;
     p->aRPath[1].isRel = 1;
-    switch( pElem->outDir ){
+    switch( pElem->inDir ){
       default:      pPt->x = +pElem->prop.w; pPt->y = 0.0; break;
       case T_LEFT:  pPt->x = -pElem->prop.w; pPt->y = 0.0; break;
       case T_UP:    pPt->y = +pElem->prop.h; pPt->x = 0.0; break;
       case T_DOWN:  pPt->y = -pElem->prop.h; pPt->x = 0.0; break;
     }
   }
+
+  /* Convert the path to absolute coordinates */
   for(i=1; i<p->nRPath; i++){
     if( p->aRPath[i].isRel ){
       p->aRPath[i].pt.x += p->aRPath[i-1].pt.x;
@@ -1886,10 +1898,22 @@ static void pic_after_adding_attributes(Pic *p, PElem *pElem){
       p->aRPath[i].isRel = 0;
     }
   }
+
+  /* Compute final bounding box, entry and exit points, center
+  ** point (ptAt) and path for the element
+  */
+  pic_bbox_init(&pElem->bbox);
+  pElem->ptEnter = p->aRPath[0].pt;
+  if( pElem->pSublist ){
+    PEList *pList = pElem->pSublist;
+    int i;
+    for(i=0; i<pList->n; i++){
+      pic_bbox_addbox(&pElem->bbox, &pList->a[i]->bbox);
+    }
+    pElem->prop.w = pElem->bbox.ne.x - pElem->bbox.sw.x;
+    pElem->prop.h = pElem->bbox.ne.y - pElem->bbox.sw.y;
+  }
   if( pElem->type->isLine ){
-    int n = p->nRPath-1;
-    pElem->ptAt.x = (p->aRPath[0].pt.x + p->aRPath[n].pt.x)/2.0;
-    pElem->ptAt.y = (p->aRPath[0].pt.y + p->aRPath[n].pt.y)/2.0;
     pElem->aPath = malloc( sizeof(PPoint)*p->nRPath );
     if( pElem->aPath==0 ){
       pic_error(p, 0, 0);
@@ -1898,73 +1922,63 @@ static void pic_after_adding_attributes(Pic *p, PElem *pElem){
       pElem->nPath = p->nRPath;
       for(i=0; i<p->nRPath; i++){
         pElem->aPath[i] = p->aRPath[i].pt;
+        pic_bbox_addpt(&pElem->bbox, &pElem->aPath[i]);
       }
     }
+    pElem->ptExit = p->aRPath[p->nRPath-1].pt;
+    pElem->prop.w = pElem->bbox.ne.x - pElem->bbox.sw.x;
+    pElem->prop.h = pElem->bbox.ne.y - pElem->bbox.sw.y;
+    pElem->ptAt.x = (pElem->bbox.ne.x + pElem->bbox.sw.x)/2.0;
+    pElem->ptAt.y = (pElem->bbox.ne.y + pElem->bbox.sw.y)/2.0;
   }else{
+    PNum w2 = pElem->prop.w/2.0;
+    PNum h2 = pElem->prop.h/2.0;
     pElem->ptAt = p->aRPath[0].pt;
-    switch( pElem->inDir ){
-      default:       pElem->ptAt.x += pElem->prop.w/2.0;  break;
-      case T_LEFT:   pElem->ptAt.x -= pElem->prop.w/2.0;  break;
-      case T_UP:     pElem->ptAt.y += pElem->prop.h/2.0;  break;
-      case T_DOWN:   pElem->ptAt.y -= pElem->prop.h/2.0;  break;
+    if( isConnected ){
+      switch( pElem->inDir ){
+        default:       pElem->ptAt.x += w2;  break;
+        case T_LEFT:   pElem->ptAt.x -= w2;  break;
+        case T_UP:     pElem->ptAt.y += h2;  break;
+        case T_DOWN:   pElem->ptAt.y -= h2;  break;
+      }
     }
+    if( isConnected ){
+      pic_elem_set_exit(p, pElem, pElem->outDir);
+    }else{
+      pElem->ptExit = pElem->ptAt;
+    }
+    pElem->bbox.sw.x = pElem->ptAt.x - w2;
+    pElem->bbox.sw.y = pElem->ptAt.y - h2;
+    pElem->bbox.ne.x = pElem->ptAt.x + w2;
+    pElem->bbox.ne.y = pElem->ptAt.y + h2;
   }
   p->eDir = pElem->outDir;
 }
-
-/*
-** Increase the size of bounding box *pBox so that it covers
-** the element *pElem.
-*/
-static void pic_elem_bbox_add(Pic *p, PElem *pElem, PBox *pBox){
-  if( pElem->type->isLine ){
-    int i;
-    for(i=0; i<pElem->nPath; i++){
-      pic_bbox_addpt(pBox, &pElem->aPath[i]);
-    }
-  }else{
-    PBox b;
-    PNum sw = pElem->prop.sw;
-    if( sw<0.0 ) sw = 0.0;
-    PNum m = pElem->prop.w/2.0 + sw;
-    b.sw.x = pElem->ptAt.x - m;
-    b.ne.x = pElem->ptAt.x + m;
-    m = pElem->prop.h/2.0 + sw;
-    b.sw.y = pElem->ptAt.y - m;
-    b.ne.y = pElem->ptAt.y + m;
-    pic_bbox_addbox(pBox, &b);
-  }
-}
-
-/* Forward reference */
-static void pic_elist_render(Pic*,PEList*);
-
 
 /* Render a single element
 */
 static void pic_elem_render(Pic *p, PElem *pElem){
   if( pElem==0 ) return;
+  pic_append(p,"<!-- ", -1);
   if( pElem->zName ){
     pic_append_text(p, pElem->zName, -1, 0);
     pic_append(p, ": ", 2);
   }
-  if( pElem->pSublist ){
-    pic_elist_render(p,pElem->pSublist);
-  }else{
-    pic_append_text(p, pElem->type->zName, -1, 0);
+  pic_append_text(p, pElem->type->zName, -1, 0);
+  if( pElem->nTxt ){
+    pic_append(p, " \"", 2);
+    pic_append_text(p, pElem->aTxt[0].z+1, pElem->aTxt[0].n-2, 1);
+    pic_append(p, "\"", 1);
   }
-  if( pElem->type->isLine ){
-  }else{
-    pic_append(p, " width ", 7);
-    pic_append_num(p, pElem->prop.w);
-    pic_append(p, " height ", 8);
-    pic_append_num(p, pElem->prop.h);
-    pic_append(p, " at ", 4);
-    pic_append_num(p, pElem->ptAt.x);
-    pic_append(p, ",", 1);
-    pic_append_num(p, pElem->ptAt.y);
-  }
-  pic_append(p, "\n", 1);
+  pic_append(p, " width ", 7);
+  pic_append_num(p, pElem->prop.w);
+  pic_append(p, " height ", 8);
+  pic_append_num(p, pElem->prop.h);
+  pic_append(p, " at ", 4);
+  pic_append_num(p, pElem->ptAt.x);
+  pic_append(p, ",", 1);
+  pic_append_num(p, pElem->ptAt.y);
+  pic_append(p, " -->\n", -1);
 }
 
 /* Render a list of elements
@@ -1974,9 +1988,14 @@ void pic_elist_render(Pic *p, PEList *pEList){
   for(i=0; i<pEList->n; i++){
     PElem *pElem = pEList->a[i];
     void (*xRender)(Pic*,PElem*);
+    pic_elem_render(p, pElem);
     xRender = pElem->type->xRender;
-    if( xRender==0 ) xRender = pic_elem_render;
-    xRender(p, pElem);
+    if( xRender ){
+      xRender(p, pElem);
+    }
+    if( pElem->pSublist ){
+      pic_elist_render(p, pElem->pSublist);
+    }
   }
 }
 
@@ -1990,7 +2009,7 @@ static void pic_render(Pic *p, PEList *pEList){
     pic_bbox_init(&p->bbox);
     for(i=0; i<pEList->n; i++){
       PElem *pElem = pEList->a[i];
-      pic_elem_bbox_add(p, pElem, &p->bbox);
+      pic_bbox_addbox(&p->bbox, &pElem->bbox);
     }
     p->rScale = 144.0*pic_value(p,"scale",5,0);
     if( p->rScale<5.0 ) p->rScale = 5.0;
