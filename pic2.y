@@ -58,6 +58,14 @@ typedef struct PBox PBox;        /* A bounding box */
 #define FN_SIN    4
 #define FN_SQRT   5
 
+/* Text position flags */
+#define TP_LJUST   0x01
+#define TP_RJUST   0x02
+#define TP_JMASK   0x03
+#define TP_ABOVE   0x04
+#define TP_BELOW   0x08
+#define TP_VMASK   0x0c
+
 /* An object to hold a position in 2-D space */
 struct PPoint {
   PNum x, y;               /* X and Y coordinates */
@@ -117,9 +125,11 @@ struct PElem {
     char larrow;           /* Arrow at beginning */
     char rarrow;           /* Arrow at end */
   } prop;
+  PToken aTxt[3];          /* Text with .eCode holding TP flags */
   PPoint ptAt;             /* Reference point for the object */
   PPoint ptFrom, ptTo;     /* previous and current points on path */
   int outDir;              /* Exit direction */
+  char nTxt;               /* Number of text values */
   char bAt;                /* The reference point has been computed */
   char seenVert;           /* Seen an "up" or "down" */
   char seenHorz;           /* Seen a "right" or "left" */
@@ -194,6 +204,8 @@ static int pic_bbox_isempty(PBox*);
 static void pic_bbox_init(PBox*);
 static void pic_bbox_addbox(PBox*,PBox*);
 static void pic_bbox_addpt(PBox*,PPoint*);
+static void pic_add_txt(Pic*,PToken*,int);
+static int pic_text_position(Pic*,int,PToken*);
 
 
 } // end %include
@@ -223,6 +235,7 @@ static void pic_bbox_addpt(PBox*,PPoint*);
 %type object {PElem*}
 %type objectname {PElem*}
 %type nth {PToken}
+%type textposition {int}
 
 %syntax_error {
   if( TOKEN.z && TOKEN.z[0] ){
@@ -294,7 +307,7 @@ attribute ::= WITH EDGE(E) AT(A) position(P).       { pic_set_at(p,&E,&P,&A); }
 attribute ::= SAME.
 attribute ::= SAME AS object.
 attribute ::= BEHIND object.
-attribute ::= STRING textposition.
+attribute ::= STRING(T) textposition(P).        {pic_add_txt(p,&T,P);}
 
 // Properties that require an argument
 numproperty(A) ::= HEIGHT|WIDTH|RADIUS|RX|RY|DIAMETER|THICKNESS(P).  {A = P;}
@@ -316,8 +329,9 @@ boolproperty ::= RARROW.      {p->cur->prop.larrow=0; p->cur->prop.rarrow=1; }
 boolproperty ::= LRARROW.     {p->cur->prop.larrow=1; p->cur->prop.rarrow=1; }
 boolproperty ::= INVIS.       {p->cur->prop.sw = 0.0;}
 
-textposition ::= .
-textposition ::= textposition CENTER|LJUST|RJUST|ABOVE|BELOW.
+textposition(A) ::= .   {A = 0;}
+textposition(A) ::= textposition(B) CENTER|LJUST|RJUST|ABOVE|BELOW(F).
+                        {A = pic_text_position(p,B,&F);}
 
 
 position(A) ::= expr(X) COMMA expr(Y).                {A.x=X; A.y=Y;}
@@ -1382,6 +1396,37 @@ static void pic_set_at(Pic *p, PToken *pEdge, PPoint *pAt, PToken *pErrTok){
   }
   pElem->bAt = 1;
 }
+
+/*
+** Try to add a text attribute to an element
+*/
+static void pic_add_txt(Pic *p, PToken *pTxt, int iPos){
+  PElem *pElem = p->cur;
+  PToken *pT;
+  if( pElem->nTxt >= count(pElem->aTxt) ){
+    pic_error(p, pTxt, "too many text terms");
+    return;
+  }
+  pT = &pElem->aTxt[pElem->nTxt++];
+  *pT = *pTxt;
+  pT->eCode = iPos;
+}
+
+/* Merge "text-position" flags
+*/
+static int pic_text_position(Pic *p, int iPrev, PToken *pFlag){
+  int iRes = 0;
+  switch( pFlag->eType ){
+    case T_CENTER:   /* no-op */                          break;
+    case T_LJUST:    iRes = (iRes&~TP_JMASK) | TP_LJUST;  break;
+    case T_RJUST:    iRes = (iRes&~TP_JMASK) | TP_RJUST;  break;
+    case T_ABOVE:    iRes = (iRes&~TP_VMASK) | TP_ABOVE;  break;
+    case T_BELOW:    iRes = (iRes&~TP_VMASK) | TP_BELOW;  break;
+  }
+  return iRes;
+}
+
+
 
 
 /* Set a local variable name to "val".
