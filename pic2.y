@@ -129,7 +129,7 @@ struct PElem {
   PPoint ptAt;             /* Reference point for the object */
   PPoint ptFrom, ptTo;     /* previous and current points on path */
   int outDir;              /* Exit direction */
-  char nTxt;               /* Number of text values */
+  unsigned char nTxt;      /* Number of text values */
   char bAt;                /* The reference point has been computed */
   char seenVert;           /* Seen an "up" or "down" */
   char seenHorz;           /* Seen a "right" or "left" */
@@ -175,6 +175,7 @@ static void pic_append_xy(Pic*,const char*,PNum,PNum);
 static void pic_append_dis(Pic*,const char*,PNum,const char*);
 static void pic_append_clr(Pic*,const char*,PNum,const char*);
 static void pic_append_style(Pic*,PElem*);
+static void pic_append_txt(Pic*,PElem*);
 static void pic_error(Pic*,PToken*,const char*);
 static void pic_elist_free(Pic*,PEList*);
 static void pic_elem_free(Pic*,PElem*);
@@ -691,6 +692,7 @@ static void boxRender(Pic *p, PElem *pElem){
     pic_append_style(p,pElem);
     pic_append(p,"\" />\n", -1);
   }
+  pic_append_txt(p, pElem);
 }
 
 /* Methods for the "circle" class */
@@ -985,6 +987,59 @@ static void pic_append_style(Pic *p, PElem *pElem){
     }
   }
 }
+
+/* Append multiple <text> SGV element for the text fields of the PElem
+*/
+static void pic_append_txt(Pic *p, PElem *pElem){
+  PNum dy = 0.1;
+  int n, i, nz;
+  PNum x, y;
+  const char *z;
+  if( p->nErr ) return;
+  if( pElem->nTxt==0 ) return;
+  n = pElem->nTxt;
+  if( n>1 ){
+    if( (pElem->aTxt[0].eCode & TP_VMASK)==0 ){
+      pElem->aTxt[0].eCode |= TP_ABOVE;
+    }
+    if( (pElem->aTxt[n-1].eCode & TP_VMASK)==0 ){
+      pElem->aTxt[n-1].eCode |= TP_BELOW;
+    }
+    for(i=0; i<n; i++){
+      if( (pElem->aTxt[i].eCode & TP_VMASK)==0 ){
+        dy = 0.15;
+      }
+    }
+  }
+  x = pElem->ptAt.x;
+  for(i=0; i<n; i++){
+    PToken *t = &pElem->aTxt[i];
+    y = pElem->ptAt.y;
+    if( t->eCode & TP_ABOVE ) y += dy;
+    if( t->eCode & TP_BELOW ) y -= dy;
+    pic_append_x(p, "<text x=\"", x, "\"");
+    pic_append_y(p, " y=\"", y, "\"");
+    if( t->eCode & TP_LJUST ){
+      pic_append(p, " text-anchor=\"end\"", -1);
+    }else if( t->eCode & TP_RJUST ){
+      pic_append(p, " text-anchor=\"start\"", -1);
+    }else{
+      pic_append(p, " text-anchor=\"middle\"", -1);
+    }
+    pic_append(p, " dominant-baseline=\"central\">", -1);
+    z = t->z+1;
+    nz = t->n-2;
+    while( nz>0 ){
+      int j;
+      for(j=0; j<nz && z[j]!='\\'; j++){}
+      if( j ) pic_append_text(p, z, j, 0);
+      nz -= j+1;
+      z += j+1;
+    }
+    pic_append(p, "</text>\n", -1);
+  }
+}
+
 
 /*
 ** Generate an error message for the output.  pErr is the token at which
@@ -1791,7 +1846,7 @@ static void pic_render(Pic *p, PEList *pEList){
       PElem *pElem = pEList->a[i];
       pic_elem_bbox_add(p, pElem, &p->bbox);
     }
-    p->rScale = 95.0*pic_value(p,"scale",5,0);
+    p->rScale = 144.0*pic_value(p,"scale",5,0);
     if( p->rScale<5.0 ) p->rScale = 5.0;
     pic_append_dis(p, "<svg width=\"", p->bbox.ne.x - p->bbox.sw.x, "\"");
     pic_append_dis(p, " height=\"",p->bbox.ne.y - p->bbox.sw.y,"\">\n");
