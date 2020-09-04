@@ -747,6 +747,21 @@ static void lineInit(Pic *p, PElem *pElem){
   pElem->prop.w = pic_value(p, "linewid",7,0);
   pElem->prop.h = pic_value(p, "lineht",6,0);
 }
+static void lineRender(Pic *p, PElem *pElem){
+  int i;
+  if( pElem->prop.sw>0.0 ){
+    const char *z = "<path d=\"M";
+    for(i=0; i<pElem->nPath; i++){
+      pic_append_xy(p,z,pElem->aPath[i].x,pElem->aPath[i].y);
+      z = "L";
+    }
+    pic_append(p,"\" ",-1);
+    pic_append_style(p,pElem);
+    pic_append(p,"\" />\n", -1);
+  }
+  pic_append_txt(p, pElem);
+
+}
 
 /* Methods for the "move" class */
 static void moveInit(Pic *p, PElem *pElem){
@@ -797,7 +812,7 @@ static const PClass aClass[] = {
       /* xInit */         arrowInit,
       /* xAfter */        0,
       /* xOffset */       0,
-      /* xRender */       0 
+      /* xRender */       lineRender 
    },
    {  /* name */          "box",
       /* isline */        0,
@@ -846,7 +861,7 @@ static const PClass aClass[] = {
       /* xInit */         lineInit,
       /* xAfter */        0,
       /* xOffset */       0,
-      /* xRender */       0 
+      /* xRender */       lineRender
    },
    {  /* name */          "move",
       /* isline */        1,
@@ -1374,10 +1389,6 @@ static void pic_then(Pic *p, PToken *pToken, PElem *pElem){
     pic_error(p, pToken, "no prior path points");
     return;
   }
-  if( p->thenFlag ){
-    pic_error(p, pToken, "syntax error");
-    return;
-  }
   p->thenFlag = 1;
 }
 
@@ -1875,8 +1886,10 @@ static void pic_after_adding_attributes(Pic *p, PElem *pElem){
       p->aRPath[i].isRel = 0;
     }
   }
-  pElem->ptAt = p->aRPath[0].pt;
   if( pElem->type->isLine ){
+    int n = p->nRPath-1;
+    pElem->ptAt.x = (p->aRPath[0].pt.x + p->aRPath[n].pt.x)/2.0;
+    pElem->ptAt.y = (p->aRPath[0].pt.y + p->aRPath[n].pt.y)/2.0;
     pElem->aPath = malloc( sizeof(PPoint)*p->nRPath );
     if( pElem->aPath==0 ){
       pic_error(p, 0, 0);
@@ -1888,6 +1901,7 @@ static void pic_after_adding_attributes(Pic *p, PElem *pElem){
       }
     }
   }else{
+    pElem->ptAt = p->aRPath[0].pt;
     switch( pElem->inDir ){
       default:       pElem->ptAt.x += pElem->prop.w/2.0;  break;
       case T_LEFT:   pElem->ptAt.x -= pElem->prop.w/2.0;  break;
