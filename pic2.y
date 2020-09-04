@@ -127,14 +127,14 @@ struct PElem {
   } prop;
   PToken aTxt[3];          /* Text with .eCode holding TP flags */
   PPoint ptAt;             /* Reference point for the object */
-  PPoint ptFrom, ptTo;     /* previous and current points on path */
-  int outDir;              /* Exit direction */
+//  PPoint ptFrom, ptTo;     /* previous and current points on path */
+  int inDir, outDir;       /* Entry and exit directions */
   unsigned char nTxt;      /* Number of text values */
-  char bAt;                /* The reference point has been computed */
-  char seenVert;           /* Seen an "up" or "down" */
-  char seenHorz;           /* Seen a "right" or "left" */
-  char seenFrom;           /* Seen a "from" */
-  char toAbs;              /* ptTo is expressed in absolute coordinates */
+//  char bAt;                /* The reference point has been computed */
+//  char seenVert;           /* Seen an "up" or "down" */
+//  char seenHorz;           /* Seen a "right" or "left" */
+//  char seenFrom;           /* Seen a "from" */
+//  char toAbs;              /* ptTo is expressed in absolute coordinates */
   int nPath;               /* Number of path points */
   PPoint *aPath;           /* Array of path points */
 };
@@ -159,10 +159,17 @@ struct Pic {
   int eDir;                /* Current direction */
   PElem *cur;              /* Element under construction */
   PEList *list;            /* Element list under construction */
+  PPoint ptStart;          /* Starting point when list is empty */
   PVar *pVar;              /* Application-defined variables */
   PBox bbox;               /* Bounding box around all elements */
   PNum rScale;             /* Multiple to convert inches to pixels */
   char inDebug;            /* True if inside debugging print statement */
+  char thenFlag;           /* True if "then" seen */
+  int nRPath;              /* Number of entries on aRPath[] */
+  struct {
+    char isRel;               /* True for relative */
+    PPoint pt;                /* Location */
+  } aRPath[1000];          /* Path under construction */
 };
 
 /* Forward declarations */
@@ -182,6 +189,7 @@ static void pic_elem_free(Pic*,PElem*);
 static void pic_render(Pic*,PEList*);
 static PEList *pic_elist_append(Pic*,PEList*,PElem*);
 static PElem *pic_elem_new(Pic*,PToken*,PToken*,PEList*);
+static void pic_set_direction(Pic*,int);
 static void pic_elem_setname(Pic*,PElem*,PToken*);
 static void pic_set_var(Pic*,PToken*,PNum);
 static PNum pic_value(Pic*,const char*,int,int*);
@@ -257,7 +265,7 @@ element_list(A) ::= element_list(B) EOL element(X).
 
 
 element(A) ::= .   { A = 0; }
-element(A) ::= direction(D).  { p->eDir = D.eType;  A=0; }
+element(A) ::= direction(D).  { pic_set_direction(p,D.eType);  A=0; }
 element(A) ::= ID(N) ASSIGN rvalue(X). {pic_set_var(p,&N,X); A = 0;}
 element(A) ::= FILL(N) ASSIGN rvalue(X). {pic_set_var(p,&N,X); A = 0;}
 element(A) ::= COLOR(N) ASSIGN rvalue(X). {pic_set_var(p,&N,X); A = 0;}
@@ -1230,7 +1238,12 @@ static PElem *pic_elem_new(Pic *p, PToken *pId, PToken *pStr,PEList *pSublist){
   }
   memset(pNew, 0, sizeof(*pNew));
   p->cur = pNew;
-  pNew->outDir = p->eDir;
+  p->nRPath = 1;
+  p->thenFlag = 0;
+  p->aRPath[0].isRel = 1;
+  p->aRPath[0].pt.x = 0.0;
+  p->aRPath[0].pt.y = 0.0;
+  pNew->outDir = pNew->inDir = p->eDir;
   if( pSublist ){
     pNew->type = &sublistClass;
     pNew->pSublist = pSublist;
@@ -1260,6 +1273,15 @@ static PElem *pic_elem_new(Pic *p, PToken *pId, PToken *pStr,PEList *pSublist){
   return 0;
 }
 
+/* Change the direction of travel
+*/
+static void pic_set_direction(Pic *p, int eDir){
+  p->eDir = eDir;
+  if( p->list && p->list->n ){
+    p->list->a[p->list->n-1]->outDir = eDir;
+  }
+}
+
 /* Move all coordinates contained within an element (and within its
 ** substructure) by dx, dy
 */
@@ -1267,10 +1289,6 @@ static void pic_elem_move(PElem *pElem, PNum dx, PNum dy){
   int i;
   pElem->ptAt.x += dx;
   pElem->ptAt.y += dy;
-  pElem->ptFrom.x += dx;
-  pElem->ptFrom.y += dy;
-  pElem->ptFrom.x += dx;
-  pElem->ptFrom.y += dy;
   for(i=0; i<pElem->nPath; i++){
     pElem->aPath[i].x += dx;
     pElem->aPath[i].y += dy;
@@ -1346,124 +1364,125 @@ void pic_set_dashed(Pic *p, PToken *pId, PNum *pVal){
 ** resetting the ptTo.
 */
 static void pic_then(Pic *p, PToken *pToken, PElem *pElem){
-  PPoint *pNew;
+  int n;
   if( !pElem->type->isLine ){
     pic_error(p, pToken, "use with line-oriented elements only");
     return;
   }
-  if( !pElem->seenVert ){
-    if( !pElem->seenHorz ) return;
-    pElem->ptTo.y = pElem->ptFrom.y;
-  }else if( !pElem->seenHorz ){
-    pElem->ptTo.x = pElem->ptFrom.x;
-  }
-  pElem->seenHorz = pElem->seenVert = 0;
-  pNew = realloc(pElem->aPath, sizeof(PPoint)*(pElem->nPath+1));
-  if( pNew==0 ){
-    pic_error(p, 0, 0);
+  n = p->nRPath - 1;
+  if( n<1 ){
+    pic_error(p, pToken, "no prior path points");
     return;
   }
-  pElem->aPath = pNew;
-  pElem->ptFrom = pElem->ptTo;
-  pElem->aPath[pElem->nPath++] = pElem->ptTo;
+  if( p->thenFlag ){
+    pic_error(p, pToken, "syntax error");
+    return;
+  }
+  p->thenFlag = 1;
+}
+
+/* Advance to the next entry in p->aRPath.  Return its index.
+*/
+static int pic_next_rpath(Pic *p, PToken *pErr){
+  int n = p->nRPath - 1;
+  if( n+1>=count(p->aRPath) ){
+    pic_error(0, pErr, "too many path elements");
+    return n;
+  }
+  n++;
+  p->nRPath++;
+  p->aRPath[n].pt.x = 0.0;
+  p->aRPath[n].pt.y = 0.0;
+  return n;
 }
 
 /* Add a direction term to an element.  "up 0.5", or "left 3", or "down".
 */
 static void pic_add_direction(Pic *p, PToken *pDir, PNum *pVal){
   PElem *pElem = p->cur;
-  PNum v;
+  int n;
   if( !pElem->type->isLine ){
     pic_error(p, pDir, "use with line-oriented elements only");
     return;
   }
+  n = p->nRPath - 1;
+  if( p->thenFlag || p->aRPath[n].isRel==0 ){
+    n = pic_next_rpath(p, pDir);
+    p->aRPath[n].isRel = 1;
+    p->thenFlag = 0;
+  }
   switch( pDir->eType ){
     case T_UP:
-       if( pElem->seenVert ) pic_then(p,pDir,pElem);
-       v = pVal ? *pVal : pElem->prop.h;
-       pElem->ptTo.y = pElem->ptFrom.y + v;
-       pElem->seenVert = 1;
+       if( p->aRPath[n].pt.y!=0.0 ) n = pic_next_rpath(p, pDir);
+       p->aRPath[n].pt.y = pVal ? *pVal : pElem->prop.h;
        break;
     case T_DOWN:
-       if( pElem->seenVert ) pic_then(p,pDir,pElem);
-       v = pVal ? *pVal : pElem->prop.h;
-       pElem->ptTo.y = pElem->ptFrom.y - v;
-       pElem->seenVert = 1;
+       if( p->aRPath[n].pt.y!=0.0 ) n = pic_next_rpath(p, pDir);
+       p->aRPath[n].pt.y = -(pVal ? *pVal : pElem->prop.h);
        break;
     case T_RIGHT:
-       if( pElem->seenHorz ) pic_then(p,pDir,pElem);
-       v = pVal ? *pVal : pElem->prop.w;
-       pElem->ptTo.x = pElem->ptFrom.x + v;
-       pElem->seenHorz = 1;
+       if( p->aRPath[n].pt.x!=0.0 ) n = pic_next_rpath(p, pDir);
+       p->aRPath[n].pt.x = pVal ? *pVal : pElem->prop.w;
        break;
     case T_LEFT:
-       if( pElem->seenHorz ) pic_then(p,pDir,pElem);
-       v = pVal ? *pVal : pElem->prop.w;
-       pElem->ptTo.x = pElem->ptFrom.x + v;
-       pElem->seenHorz = 1;
+       if( p->aRPath[n].pt.x!=0.0 ) n = pic_next_rpath(p, pDir);
+       p->aRPath[n].pt.x = -(pVal ? *pVal : pElem->prop.w);
        break;
   }
+  pElem->outDir = pDir->eType;
+  p->aRPath[n].isRel = 1;
 }
 
 /* Set the "from" of an element
 */
 static void pic_set_from(Pic *p, PElem *pElem, PToken *pTk, PPoint *pPt){
-  if( pElem->seenFrom ){
-    pic_error(p, pTk, "multiple \"from\" terms on one element");
+  if( !pElem->type->isLine ){
+    pic_error(p, pTk, "use \"at\" to position this object");
     return;
   }
-  if( pElem->nPath ){
-    pic_error(p, pTk, "\"from\" term out of order");
+  if( p->aRPath[0].isRel==0 ){
+    pic_error(p, pTk, "location already fixed");
     return;
   }
-  pElem->seenFrom = 1;
-  if( !pElem->toAbs ){
-    pElem->ptTo.x += pPt->x;
-    pElem->ptTo.y += pPt->y;
-    pElem->toAbs = 1;
-  }
-  pElem->ptFrom = *pPt;
-  pElem->ptAt = *pPt;
-  pElem->bAt = 1;
+  p->aRPath[0].pt = *pPt;
+  p->aRPath[0].isRel = 0;
 }
 
 /* Set the "to" of an element
 */
 static void pic_add_to(Pic *p, PElem *pElem, PToken *pTk, PPoint *pPt){
-  if( pElem->seenVert || pElem->seenHorz ){
-    pic_then(p,0,pElem);
+  int n = p->nRPath-1;
+  if( !pElem->type->isLine ){
+    pic_error(p, pTk, "use \"at\" to position this object");
+    return;
   }
-  pElem->ptTo = *pPt;
-  pElem->toAbs = 1;
-  pElem->seenVert = 1;
-  pElem->seenHorz = 1;
+  if( p->aRPath[n].isRel ) n = pic_next_rpath(p, pTk);
+  p->aRPath[n].isRel = 0;
+  p->aRPath[n].pt = *pPt;
 }
 
 /* Set the "at" of an element
 */
 static void pic_set_at(Pic *p, PToken *pEdge, PPoint *pAt, PToken *pErrTok){
-  const PClass *pClass;
   PElem *pElem;
   if( p->nErr ) return;
   pElem = p->cur;
-  pClass = pElem->type;
-  if( pClass->isLine ){
-    pic_error(p, pErrTok, "cannot possition a line this way - "
-                          "use \"from\" and \"to\" instead");
+  if( pElem->type->isLine ){
+    pic_error(p, pErrTok, "use \"from\" and \"to\" to position this object");
     return;
   }
-  if( pElem->bAt ){
-    pic_error(p, pErrTok, "position cannot be changed");
+  if( p->aRPath[0].isRel==0 ){
+    pic_error(p, pErrTok, "location already fixed");
     return;
   }
   if( pEdge ){
     PPoint ofst = pic_elem_offset(p,pElem,pEdge->eCode);
-    pElem->ptAt.x = pAt->x - ofst.x;
-    pElem->ptAt.y = pAt->y - ofst.y;
+    p->aRPath[0].pt.x = pAt->x - ofst.x;
+    p->aRPath[0].pt.y = pAt->y - ofst.y;
   }else{   
-    pElem->ptAt = *pAt;
+    p->aRPath[0].pt = *pAt;
   }
-  pElem->bAt = 1;
+  p->aRPath[0].isRel = 0;
 }
 
 /*
@@ -1783,8 +1802,9 @@ static PPoint pic_place_of_elem(Pic *p, PElem *pElem, PToken *pEdge){
   }
   if( pEdge->eType==T_START ){
     return pElem->ptAt;
+  }else{
+    return pElem->aPath[pElem->nPath-1];
   }
-  return pElem->ptTo;  
 }
 
 /* Attach a name to an element
@@ -1803,11 +1823,79 @@ static void pic_elem_setname(Pic *p, PElem *pElem, PToken *pName){
   return;
 }
 
+/* Return the exit point for an object
+*/
+static PPoint pic_exit_point(Pic *p, PElem *pElem){
+  PPoint pt;
+  if( pElem->type->isLine ){
+    return pElem->aPath[pElem->nPath-1];
+  }
+  pt = pElem->ptAt;
+  switch( pElem->outDir ){
+    default:       pt.x += pElem->prop.w/2.0;  break;
+    case T_LEFT:   pt.x -= pElem->prop.w/2.0;  break;
+    case T_UP:     pt.y += pElem->prop.h/2.0;  break;
+    case T_DOWN:   pt.y -= pElem->prop.h/2.0;  break;
+  }
+  return pt;
+}
+
 /* This routine runs after all attributes have been received
 ** on an element.
 */
 static void pic_after_adding_attributes(Pic *p, PElem *pElem){
-  
+  int i;
+  if( p->aRPath[0].isRel ){
+    PPoint ptStart;
+    if( p->list==0 || p->list->n==0 ){
+      ptStart = p->ptStart;
+    }else{
+      PElem *pPrior = p->list->a[p->list->n-1];
+      ptStart = pic_exit_point(p, pPrior);
+    }
+    p->aRPath[0].pt.x += ptStart.x;
+    p->aRPath[0].pt.y += ptStart.y;
+    p->aRPath[0].isRel = 0;
+  }
+  if( pElem->type->isLine && p->nRPath<2 ){
+    PPoint *pPt = &p->aRPath[1].pt;
+    p->nRPath = 2;
+    p->aRPath[1].isRel = 1;
+    switch( pElem->outDir ){
+      default:      pPt->x = +pElem->prop.w; pPt->y = 0.0; break;
+      case T_LEFT:  pPt->x = -pElem->prop.w; pPt->y = 0.0; break;
+      case T_UP:    pPt->y = +pElem->prop.h; pPt->x = 0.0; break;
+      case T_DOWN:  pPt->y = -pElem->prop.h; pPt->x = 0.0; break;
+    }
+  }
+  for(i=1; i<p->nRPath; i++){
+    if( p->aRPath[i].isRel ){
+      p->aRPath[i].pt.x += p->aRPath[i-1].pt.x;
+      p->aRPath[i].pt.y += p->aRPath[i-1].pt.y;
+      p->aRPath[i].isRel = 0;
+    }
+  }
+  pElem->ptAt = p->aRPath[0].pt;
+  if( pElem->type->isLine ){
+    pElem->aPath = malloc( sizeof(PPoint)*p->nRPath );
+    if( pElem->aPath==0 ){
+      pic_error(p, 0, 0);
+      pElem->nPath = 0;
+    }else{
+      pElem->nPath = p->nRPath;
+      for(i=0; i<p->nRPath; i++){
+        pElem->aPath[i] = p->aRPath[i].pt;
+      }
+    }
+  }else{
+    switch( pElem->inDir ){
+      default:       pElem->ptAt.x += pElem->prop.w/2.0;  break;
+      case T_LEFT:   pElem->ptAt.x -= pElem->prop.w/2.0;  break;
+      case T_UP:     pElem->ptAt.y += pElem->prop.h/2.0;  break;
+      case T_DOWN:   pElem->ptAt.y -= pElem->prop.h/2.0;  break;
+    }
+  }
+  p->eDir = pElem->outDir;
 }
 
 /*
@@ -1817,8 +1905,6 @@ static void pic_after_adding_attributes(Pic *p, PElem *pElem){
 static void pic_elem_bbox_add(Pic *p, PElem *pElem, PBox *pBox){
   if( pElem->type->isLine ){
     int i;
-    pic_bbox_addpt(pBox, &pElem->ptFrom);
-    pic_bbox_addpt(pBox, &pElem->ptTo);
     for(i=0; i<pElem->nPath; i++){
       pic_bbox_addpt(pBox, &pElem->aPath[i]);
     }
@@ -2222,6 +2308,7 @@ char *pic(const char *zText, int *pnErr){
   memset(&s, 0, sizeof(s));
   s.zIn = zText;
   s.nIn = (unsigned int)strlen(zText);
+  s.eDir = T_RIGHT;
   pic_parserInit(&sParse, &s);
 #if 0
   pic_parserTrace(stdout, "parser: ");
@@ -2233,14 +2320,16 @@ char *pic(const char *zText, int *pnErr){
     token.n = sz;
     token.eType = (unsigned short int)eType;
     token.eCode = (unsigned short int)eCode;
-    if( sz>1000 ){
+    if( eType==T_WHITESPACE ){
+      /* no-op */
+    }else if( sz>1000 ){
       token.n = 1;
       pic_error(&s, &token, "token is too long - max length 1000 bytes");
       break;
     }else if( eType==T_ERROR ){
       pic_error(&s, &token, "unrecognized token");
       break;
-    }else if( eType!=T_WHITESPACE ){
+    }else{
 #if 0
       printf("******** Token %s (%d): \"%.*s\" **************\n",
              yyTokenName[token.eType], eType,
