@@ -629,8 +629,8 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
   { "arrowwid",    0.05 },
   { "boxht",       0.5  },
   { "boxwid",      0.75 },
-  { "color",       0.0  },
   { "circlerad",   0.25 },
+  { "color",       0.0  },
   { "dashwid",     0.05 },
   { "ellipseht",   0.5  },
   { "ellipsewid",  0.75 },
@@ -701,6 +701,18 @@ static void circleInit(Pic *p, PElem *pElem){
   pElem->prop.w = pic_value(p, "circlerad",9,0)*2;
   pElem->prop.h = pElem->prop.w;
 }
+static void circleRender(Pic *p, PElem *pElem){
+  PNum w = pElem->prop.w;
+  PPoint pt = pElem->ptAt;
+  if( pElem->prop.sw>0.0 ){
+    pic_append_x(p,"<circle cx=\"", pt.x, "\"");
+    pic_append_y(p," cy=\"", pt.y, "\"");
+    pic_append_dis(p," r=\"", w/2.0, "\"");
+    pic_append_style(p,pElem);
+    pic_append(p,"\" />\n", -1);
+  }
+  pic_append_txt(p, pElem);
+}
 
 /* Methods for the "cylinder" class */
 static void cylinderInit(Pic *p, PElem *pElem){
@@ -719,6 +731,21 @@ static void ellipseInit(Pic *p, PElem *pElem){
   pElem->prop.w = pic_value(p, "ellipsewid",10,0);
   pElem->prop.h = pic_value(p, "ellipseht",9,0);
 }
+static void ellipseRender(Pic *p, PElem *pElem){
+  PNum w = pElem->prop.w;
+  PNum h = pElem->prop.h;
+  PPoint pt = pElem->ptAt;
+  if( pElem->prop.sw>0.0 ){
+    pic_append_x(p,"<ellipse cx=\"", pt.x, "\"");
+    pic_append_y(p," cy=\"", pt.y, "\"");
+    pic_append_dis(p," rx=\"", w/2.0, "\"");
+    pic_append_dis(p," ry=\"", h/2.0, "\"");
+    pic_append_style(p,pElem);
+    pic_append(p,"\" />\n", -1);
+  }
+  pic_append_txt(p, pElem);
+}
+
 
 /* Methods for the "folder" class */
 static void folderInit(Pic *p, PElem *pElem){
@@ -817,7 +844,7 @@ static const PClass aClass[] = {
       /* xInit */         circleInit,
       /* xAfter */        0,
       /* xOffset */       0,
-      /* xRender */       0 
+      /* xRender */       circleRender 
    },
    {  /* name */          "cylinder",
       /* isline */        0,
@@ -838,7 +865,7 @@ static const PClass aClass[] = {
       /* xInit */         ellipseInit,
       /* xAfter */        0,
       /* xOffset */       0,
-      /* xRender */       0 
+      /* xRender */       ellipseRender
    },
    {  /* name */          "folder",
       /* isline */        0,
