@@ -872,6 +872,18 @@ static const PClass textClass =
       /* xRender */       boxRender 
    };
 
+/*
+** Compute the relative office of a edge from the reference for a
+** an element.
+*/
+static PPoint pic_elem_offset(Pic *p, PElem *pElem, int cp){
+  if( pElem->type->xOffset==0 ){
+    return boxOffset(p, pElem, cp);
+  }else{
+    return pElem->type->xOffset(p, pElem, cp);
+  }
+}
+
 
 /*
 ** Append raw text to zOut
@@ -1390,18 +1402,6 @@ static void pic_add_direction(Pic *p, PToken *pDir, PNum *pVal){
        pElem->ptTo.x = pElem->ptFrom.x + v;
        pElem->seenHorz = 1;
        break;
-  }
-}
-
-/*
-** Compute the relative office of a edge from the reference for a
-** an element.
-*/
-static PPoint pic_elem_offset(Pic *p, PElem *pElem, int cp){
-  if( pElem->type->xOffset==0 ){
-    return boxOffset(p, pElem, cp);
-  }else{
-    return pElem->type->xOffset(p, pElem, cp);
   }
 }
 
