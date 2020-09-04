@@ -274,8 +274,9 @@ pritem ::= STRING(S). {pic_append_text(p,S.z+1,S.n-2,0);}
 unnamed_element(A) ::= basetype(X) attribute_list.  
                           {A = X; pic_after_adding_attributes(p,A);}
 
-basetype(A) ::= ID(N).                  {A = pic_elem_new(p,&N,0,0); }
-basetype(A) ::= STRING(N).              {A = pic_elem_new(p,0,&N,0); }
+basetype(A) ::= ID(N).                   {A = pic_elem_new(p,&N,0,0); }
+basetype(A) ::= STRING(N) textposition(P).
+                            {N.eCode = P; A = pic_elem_new(p,0,&N,0); }
 basetype(A) ::= LB savelist(L) element_list(X) RB.
       { A = pic_elem_new(p,0,0,X); p->list = L; }
 
@@ -1195,7 +1196,7 @@ static const PClass *pic_find_class(PToken *pId){
 
 /* Allocate and return a new PElem object.
 */
-static PElem *pic_elem_new(Pic *p, PToken *pId, PToken *pStr, PEList *pSublist){
+static PElem *pic_elem_new(Pic *p, PToken *pId, PToken *pStr,PEList *pSublist){
   PElem *pNew;
 
   pNew = malloc( sizeof(*pNew) );
@@ -1216,6 +1217,7 @@ static PElem *pic_elem_new(Pic *p, PToken *pId, PToken *pStr, PEList *pSublist){
   if( pStr ){
     pNew->type = &textClass;
     textClass.xInit(p, pNew);
+    pic_add_txt(p, pStr, pStr->eCode);
     return pNew;
   }
   if( pId ){
