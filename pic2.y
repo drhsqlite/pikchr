@@ -180,6 +180,7 @@ static void pic_after_adding_attributes(Pic*,PElem*);
 static void pic_translate(Pic*,PElem*,int,PPoint);
 static void pic_elem_move(PElem*,PNum dx, PNum dy);
 static void pic_set_numprop(Pic*,PToken*,PNum,PNum);
+static void pic_set_dashed(Pic*,PToken*,PNum*);
 static void pic_then(Pic*,PToken*,PElem*);
 static void pic_add_direction(Pic*,PToken*,PNum*);
 static void pic_set_from(Pic*,PElem*,PToken*,PPoint*);
@@ -202,7 +203,7 @@ static void pic_bbox_addpt(PBox*,PPoint*);
 %token_type {PToken}
 %extra_context {Pic *p}
 
-%fallback ID FILL COLOR EDGE.
+%fallback ID EDGE.
 
 %type element_list {PEList*}
 %destructor element_list {pic_elist_free(p,$$);}
@@ -215,6 +216,8 @@ static void pic_bbox_addpt(PBox*,PPoint*);
 %type expr {PNum}
 %type numproperty {PToken}
 %type direction {PToken}
+%type dashproperty {PToken}
+%type colorproperty {PToken}
 %type position {PPoint}
 %type place {PPoint}
 %type object {PElem*}
@@ -240,6 +243,8 @@ element_list(A) ::= element_list(B) EOL element(X).
 element(A) ::= .   { A = 0; }
 element(A) ::= direction(D).  { p->eDir = D.eType;  A=0; }
 element(A) ::= ID(N) ASSIGN expr(X). {pic_set_var(p,&N,X); A = 0;}
+element(A) ::= FILL(N) ASSIGN expr(X). {pic_set_var(p,&N,X); A = 0;}
+element(A) ::= COLOR(N) ASSIGN expr(X). {pic_set_var(p,&N,X); A = 0;}
 element(A) ::= PLACENAME(N) COLON unnamed_element(X).
                { A = X;  pic_elem_setname(p,X,&N); }
 element(A) ::= unnamed_element(X).  {A = X;}
@@ -274,9 +279,9 @@ attribute_list ::= attribute_list attribute.
 attribute ::= numproperty(P) expr(X) PERCENT.
                                       { pic_set_numprop(p,&P,0.0,X/100.0); }
 attribute ::= numproperty(P) expr(X). { pic_set_numprop(p,&P,X,0.0); }
-attribute ::= dashproperty expr.
-attribute ::= dashproperty.
-attribute ::= colorproperty expr.
+attribute ::= dashproperty(P) expr(X).  { pic_set_dashed(p,&P,&X); }
+attribute ::= dashproperty(P).          { pic_set_dashed(p,&P,0);  }
+attribute ::= colorproperty(P) expr(X). { pic_set_numprop(p,&P,X,0.0); }
 attribute ::= direction(D) expr(X). { pic_add_direction(p,&D,&X);}
 attribute ::= direction(D).         { pic_add_direction(p,&D,0); }
 attribute ::= FROM(T) position(X).  { pic_set_from(p,p->cur,&T,&X); }
@@ -295,13 +300,13 @@ attribute ::= STRING textposition.
 numproperty(A) ::= HEIGHT|WIDTH|RADIUS|RX|RY|DIAMETER|THICKNESS(P).  {A = P;}
 
 // Properties with optional arguments
-dashproperty ::= DOTTED.
-dashproperty ::= DASHED.
-dashproperty ::= CHOP.
+dashproperty(A) ::= DOTTED(A).
+dashproperty(A) ::= DASHED(A).
+dashproperty(A) ::= CHOP(A).
 
 // Color properties
-colorproperty ::= FILL.
-colorproperty ::= COLOR.
+colorproperty(A) ::= FILL(A).
+colorproperty(A) ::= COLOR(A).
 
 // Properties with no argument
 boolproperty ::= CW.          {p->cur->prop.cw = 1;}
@@ -598,7 +603,7 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
   { "boxwid",      0.75 },
   { "color",       0.0  },
   { "circlerad",   0.25 },
-  { "dashwid",     0.1  },
+  { "dashwid",     0.05 },
   { "ellipseht",   0.5  },
   { "ellipsewid",  0.75 },
   { "fill",        -1.0 },
@@ -954,6 +959,16 @@ static void pic_append_style(Pic *p, PElem *pElem){
     if( sw*p->rScale<1.0 ) sw = 1.1/p->rScale;
     pic_append_dis(p, "stroke-width:", sw, ";");
     pic_append_clr(p, "stroke:",pElem->prop.color,";");
+    if( pElem->prop.dotted>0.0 ){
+      PNum v = pElem->prop.dotted;
+      if( sw<2.1/p->rScale ) sw = 2.1/p->rScale;
+      pic_append_dis(p,"stroke-dasharray:",sw,"");
+      pic_append_dis(p,",",v,";");
+    }else if( pElem->prop.dashed>0.0 ){
+      PNum v = pElem->prop.dashed;
+      pic_append_dis(p,"stroke-dasharray:",v,"");
+      pic_append_dis(p,",",v,";");
+    }
   }
 }
 
@@ -1189,6 +1204,44 @@ void pic_set_numprop(Pic *p, PToken *pId, PNum rAbs, PNum rRel){
     case T_RX:         pProp->rx = pProp->rx*rRel + rAbs;  break;
     case T_RY:         pProp->ry = pProp->ry*rRel + rAbs;  break;
     case T_THICKNESS:  pProp->sw = pProp->sw*rRel + rAbs;  break;
+    case T_FILL:       pProp->fill = rAbs;                 break;
+    case T_COLOR:      pProp->color = rAbs;                break;
+  }
+}
+
+/*
+** Set a "dashed" property like "dash 0.05" or "chop"
+**
+** Use the value supplied by pVal if available.  If pVal==0, use
+** a default.
+*/
+void pic_set_dashed(Pic *p, PToken *pId, PNum *pVal){
+  struct PProp *pProp = &p->cur->prop;
+  PNum v;
+  switch( pId->eType ){
+    case T_DOTTED:  {
+      v = pVal==0 ? pic_value(p,"dashwid",7,0) : *pVal;
+      pProp->dotted = v;
+      pProp->dashed = 0.0;
+      break;
+    }
+    case T_DASHED:  {
+      v = pVal==0 ? pic_value(p,"dashwid",7,0) : *pVal;
+      pProp->dashed = v;
+      pProp->dotted = 0.0;
+      break;
+    }
+    case T_CHOP: {
+      v = pVal==0 ? pic_value(p,"circlerad",9,0) : *pVal;
+      if( pProp->chop1<=0.0 ){
+        pProp->chop1 = v;
+      }else if( pProp->chop2<=0.0 ){
+        pProp->chop2 = v;
+      }else{
+        pic_error(p, pId, "too many \"chop\" terms");
+      }
+      break;
+    }
   }
 }
 
