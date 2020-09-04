@@ -185,6 +185,7 @@ static PElem *pic_elem_new(Pic*,PToken*,PToken*,PEList*);
 static void pic_elem_setname(Pic*,PElem*,PToken*);
 static void pic_set_var(Pic*,PToken*,PNum);
 static PNum pic_value(Pic*,const char*,int,int*);
+static PNum pic_lookup_color(Pic*,PToken*);
 static PNum pic_get_var(Pic*,PToken*);
 static PNum pic_color_to_num(Pic*,const char*,int);
 static void pic_after_adding_attributes(Pic*,PElem*);
@@ -237,6 +238,7 @@ static int pic_text_position(Pic*,int,PToken*);
 %type objectname {PElem*}
 %type nth {PToken}
 %type textposition {int}
+%type rvalue {PNum}
 
 %syntax_error {
   if( TOKEN.z && TOKEN.z[0] ){
@@ -256,20 +258,26 @@ element_list(A) ::= element_list(B) EOL element(X).
 
 element(A) ::= .   { A = 0; }
 element(A) ::= direction(D).  { p->eDir = D.eType;  A=0; }
-element(A) ::= ID(N) ASSIGN expr(X). {pic_set_var(p,&N,X); A = 0;}
-element(A) ::= FILL(N) ASSIGN expr(X). {pic_set_var(p,&N,X); A = 0;}
-element(A) ::= COLOR(N) ASSIGN expr(X). {pic_set_var(p,&N,X); A = 0;}
+element(A) ::= ID(N) ASSIGN rvalue(X). {pic_set_var(p,&N,X); A = 0;}
+element(A) ::= FILL(N) ASSIGN rvalue(X). {pic_set_var(p,&N,X); A = 0;}
+element(A) ::= COLOR(N) ASSIGN rvalue(X). {pic_set_var(p,&N,X); A = 0;}
 element(A) ::= PLACENAME(N) COLON unnamed_element(X).
                { A = X;  pic_elem_setname(p,X,&N); }
 element(A) ::= unnamed_element(X).  {A = X;}
-
 element(A) ::= print prlist.  {pic_append(p," -->\n",5); A=0; p->inDebug=0;}
+
+// PLACENAME might actually be a color name (ex: DarkBlue).  But we
+// cannot make it part of expr due to parsing ambiguities.  The
+// rvalue non-terminal means "general expression or a colorname"
+rvalue(A) ::= expr(A).
+rvalue(A) ::= PLACENAME(C).  {A = pic_lookup_color(p,&C);}
 
 print ::= PRINT.  {pic_append(p,"<!-- ",5); p->inDebug = 1;}
 prlist ::= pritem.
-prlist ::= prlist COMMA pritem.
-pritem ::= expr(X).   {pic_append_num(p,X);}
+prlist ::= prlist prsep pritem.
+pritem ::= rvalue(X). {pic_append_num(p,X);}
 pritem ::= STRING(S). {pic_append_text(p,S.z+1,S.n-2,0);}
+prsep  ::= COMMA. {pic_append(p, " ", 1);}
 
 unnamed_element(A) ::= basetype(X) attribute_list.  
                           {A = X; pic_after_adding_attributes(p,A);}
@@ -296,7 +304,7 @@ attribute ::= numproperty(P) expr(X) PERCENT.
 attribute ::= numproperty(P) expr(X). { pic_set_numprop(p,&P,X,0.0); }
 attribute ::= dashproperty(P) expr(X).  { pic_set_dashed(p,&P,&X); }
 attribute ::= dashproperty(P).          { pic_set_dashed(p,&P,0);  }
-attribute ::= colorproperty(P) expr(X). { pic_set_numprop(p,&P,X,0.0); }
+attribute ::= colorproperty(P) rvalue(X). { pic_set_numprop(p,&P,X,0.0); }
 attribute ::= direction(D) expr(X). { pic_add_direction(p,&D,&X);}
 attribute ::= direction(D).         { pic_add_direction(p,&D,0); }
 attribute ::= FROM(T) position(X).  { pic_set_from(p,p->cur,&T,&X); }
@@ -1028,6 +1036,9 @@ static void pic_append_txt(Pic *p, PElem *pElem){
     }else{
       pic_append(p, " text-anchor=\"middle\"", -1);
     }
+    if( pElem->prop.color>0 ){
+      pic_append_clr(p, "fill=\"", pElem->prop.color, "\"");
+    }
     pic_append(p, " dominant-baseline=\"central\">", -1);
     z = t->z+1;
     nz = t->n-2;
@@ -1515,13 +1526,19 @@ static void pic_set_var(Pic *p, PToken *pId, PNum val){
   pVar->val = val;
 }
 
-/* Get the value of a variable.
+/*
+** Search for the variable named z[0..n-1] in:
 **
-** Search in order:
+**   * Application defined variables
+**   * Built-in variables
 **
-**    *  Application defined variables
-**    *  Built-in variables
-**    *  Color names
+** Return the value of the variable if found.  If not found
+** return 0.0.  Also if pMiss is not NULL, then set it to 1
+** if not found.
+**
+** This routine is a subroutine to pic_get_var().  But it is also
+** used by object implementations to look up (possibly overwritten)
+** values for built-in variables like "boxwid".
 */
 static PNum pic_value(Pic *p, const char *z, int n, int *pMiss){
   PVar *pVar;
@@ -1547,11 +1564,15 @@ static PNum pic_value(Pic *p, const char *z, int n, int *pMiss){
   if( pMiss ) *pMiss = 1;
   return 0.0;
 }
-static PNum pic_get_var(Pic *p, PToken *pId){
-  int miss = 0;
+
+/*
+** Look up a color-name.  Return negative if not found.
+** Unlike most other things, the color-names are not case
+** sensitive.  So "DarkBlue" and "darkblue" and "DARKBLUE"
+** all find the same value (139).
+*/
+static PNum pic_lookup_color(Pic *p, PToken *pId){
   int first, last, mid, c;
-  PNum v = pic_value(p, pId->z, pId->n, &miss);
-  if( miss==0 ) return v;
   first = 0;
   last = count(aColor)-1;
   while( first<=last ){
@@ -1567,7 +1588,7 @@ static PNum pic_get_var(Pic *p, PToken *pId){
       c = c2 - c1;
       if( c ) break;
     }
-    if( c==0 && aColor[mid].zName[pId->n] ) c = 1;
+    if( c==0 && aColor[mid].zName[pId->n] ) c = -1;
     if( c==0 ) return (double)aColor[mid].val;
     if( c>0 ){
       first = mid+1;
@@ -1575,6 +1596,26 @@ static PNum pic_get_var(Pic *p, PToken *pId){
       last = mid-1;
     }
   }
+  if( p ) pic_error(p, pId, "not a known color name");
+  return -1.0;
+}
+
+/* Get the value of a variable.
+**
+** Search in order:
+**
+**    *  Application defined variables
+**    *  Built-in variables
+**    *  Color names
+**
+** If no such variable is found, throw an error.
+*/
+static PNum pic_get_var(Pic *p, PToken *pId){
+  int miss = 0;
+  PNum v = pic_value(p, pId->z, pId->n, &miss);
+  if( miss==0 ) return v;
+  v = pic_lookup_color(0, pId);
+  if( v>=0.0 ) return v;
   pic_error(p,pId,"no such variable");
   return 0.0;
 }
@@ -2023,9 +2064,28 @@ static int pic_token_length(const char *zStart, int *peType, int *peCode){
       *peType = T_WHITESPACE;
       return i;
     }
+    case '/': {
+      if( zStart[1]=='*' ){
+        for(i=2; zStart[i]!=0 && (zStart[i]!='*' || zStart[i+1]!='/'); i++){}
+        if( zStart[i]=='*' ){
+          *peType = T_WHITESPACE;
+          return i+2;
+        }else{
+          *peType = T_ERROR;
+          return i;
+        }
+      }else if( zStart[1]=='/' ){
+        for(i=2; zStart[i]!=0 && zStart[i]!='\n'; i++){}
+        if( zStart[i]!=0 ) i++;
+        *peType = T_WHITESPACE;
+        return i;
+      }else{
+        *peType = T_SLASH;
+        return 1;
+      }
+    }
     case '+': {   *peType = T_PLUS;    return 1; }
     case '*': {   *peType = T_STAR;    return 1; }
-    case '/': {   *peType = T_SLASH;   return 1; }
     case '%': {   *peType = T_PERCENT; return 1; }
     case '(': {   *peType = T_LP;      return 1; }
     case ')': {   *peType = T_RP;      return 1; }
@@ -2125,7 +2185,7 @@ static int pic_token_length(const char *zStart, int *peType, int *peCode){
         }
         *peType = T_NUMBER;
         return i;
-      }else if( c>='a' && c<='z' ){
+      }else if( (c>='a' && c<='z') || c=='_' || c=='$' || c=='@' ){
         const PicWord *pFound;
         for(i=1; (c =  zStart[i])!=0 && (isalnum(c) || c=='_'); i++){}
         pFound = pic_find_word(zStart, i, pic_keywords, count(pic_keywords));
