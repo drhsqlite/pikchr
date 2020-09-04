@@ -627,7 +627,7 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
   { "movewid",     0.5  },
   { "scale",       1.0  },
   { "textht",      0.5  },
-  { "textwid",     0.0  },
+  { "textwid",     0.75 },
   { "thickness",   0.01 },
 };
 
@@ -747,6 +747,7 @@ static void splineInit(Pic *p, PElem *pElem){
 static void textInit(Pic *p, PElem *pElem){
   pElem->prop.w = pic_value(p, "textwid",7,0);
   pElem->prop.h = pic_value(p, "textht",6,0);
+  pElem->prop.sw = 0.0;
 }
 
 /* Methods for the "sublist" class */
@@ -859,7 +860,7 @@ static const PClass textClass =
       /* xInit */         textInit,
       /* xAfter */        0,
       /* xOffset */       0,
-      /* xRender */       0 
+      /* xRender */       boxRender 
    };
 
 
@@ -991,7 +992,7 @@ static void pic_append_style(Pic *p, PElem *pElem){
 /* Append multiple <text> SGV element for the text fields of the PElem
 */
 static void pic_append_txt(Pic *p, PElem *pElem){
-  PNum dy = 0.1;
+  PNum dy = 0.08;
   int n, i, nz;
   PNum x, y;
   const char *z;
@@ -1007,7 +1008,7 @@ static void pic_append_txt(Pic *p, PElem *pElem){
     }
     for(i=0; i<n; i++){
       if( (pElem->aTxt[i].eCode & TP_VMASK)==0 ){
-        dy = 0.15;
+        dy = 0.12;
       }
     }
   }
@@ -1019,9 +1020,9 @@ static void pic_append_txt(Pic *p, PElem *pElem){
     if( t->eCode & TP_BELOW ) y -= dy;
     pic_append_x(p, "<text x=\"", x, "\"");
     pic_append_y(p, " y=\"", y, "\"");
-    if( t->eCode & TP_LJUST ){
+    if( t->eCode & TP_RJUST ){
       pic_append(p, " text-anchor=\"end\"", -1);
-    }else if( t->eCode & TP_RJUST ){
+    }else if( t->eCode & TP_LJUST ){
       pic_append(p, " text-anchor=\"start\"", -1);
     }else{
       pic_append(p, " text-anchor=\"middle\"", -1);
@@ -1470,7 +1471,7 @@ static void pic_add_txt(Pic *p, PToken *pTxt, int iPos){
 /* Merge "text-position" flags
 */
 static int pic_text_position(Pic *p, int iPrev, PToken *pFlag){
-  int iRes = 0;
+  int iRes = iPrev;
   switch( pFlag->eType ){
     case T_CENTER:   /* no-op */                          break;
     case T_LJUST:    iRes = (iRes&~TP_JMASK) | TP_LJUST;  break;
@@ -1493,7 +1494,7 @@ static int pic_text_position(Pic *p, int iPrev, PToken *pFlag){
 static void pic_set_var(Pic *p, PToken *pId, PNum val){
   PVar *pVar = p->pVar;
   while( pVar ){
-    if( strncmp(pVar->zName,pId->z,pId->n)==0 && pVar->zName[pId->n]==0 ) break;
+    if( pic_token_eq(pId,pVar->zName)==0 ) break;
     pVar = pVar->pNext;
   }
   if( pVar==0 ){
@@ -1780,10 +1781,12 @@ static void pic_elem_bbox_add(Pic *p, PElem *pElem, PBox *pBox){
     }
   }else{
     PBox b;
-    PNum m = pElem->prop.w/2.0 + pElem->prop.sw;
+    PNum sw = pElem->prop.sw;
+    if( sw<0.0 ) sw = 0.0;
+    PNum m = pElem->prop.w/2.0 + sw;
     b.sw.x = pElem->ptAt.x - m;
     b.ne.x = pElem->ptAt.x + m;
-    m = pElem->prop.h/2.0 + pElem->prop.sw;
+    m = pElem->prop.h/2.0 + sw;
     b.sw.y = pElem->ptAt.y - m;
     b.ne.y = pElem->ptAt.y + m;
     pic_bbox_addbox(pBox, &b);
