@@ -18,6 +18,6 @@ box fill darkblue color darkblue width Branch.width+1 height Branch.height+1 \
     at Branch behind Branch
 box fill lightblue color lightblue width Main.width+1 height Main.height+1 \
     at Main behind Main
-"main" at down 0.25 from w of 2nd box
-"feature" at up 0.25 from n of 1st box
-[] same as Main with .n at Main.s
+"main" at 0.25 below w of 2nd box
+"feature" at 0.25 above n of 1st box
+// [] same as Main with .n at Main.s

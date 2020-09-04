@@ -193,8 +193,8 @@ static PNum pic_lookup_color(Pic*,PToken*);
 static PNum pic_get_var(Pic*,PToken*);
 static PNum pic_color_to_num(Pic*,const char*,int);
 static void pic_after_adding_attributes(Pic*,PElem*);
-static void pic_translate(Pic*,PElem*,int,PPoint);
 static void pic_elem_move(PElem*,PNum dx, PNum dy);
+static void pic_elist_move(PEList*,PNum dx, PNum dy);
 static void pic_set_numprop(Pic*,PToken*,PNum,PNum);
 static void pic_set_dashed(Pic*,PToken*,PNum*);
 static void pic_then(Pic*,PToken*,PElem*);
@@ -680,18 +680,6 @@ static PPoint boxOffset(Pic *p, PElem *pElem, int cp){
   }
   return pt;
 }
-static PPoint boxEntry(Pic *p, PElem *pElem, int eDir){
-  PPoint pt;
-  switch( eDir ){
-    case T_RIGHT:  pt = boxOffset(p,pElem,CP_W);  break;
-    case T_DOWN:   pt = boxOffset(p,pElem,CP_N);  break;
-    case T_LEFT:   pt = boxOffset(p,pElem,CP_E);  break;
-    case T_UP:     pt = boxOffset(p,pElem,CP_S);  break;
-  }
-  pt.x += pElem->ptAt.x;
-  pt.y += pElem->ptAt.y;
-  return pt;
-}
 static void boxRender(Pic *p, PElem *pElem){
   PNum w2 = 0.5*pElem->prop.w;
   PNum h2 = 0.5*pElem->prop.h;
@@ -780,7 +768,14 @@ static void textInit(Pic *p, PElem *pElem){
 
 /* Methods for the "sublist" class */
 static void sublistInit(Pic *p, PElem *pElem){
-  return;
+  PEList *pList = pElem->pSublist;
+  int i;
+  pic_bbox_init(&pElem->bbox);
+  for(i=0; i<pList->n; i++){
+    pic_bbox_addbox(&pElem->bbox, &pList->a[i]->bbox);
+  }
+  pElem->prop.w = pElem->bbox.ne.x - pElem->bbox.sw.x;
+  pElem->prop.h = pElem->bbox.ne.y - pElem->bbox.sw.y;
 }
 
 /*
@@ -1316,14 +1311,26 @@ static void pic_elem_move(PElem *pElem, PNum dx, PNum dy){
   int i;
   pElem->ptAt.x += dx;
   pElem->ptAt.y += dy;
+  pElem->ptEnter.x += dx;
+  pElem->ptEnter.y += dy;
+  pElem->ptExit.x += dx;
+  pElem->ptExit.y += dy;
+  pElem->bbox.ne.x += dx;
+  pElem->bbox.ne.y += dy;
+  pElem->bbox.sw.x += dx;
+  pElem->bbox.sw.y += dy;
   for(i=0; i<pElem->nPath; i++){
     pElem->aPath[i].x += dx;
     pElem->aPath[i].y += dy;
   }
   if( pElem->pSublist ){
-    for(i=0; i<pElem->pSublist->n; i++){
-      pic_elem_move(pElem->pSublist->a[i], dx, dy);
-    }
+    pic_elist_move(pElem->pSublist, dx, dy);
+  }
+}
+static void pic_elist_move(PEList *pList, PNum dx, PNum dy){
+  int i;
+  for(i=0; i<pList->n; i++){
+    pic_elem_move(pList->a[i], dx, dy);
   }
 }
 
@@ -1506,6 +1513,9 @@ static void pic_set_at(Pic *p, PToken *pEdge, PPoint *pAt, PToken *pErrTok){
     p->aRPath[0].pt = *pAt;
   }
   p->aRPath[0].isRel = 0;
+  if( pElem->pSublist ){
+    pic_elist_move(pElem->pSublist, p->aRPath[0].pt.x, p->aRPath[0].pt.y);
+  }
 }
 
 /*
@@ -1866,9 +1876,12 @@ static void pic_after_adding_attributes(Pic *p, PElem *pElem){
       PElem *pPrior = p->list->a[p->list->n-1];
       ptStart = pPrior->ptExit;
     }
-    p->aRPath[0].pt.x += ptStart.x;
-    p->aRPath[0].pt.y += ptStart.y;
+    p->aRPath[0].pt.x = ptStart.x;
+    p->aRPath[0].pt.y = ptStart.y;
     p->aRPath[0].isRel = 0;
+    if( pElem->pSublist ){
+      pic_elist_move(pElem->pSublist, ptStart.x, ptStart.y);
+    }
     isConnected = 1;
   }else{
     /* Absolute location was specified */
@@ -1904,15 +1917,6 @@ static void pic_after_adding_attributes(Pic *p, PElem *pElem){
   */
   pic_bbox_init(&pElem->bbox);
   pElem->ptEnter = p->aRPath[0].pt;
-  if( pElem->pSublist ){
-    PEList *pList = pElem->pSublist;
-    int i;
-    for(i=0; i<pList->n; i++){
-      pic_bbox_addbox(&pElem->bbox, &pList->a[i]->bbox);
-    }
-    pElem->prop.w = pElem->bbox.ne.x - pElem->bbox.sw.x;
-    pElem->prop.h = pElem->bbox.ne.y - pElem->bbox.sw.y;
-  }
   if( pElem->type->isLine ){
     pElem->aPath = malloc( sizeof(PPoint)*p->nRPath );
     if( pElem->aPath==0 ){
