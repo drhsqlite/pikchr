@@ -225,6 +225,7 @@ static int pic_bbox_isempty(PBox*);
 static void pic_bbox_init(PBox*);
 static void pic_bbox_addbox(PBox*,PBox*);
 static void pic_bbox_addpt(PBox*,PPoint*);
+static void pic_bbox_addellipse(PBox*,PNum x,PNum y,PNum rx,PNum ry);
 static void pic_add_txt(Pic*,PToken*,int);
 static int pic_text_position(Pic*,int,PToken*);
 static PNum pic_property_of(Pic*,PElem*,PToken*);
@@ -1014,21 +1015,31 @@ static void pic_append(Pic *p, const char *zText, int n){
 
 /*
 ** Append text to zOut with HTML characters escaped.
+**
+**   *  The space character is changed into "&nbsp;" if the bQSpace
+**      flag is set.  This is needed when outputting text to preserve
+**      leading and trailing whitespace for spacing.
+**
+**   *  Except for the above, only "<" and ">" are escaped.  Entities
+**      Entitiles (like "&copy;" or "&rarr;") are allowed through.
 */
-static void pic_append_text(Pic *p, const char *zText, int n, int bStrict){
+static void pic_append_text(Pic *p, const char *zText, int n, int bQSpace){
   int i;
   char c;
-  if( bStrict ) bStrict = '"';
   if( n<0 ) n = (int)strlen(zText);
   while( n>0 ){
-    for(i=0; i<n && (c=zText[i])!='<' && c!='>' && c!='&' && c!=bStrict; i++){}
+    for(i=0; i<n; i++){
+      c = zText[i];
+      if( c=='<' || c=='>' ) break;
+      if( !bQSpace ) continue;
+      if( c==' ' ) break;
+    }
     if( i ) pic_append(p, zText, i);
     if( i==n ) break;
     switch( c ){
       case '<': {  pic_append(p, "&lt;", 4);  break;  }
       case '>': {  pic_append(p, "&gt;", 4);  break;  }
-      case '&': {  pic_append(p, "&amp;", 5);  break;  }
-      case '"': {  pic_append(p, "&quot;", 6);  break;  }
+      case ' ': {  pic_append(p, "&nbsp;", 6);  break;  }
     }
     i++;
     n -= i;
@@ -1164,7 +1175,7 @@ static void pic_append_txt(Pic *p, PElem *pElem){
     while( nz>0 ){
       int j;
       for(j=0; j<nz && z[j]!='\\'; j++){}
-      if( j ) pic_append_text(p, z, j, 0);
+      if( j ) pic_append_text(p, z, j, 1);
       nz -= j+1;
       z += j+1;
     }
@@ -1273,6 +1284,23 @@ static void pic_bbox_addpt(PBox *pA, PPoint *pPt){
   if( pA->sw.y>pPt->y ) pA->sw.y = pPt->y;
   if( pA->ne.x<pPt->x ) pA->ne.x = pPt->x;
   if( pA->ne.y<pPt->y ) pA->ne.y = pPt->y;
+}
+
+/* Enlarge the PBox so that it is able to contain an ellipse
+** centered at x,y and with radiuses rx and ry.
+*/
+static void pic_bbox_addellipse(PBox *pA, PNum x, PNum y, PNum rx, PNum ry){
+  if( pic_bbox_isempty(pA) ){
+    pA->ne.x = x+rx;
+    pA->ne.y = y+ry;
+    pA->sw.x = x-rx;
+    pA->sw.y = y-ry;
+    return;
+  }
+  if( pA->sw.x>x-rx ) pA->sw.x = x-rx;
+  if( pA->sw.y>y-ry ) pA->sw.y = y-ry;
+  if( pA->ne.x<x+rx ) pA->ne.x = x+rx;
+  if( pA->ne.y<y+ry ) pA->ne.y = y+ry;
 }
 
 
@@ -2142,10 +2170,16 @@ static void pic_after_adding_attributes(Pic *p, PElem *pElem){
       }
     }
     pElem->ptExit = p->aRPath[p->nRPath-1].pt;
-    pElem->prop.w = pElem->bbox.ne.x - pElem->bbox.sw.x;
-    pElem->prop.h = pElem->bbox.ne.y - pElem->bbox.sw.y;
+
+    /* Compute the center of the line based on the bounding box over
+    ** the vertexes */
     pElem->ptAt.x = (pElem->bbox.ne.x + pElem->bbox.sw.x)/2.0;
     pElem->ptAt.y = (pElem->bbox.ne.y + pElem->bbox.sw.y)/2.0;
+
+    /* Reset the width and height of the object to be the width and height
+    ** of the bounding box over vertexes */
+    pElem->prop.w = pElem->bbox.ne.x - pElem->bbox.sw.x;
+    pElem->prop.h = pElem->bbox.ne.y - pElem->bbox.sw.y;
   }else{
     PNum w2 = pElem->prop.w/2.0;
     PNum h2 = pElem->prop.h/2.0;
@@ -2215,24 +2249,49 @@ void pic_elist_render(Pic *p, PEList *pEList){
 ** Delete the input element_list before returnning.
 */
 static void pic_render(Pic *p, PEList *pEList){
-  int i;
+  int i, j;
   if( pEList==0 ) return;
   if( p->nErr==0 ){
-    PNum thickness = pic_value(p,"thickness",9,0);
+    PNum thickness;
+    PNum wArrow;
+
+    /* Set up rendering parameters */
+    thickness = pic_value(p,"thickness",9,0);
     if( thickness<=0.01 ) thickness = 0.01;
-    p->wArrow = 0.5*pic_value(p,"arrowwid",8,0)/thickness;
+    wArrow = 0.5*pic_value(p,"arrowwid",8,0);
+    p->wArrow = wArrow/thickness;
     p->hArrow = pic_value(p,"arrowht",7,0)/thickness;
+    p->rScale = 144.0*pic_value(p,"scale",5,0);
+    if( p->rScale<5.0 ) p->rScale = 5.0;
+
+    /* Compute a bounding box over all objects so that we can know
+    ** how big to declare the SVG canvas */
     pic_bbox_init(&p->bbox);
     for(i=0; i<pEList->n; i++){
       PElem *pElem = pEList->a[i];
       pic_bbox_addbox(&p->bbox, &pElem->bbox);
+
+      /* Expand the bounding box to account for arrowheads on lines */
+      if( pElem->type->isLine && pElem->nPath>0 ){
+        if( pElem->prop.larrow ){
+          pic_bbox_addellipse(&p->bbox, pElem->aPath[0].x, pElem->aPath[0].y,
+                              wArrow, wArrow);
+        }
+        if( pElem->prop.rarrow ){
+          j = pElem->nPath-1;
+          pic_bbox_addellipse(&p->bbox, pElem->aPath[j].x, pElem->aPath[j].y,
+                              wArrow, wArrow);
+        }
+      }
     }
-    p->rScale = 144.0*pic_value(p,"scale",5,0);
-    if( p->rScale<5.0 ) p->rScale = 5.0;
+
+    /* Expand the bounding box slightly to account for line thickness */
     p->bbox.ne.x += thickness;
     p->bbox.ne.y += thickness;
     p->bbox.sw.x -= thickness;
     p->bbox.sw.y -= thickness;
+
+    /* Output the SVG */
     pic_append_dis(p, "<svg width=\"", p->bbox.ne.x - p->bbox.sw.x, "\"");
     pic_append_dis(p, " height=\"",p->bbox.ne.y - p->bbox.sw.y,"\">\n");
     pic_elist_render(p, pEList);
