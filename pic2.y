@@ -164,6 +164,8 @@ struct Pic {
   char *zOut;              /* Result accumulates here */
   unsigned int nOut;       /* Bytes written to zOut[] so far */
   unsigned int nOutAlloc;  /* Space allocated to zOut[] */
+  PNum wArrow;             /* Width of arrowhead at the fat end */
+  PNum hArrow;             /* Height of arrowhead - dist from tip to fat end */
   int eDir;                /* Current direction */
   PElem *cur;              /* Element under construction */
   PEList *list;            /* Element list under construction */
@@ -191,6 +193,8 @@ static void pic_append_dis(Pic*,const char*,PNum,const char*);
 static void pic_append_clr(Pic*,const char*,PNum,const char*);
 static void pic_append_style(Pic*,PElem*);
 static void pic_append_txt(Pic*,PElem*);
+static void pic_draw_arrowhead(Pic*,PPoint*pFrom,PPoint*pTo,PElem*);
+static void pic_chop(Pic*,PPoint*pFrom,PPoint*pTo,PNum);
 static void pic_error(Pic*,PToken*,const char*);
 static void pic_elist_free(Pic*,PEList*);
 static void pic_elem_free(Pic*,PElem*);
@@ -758,6 +762,19 @@ static void lineRender(Pic *p, PElem *pElem){
   int i;
   if( pElem->prop.sw>0.0 ){
     const char *z = "<path d=\"M";
+    int n = pElem->nPath;
+    if( pElem->prop.chop1>0.0 ){
+      pic_chop(p,&pElem->aPath[1],&pElem->aPath[0],pElem->prop.chop1);
+    }
+    if( pElem->prop.chop2>0.0 ){
+      pic_chop(p,&pElem->aPath[n-2],&pElem->aPath[n-1],pElem->prop.chop2);
+    }
+    if( pElem->prop.larrow ){
+      pic_draw_arrowhead(p,&pElem->aPath[1],&pElem->aPath[0],pElem);
+    }
+    if( pElem->prop.rarrow ){
+      pic_draw_arrowhead(p,&pElem->aPath[n-2],&pElem->aPath[n-1],pElem);
+    }
     for(i=0; i<pElem->nPath; i++){
       pic_append_xy(p,z,pElem->aPath[i].x,pElem->aPath[i].y);
       z = "L";
@@ -908,6 +925,57 @@ static const PClass textClass =
       /* xOffset */       0,
       /* xRender */       boxRender 
    };
+
+
+/*
+** Reduce the length of the line segment by amt (if possible) by
+** modifying t.
+*/
+static void pic_chop(Pic *p, PPoint *f, PPoint *t, PNum amt){
+  PNum dx = t->x - f->x;
+  PNum dy = t->y - f->y;
+  PNum dist = sqrt(dx*dx + dy+dy);
+  PNum r;
+  if( dist<=amt ){
+    *t = *f;
+    return;
+  }
+  r = 1.0 - amt/dist;
+  t->x = f->x + r*dx;
+  t->y = f->y + r*dy;
+}
+
+/*
+** Draw an error head on the end of the line segment from pFrom to pTo.
+** Also, shorten the line segment (by changing the value of pTo) so that
+** the arrow ends in a point.
+*/
+static void pic_draw_arrowhead(Pic *p, PPoint *f, PPoint *t, PElem *pElem){
+  PNum dx = t->x - f->x;
+  PNum dy = t->y - f->y;
+  PNum dist = sqrt(dx*dx + dy+dy);
+  PNum h = p->hArrow * pElem->prop.sw;
+  PNum w = p->wArrow * pElem->prop.sw;
+  PNum e1, ddx, ddy;
+  PNum bx, by;
+  if( dist<=0.0 ) return;  /* Unable */
+  dx /= dist;
+  dy /= dist;
+  e1 = dist - h;
+  if( e1<0.0 ){
+    e1 = 0.0;
+    h = dist;
+  }
+  ddx = -w*dy;
+  ddy = w*dx;
+  bx = f->x + e1*dx;
+  by = f->y + e1*dy;
+  pic_append_xy(p,"<polygon points=\"", t->x, t->y);
+  pic_append_xy(p," ",bx-ddx, by-ddy);
+  pic_append_xy(p," ",bx+ddx, by+ddy);
+  pic_append_clr(p,"\" style=\"fill:",pElem->prop.color,"\"/>\n");
+  pic_chop(p,f,t,h/2);
+}
 
 /*
 ** Compute the relative office of a edge from the reference for a
@@ -1273,6 +1341,7 @@ static PElem *pic_elem_new(Pic *p, PToken *pId, PToken *pStr,PEList *pSublist){
   p->aRPath[0].pt.x = 0.0;
   p->aRPath[0].pt.y = 0.0;
   pNew->outDir = pNew->inDir = p->eDir;
+  pNew->prop.chop1 = pNew->prop.chop2 = -1.0;
   if( pSublist ){
     pNew->type = &sublistClass;
     pNew->pSublist = pSublist;
@@ -1403,9 +1472,9 @@ void pic_set_dashed(Pic *p, PToken *pId, PNum *pVal){
     }
     case T_CHOP: {
       v = pVal==0 ? pic_value(p,"circlerad",9,0) : *pVal;
-      if( pProp->chop1<=0.0 ){
+      if( pProp->chop1<0.0 ){
         pProp->chop1 = v;
-      }else if( pProp->chop2<=0.0 ){
+      }else if( pProp->chop2<0.0 ){
         pProp->chop2 = v;
       }else{
         pic_error(p, pId, "too many \"chop\" terms");
@@ -1912,7 +1981,7 @@ static PNum pic_property_of(Pic *p, PElem *pElem, PToken *pProp){
     case T_DASHED:    v = pElem->prop.dashed;  break;
     case T_DOTTED:    v = pElem->prop.dotted;  break;
     case T_CHOP:      v = pElem->prop.chop2;
-         if( v<=0.0 ) v = pElem->prop.chop1;   break;
+         if( v<0.0 )  v = 0.0;                 break;
     case T_FILL:      v = pElem->prop.fill;    break;
     case T_COLOR:     v = pElem->prop.color;   break;
     case T_X:         v = pElem->ptAt.x;       break;
@@ -2020,6 +2089,11 @@ static void pic_after_adding_attributes(Pic *p, PElem *pElem){
     }
   }
 
+  /* Fix up the chop parameters */
+  if( pElem->prop.chop1>=0.0 && pElem->prop.chop2<0.0 ){
+    pElem->prop.chop2 = pElem->prop.chop1;
+  }
+
   /* Compute final bounding box, entry and exit points, center
   ** point (ptAt) and path for the element
   */
@@ -2114,6 +2188,10 @@ static void pic_render(Pic *p, PEList *pEList){
   int i;
   if( pEList==0 ) return;
   if( p->nErr==0 ){
+    PNum thickness = pic_value(p,"thickness",9,0);
+    if( thickness<=0.01 ) thickness = 0.01;
+    p->wArrow = 0.5*pic_value(p,"arrowwid",8,0)/thickness;
+    p->hArrow = pic_value(p,"arrowht",7,0)/thickness;
     pic_bbox_init(&p->bbox);
     for(i=0; i<pEList->n; i++){
       PElem *pElem = pEList->a[i];
@@ -2121,6 +2199,10 @@ static void pic_render(Pic *p, PEList *pEList){
     }
     p->rScale = 144.0*pic_value(p,"scale",5,0);
     if( p->rScale<5.0 ) p->rScale = 5.0;
+    p->bbox.ne.x += thickness;
+    p->bbox.ne.y += thickness;
+    p->bbox.sw.x -= thickness;
+    p->bbox.sw.y -= thickness;
     pic_append_dis(p, "<svg width=\"", p->bbox.ne.x - p->bbox.sw.x, "\"");
     pic_append_dis(p, " height=\"",p->bbox.ne.y - p->bbox.sw.y,"\">\n");
     pic_elist_render(p, pEList);

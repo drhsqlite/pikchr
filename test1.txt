@@ -1,5 +1,6 @@
     circlerad = circlerad*0.6;
     linewid = linewid*0.6
+  scale=2
     circle "C0"
     arrow
     circle "C1"
