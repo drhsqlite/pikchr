@@ -175,6 +175,8 @@ struct Pic {
   char inDebug;            /* True if inside debugging print statement */
   char thenFlag;           /* True if "then" seen */
   int nRPath;              /* Number of entries on aRPath[] */
+  const char *zClass;      /* Class name for the <svg> */
+  int wSVG, hSVG;          /* Width and height of the <svg> */
   struct {
     char isRel;               /* True for relative */
     PPoint pt;                /* Location */
@@ -1016,29 +1018,34 @@ static void pic_append(Pic *p, const char *zText, int n){
 /*
 ** Append text to zOut with HTML characters escaped.
 **
-**   *  The space character is changed into "&nbsp;" if the bQSpace
-**      flag is set.  This is needed when outputting text to preserve
+**   *  The space character is changed into "&nbsp;" if mFlags as the
+**      0x01 bit set.  This is needed when outputting text to preserve
 **      leading and trailing whitespace for spacing.
 **
-**   *  Except for the above, only "<" and ">" are escaped.  Entities
-**      Entitiles (like "&copy;" or "&rarr;") are allowed through.
+**   *  The "&" character is changed into "&amp;" if mFlags as the
+**      0x02 bit set.  This is needed when outputting error message text.
+**
+**   *  Except for the above, only "<" and ">" are escaped.
 */
-static void pic_append_text(Pic *p, const char *zText, int n, int bQSpace){
+static void pic_append_text(Pic *p, const char *zText, int n, int mFlags){
   int i;
   char c;
+  int bQSpace = mFlags & 1;
+  int bQAmp = mFlags & 2;
   if( n<0 ) n = (int)strlen(zText);
   while( n>0 ){
     for(i=0; i<n; i++){
       c = zText[i];
       if( c=='<' || c=='>' ) break;
-      if( !bQSpace ) continue;
-      if( c==' ' ) break;
+      if( c==' ' && bQSpace ) break;
+      if( c=='&' && bQAmp ) break;
     }
     if( i ) pic_append(p, zText, i);
     if( i==n ) break;
     switch( c ){
       case '<': {  pic_append(p, "&lt;", 4);  break;  }
       case '>': {  pic_append(p, "&gt;", 4);  break;  }
+      case '&': {  pic_append(p, "&amp;", 5);  break;  }
       case ' ': {  pic_append(p, "&nbsp;", 6);  break;  }
     }
     i++;
@@ -1211,7 +1218,7 @@ static void pic_error(Pic *p, PToken *pErr, const char *zMsg){
   iCol = i - j;
   for(nExtra=0; (c = p->zIn[i+nExtra])!=0 && c!='\n'; nExtra++){}
   pic_append(p, "<div><pre>\n", -1);
-  pic_append_text(p, p->zIn, i+nExtra, 0);
+  pic_append_text(p, p->zIn, i+nExtra, 3);
   pic_append(p, "\n", 1);
   for(i=0; i<iCol; i++){ pic_append(p, " ", 1); }
   for(i=0; i<pErr->n; i++) pic_append(p, "^", 1);
@@ -2252,12 +2259,17 @@ static void pic_render(Pic *p, PEList *pEList){
   int i, j;
   if( pEList==0 ) return;
   if( p->nErr==0 ){
-    PNum thickness;
-    PNum wArrow;
+    PNum thickness;  /* Line thickness */
+    PNum wArrow;     /* Width of arrowheads */
+    PNum margin;     /* Extra bounding box margin */
+    PNum w, h;       /* Drawing width and height */
 
     /* Set up rendering parameters */
     thickness = pic_value(p,"thickness",9,0);
     if( thickness<=0.01 ) thickness = 0.01;
+    margin = pic_value(p,"margin",6,0);
+    if( margin<0 ) margin = 0;
+    margin += thickness;
     wArrow = 0.5*pic_value(p,"arrowwid",8,0);
     p->wArrow = wArrow/thickness;
     p->hArrow = pic_value(p,"arrowht",7,0)/thickness;
@@ -2285,17 +2297,31 @@ static void pic_render(Pic *p, PEList *pEList){
       }
     }
 
-    /* Expand the bounding box slightly to account for line thickness */
-    p->bbox.ne.x += thickness;
-    p->bbox.ne.y += thickness;
-    p->bbox.sw.x -= thickness;
-    p->bbox.sw.y -= thickness;
+    /* Expand the bounding box slightly to account for line thickness
+    ** and the optional "margin = EXPR" setting. */
+    p->bbox.ne.x += margin;
+    p->bbox.ne.y += margin;
+    p->bbox.sw.x -= margin;
+    p->bbox.sw.y -= margin;
 
     /* Output the SVG */
-    pic_append_dis(p, "<svg width=\"", p->bbox.ne.x - p->bbox.sw.x, "\"");
-    pic_append_dis(p, " height=\"",p->bbox.ne.y - p->bbox.sw.y,"\">\n");
+    pic_append(p, "<svg",4);
+    if( p->zClass ){
+      pic_append(p, " class=\"", -1);
+      pic_append(p, p->zClass, -1);
+      pic_append(p, "\"", 1);
+    }
+    w = p->bbox.ne.x - p->bbox.sw.x;
+    h = p->bbox.ne.y - p->bbox.sw.y;
+    p->wSVG = (int)(p->rScale*w);
+    p->hSVG = (int)(p->rScale*h);
+    pic_append_dis(p, " width=\"", w, "\"");
+    pic_append_dis(p, " height=\"",h,"\">\n");
     pic_elist_render(p, pEList);
     pic_append(p,"</svg>\n", -1);
+  }else{
+    p->wSVG = -1;
+    p->hSVG = -1;
   }
   pic_elist_free(p, pEList);
 }
@@ -2607,9 +2633,28 @@ static int pic_token_length(const char *zStart, int *peType, int *peCode){
 }
 
 /*
-** Parse the PIC script contained in zText[]
+** Parse the PIC script contained in zText[].  Return a rendering.  Or
+** if an error is encountered, return the error text.  The error message
+** is HTML formatted.  So regardless of what happens, the return text
+** is safe to be insertd into an HTML output stream.
+**
+** If pnWidth and pnHeight are NULL, then this routine writes the
+** width and height of the <SVG> object into the integers that they
+** point to.  A value of -1 is written if an error is seen.
+**
+** If zClass is not NULL, then it is a class name to be included in
+** the <SVG> markup.
+**
+** The returned string is contained in memory obtained from malloc()
+** and should be released by the caller.
 */
-char *pic(const char *zText, int *pnErr){
+char *pic(
+  const char *zText,     /* Input PIC source text.  zero-terminated */
+  const char *zClass,    /* Add class="%s" to <svg> markup */
+  unsigned int mFlags,   /* Flags used to influence rendering behavior */
+  int *pnWidth,          /* Write width of <svg> here, if not NULL */
+  int *pnHeight          /* Write height here, if not NULL */
+){
   int i;
   int sz;
   int eType, eCode;
@@ -2621,6 +2666,7 @@ char *pic(const char *zText, int *pnErr){
   s.zIn = zText;
   s.nIn = (unsigned int)strlen(zText);
   s.eDir = T_RIGHT;
+  s.zClass = zClass;
   pic_parserInit(&sParse, &s);
 #if 0
   pic_parserTrace(stdout, "parser: ");
@@ -2660,7 +2706,8 @@ char *pic(const char *zText, int *pnErr){
     free(s.pVar);
     s.pVar = pNext;
   }
-  if( pnErr ) *pnErr = s.nErr;
+  if( pnWidth ) *pnWidth = s.nErr ? -1 : s.wSVG;
+  if( pnHeight ) *pnHeight = s.nErr ? -1 : s.hSVG;
   if( s.zOut ){
     s.zOut[s.nOut] = 0;
     s.zOut = realloc(s.zOut, s.nOut+1);
@@ -2668,14 +2715,32 @@ char *pic(const char *zText, int *pnErr){
   return s.zOut;
 }
 
+/* Texting interface
+**
+** Generate HTML on standard output that displays both the original
+** input text and the rendered SVG for all files named on the command
+** line.
+*/
 int main(int argc, char **argv){
   int i;
+  printf(
+    "<!DOCTYPE html>\n"
+    "<html lang=\"en-US\">\n"
+    "<head>\n<title>PIC Test</title>\n"
+    "<meta charset=\"utf-8\">\n"
+    "</head>\n"
+    "<body>\n"
+  );
   for(i=1; i<argc; i++){
     FILE *in;
     size_t sz;
     char *zIn;
     char *zOut;
+    char *z, c;
+    int j;
+    int w, h;
 
+    printf("<h1>File %s</h1>\n", argv[i]);
     in = fopen(argv[i], "rb");
     if( in==0 ){
       fprintf(stderr, "cannot open \"%s\" for reading\n", argv[i]);
@@ -2693,13 +2758,37 @@ int main(int argc, char **argv){
     sz = fread(zIn, 1, sz, in);
     fclose(in);
     zIn[sz] = 0;
-    zOut = pic(zIn, 0);
+    printf("<p>Source text:</p>\n<blockquote><pre>\n");
+    z = zIn;
+    while( z[0]!=0 ){
+      for(j=0; (c = z[j])!=0 && c!='<' && c!='>' && c!='&'; j++){}
+      if( j ) printf("%.*s", j, z);
+      z += j+1;
+      j = -1;
+      if( c=='<' ){
+        printf("&lt;");
+      }else if( c=='>' ){
+        printf("&gt;");
+      }else if( c=='&' ){
+        printf("&amp;");
+      }else if( c==0 ){
+        break;
+      }
+    }
+    printf("</pre></blockquote>\n");
+    zOut = pic(zIn, "pictest", 0, &w, &h);
     free(zIn);
     if( zOut ){
-      printf("%s", zOut);
+      if( w<0 ){
+        printf("<p>ERROR:</p>\n");
+      }else{
+        printf("<p>Output size: %d by %d</p>\n", w, h);
+      }
+      printf("<div style='border:2px solid gray;'>\n%s</div>\n", zOut);
       free(zOut);
     }
   }
+  printf("</body></html>\n");
   return 0; 
 }
 

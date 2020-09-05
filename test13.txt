@@ -1,0 +1,7 @@
+// margin = 1
+line up 1 right 2
+linewid = 0
+arrow left 2
+move left 0.1
+line <-> down 1
+"height " rjust at last line
