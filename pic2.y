@@ -1528,7 +1528,7 @@ static void pic_add_direction(Pic *p, PToken *pDir, PNum *pVal){
     return;
   }
   n = p->nRPath - 1;
-  if( p->thenFlag || p->aRPath[n].isRel==0 ){
+  if( p->thenFlag || p->aRPath[n].isRel==0 || n==0 ){
     n = pic_next_rpath(p, pDir);
     p->aRPath[n].isRel = 1;
     p->thenFlag = 0;
