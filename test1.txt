@@ -6,10 +6,10 @@
     arrow
 C2: circle "C2"
 A1: arrow
-C4: ellipse "C4"
+C4: circle "C4"
     arrow
 C6: circle "C6"
-C3: circle "C3" at circlerad*3 above A1
+C3: circle "C3" at (C4.x-C2.x) ne of C2
     arrow
     circle "C5"
     arrow from C2.ne to C3.sw

@@ -50,6 +50,18 @@ typedef struct PBox PBox;        /* A bounding box */
 #define CP_W      7
 #define CP_NW     8
 
+static const PNum pic_hdg_angle[] = {
+  /* C  */    0.0,
+  /* N  */    0.0,
+  /* NE */   45.0,
+  /* E  */   90.0,
+  /* SE */  135.0,
+  /* S  */  180.0,
+  /* SW */  225.0,
+  /* W  */  270.0,
+  /* NW */  315.0,
+};
+
 /* Built-in functions */
 #define FN_COS    0
 #define FN_INT    1
@@ -215,6 +227,8 @@ static int pic_text_position(Pic*,int,PToken*);
 static PNum pic_property_of(Pic*,PElem*,PToken*);
 static PNum pic_func(Pic*,PToken*,PNum,PNum);
 static PPoint pic_position_between(Pic *p, PNum x, PPoint p1, PPoint p2);
+static PPoint pic_position_at_angle(Pic *p, PNum dist, PNum r, PPoint pt);
+static PPoint pic_position_at_hdg(Pic *p, PNum dist, PToken *pD, PPoint pt);
 
 
 } // end %include
@@ -370,8 +384,10 @@ position(A) ::= expr(X) ABOVE position(B).    {A=B; A.y += X;}
 position(A) ::= expr(X) BELOW position(B).    {A=B; A.y -= X;}
 position(A) ::= expr(X) LEFT OF position(B).  {A=B; A.x -= X;}
 position(A) ::= expr(X) RIGHT OF position(B). {A=B; A.x += X;}
-position ::= expr EDGE OF position.
-position ::= expr ANGLE expr FROM position.
+position(A) ::= expr(D) EDGE(E) OF position(P).
+                                        {A = pic_position_at_hdg(p,D,&E,P);}
+position(A) ::= expr(D) ANGLE expr(G) FROM position(P).
+                                        {A = pic_position_at_angle(p,D,G,P);}
 
 place(A) ::= object(O).                 {A = pic_place_of_elem(p,O,0);}
 place(A) ::= object(O) DOT_E EDGE(X).   {A = pic_place_of_elem(p,O,&X);}
@@ -1852,7 +1868,7 @@ static PPoint pic_place_of_elem(Pic *p, PElem *pElem, PToken *pEdge){
   }
 }
 
-/* Do a linear interpolation of two positions
+/* Do a linear interpolation of two positions.
 */
 static PPoint pic_position_between(Pic *p, PNum x, PPoint p1, PPoint p2){
   PPoint out;
@@ -1861,6 +1877,24 @@ static PPoint pic_position_between(Pic *p, PNum x, PPoint p1, PPoint p2){
   out.x = p1.x*x + p2.x*(1.0 - x);
   out.y = p1.y*x + p2.y*(1.0 - x);
   return out;
+}
+
+/* Compute the position that is dist away from pt at an heading angle of r
+**
+** The angle is compass heading in degrees.  North is 0 (or 360).
+** East is 90.  South is 180.  West is 270.  And so forth.
+*/
+static PPoint pic_position_at_angle(Pic *p, PNum dist, PNum r, PPoint pt){
+  r *= 0.017453292519943295769;  /* degrees to radians */
+  pt.x += dist*sin(r);
+  pt.y += dist*cos(r);
+  return pt;
+}
+
+/* Compute the position that is dist away at a compass point
+*/
+static PPoint pic_position_at_hdg(Pic *p, PNum dist, PToken *pD, PPoint pt){
+  return pic_position_at_angle(p, dist, pic_hdg_angle[pD->eCode], pt);
 }
 
 /* Return the value of a property of an object.
