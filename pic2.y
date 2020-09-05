@@ -212,6 +212,9 @@ static void pic_bbox_addbox(PBox*,PBox*);
 static void pic_bbox_addpt(PBox*,PPoint*);
 static void pic_add_txt(Pic*,PToken*,int);
 static int pic_text_position(Pic*,int,PToken*);
+static PNum pic_property_of(Pic*,PElem*,PToken*);
+static PNum pic_func(Pic*,PToken*,PNum,PNum);
+static PPoint pic_position_between(Pic *p, PNum x, PPoint p1, PPoint p2);
 
 
 } // end %include
@@ -236,6 +239,7 @@ static int pic_text_position(Pic*,int,PToken*);
 %type direction {PToken}
 %type dashproperty {PToken}
 %type colorproperty {PToken}
+%type locproperty {PToken}
 %type position {PPoint}
 %type place {PPoint}
 %type object {PElem*}
@@ -358,22 +362,10 @@ position(A) ::= place(B) MINUS LP expr(X) COMMA expr(Y) RP.
                                                       {A.x=B.x+X; A.y=B.y+Y;}
 position(A) ::= LP position(X) COMMA position(Y) RP.  {A.x=X.x; A.y=Y.y;}
 position(A) ::= LP position(X) RP.                    {A=X;}
-position(A) ::= expr(X) OF THE WAY BETWEEN position(P1) AND position(P2). {
-   PNum r1 = X, r2;
-   if( r1<0.0 ) r1 = 0.0;
-   if( r1>1.0 ) r1 = 1.0;
-   r2 = 1.0 - r1;
-   A.x = P1.x*r1 + P2.x*r2;
-   A.y = P1.y*r1 + P2.y*r2;
-}
-position(A) ::= expr(X) BETWEEN position(P1) AND position(P2). {
-   PNum r1 = X, r2;
-   if( r1<0.0 ) r1 = 0.0;
-   if( r1>1.0 ) r1 = 1.0;
-   r2 = 1.0 - r1;
-   A.x = P1.x*r1 + P2.x*r2;
-   A.y = P1.y*r1 + P2.y*r2;
-}
+position(A) ::= expr(X) OF THE WAY BETWEEN position(P1) AND position(P2).
+                         {A = pic_position_between(p,X,P1,P2);}
+position(A) ::= expr(X) BETWEEN position(P1) AND position(P2).
+                         {A = pic_position_between(p,X,P1,P2);}
 position(A) ::= expr(X) ABOVE position(B).    {A=B; A.y += X;}
 position(A) ::= expr(X) BELOW position(B).    {A=B; A.y -= X;}
 position(A) ::= expr(X) LEFT OF position(B).  {A=B; A.x -= X;}
@@ -414,12 +406,8 @@ expr(A) ::= expr(X) PLUS expr(Y).     {A=X+Y;}
 expr(A) ::= expr(X) MINUS expr(Y).    {A=X-Y;}
 expr(A) ::= expr(X) STAR expr(Y).     {A=X*Y;}
 expr(A) ::= expr(X) SLASH(E) expr(Y).    {
-  if( Y==0.0 ){
-    pic_error(p, &E, "division by zero");
-    A = 0.0;
-  }else{
-    A = X/Y;
-  }
+  if( Y==0.0 ){ pic_error(p, &E, "division by zero"); A = 0.0; }
+  else{ A = X/Y; }
 }
 expr(A) ::= MINUS expr(X). [UMINUS]  {A=-X;}
 expr(A) ::= PLUS expr(X). [UMINUS]   {A=X;}
@@ -427,49 +415,21 @@ expr(A) ::= LP expr(X) RP.           {A=X;}
 expr(A) ::= NUMBER(N).               {A=atof(N.z);}
 expr(A) ::= ID(N).                   {A=pic_get_var(p,&N);}
 expr(A) ::= HEXRGB(X).               {A=pic_color_to_num(p,X.z,X.n);}
-expr(A) ::= FUNC1(F) LP expr(X) RP. {
-  switch( F.eCode ){
-    case FN_COS:  A = cos(X);   break;
-    case FN_INT:  A = floor(X); break;
-    case FN_SIN:  A = sin(X);   break;
-    case FN_SQRT:
-      if( X<0.0 ){
-        pic_error(p, &F, "sqrt of negative value");
-        A = 0.0;
-      }else{
-        A = sqrt(X);
-      }
-      break;
-    default: A = 0.0;
-  }
-}
-expr(A) ::= FUNC2(F) LP expr(X) COMMA expr(Y) RP. {
-  switch( F.eCode ){
-    case FN_MAX:  A = X>Y ? X : Y;   break;
-    case FN_MIN:  A = X<Y ? X : Y;   break;
-    default: A = 0.0;
-  }
-}
+expr(A) ::= FUNC1(F) LP expr(X) RP.               {A = pic_func(p,&F,X,0.0);}
+expr(A) ::= FUNC2(F) LP expr(X) COMMA expr(Y) RP. {A = pic_func(p,&F,X,Y);}
 
+expr(A) ::= object(O) DOT_L locproperty(P).    {A=pic_property_of(p,O,&P);}
+expr(A) ::= object(O) DOT_L numproperty(P).    {A=pic_property_of(p,O,&P);}
+expr(A) ::= object(O) DOT_L dashproperty(P).   {A=pic_property_of(p,O,&P);}
+expr(A) ::= object(O) DOT_L colorproperty(P).  {A=pic_property_of(p,O,&P);}
+expr(A) ::= object(O) DOT_E EDGE(E) DOT_L X.   {A=pic_place_of_elem(p,O,&E).x;}
+expr(A) ::= object(O) DOT_E EDGE(E) DOT_L Y.   {A=pic_place_of_elem(p,O,&E).y;}
+expr(A) ::= LP locproperty(P) OF object(O) RP.   {A=pic_property_of(p,O,&P);}
+expr(A) ::= LP dashproperty(P) OF object(O) RP.  {A=pic_property_of(p,O,&P);}
+expr(A) ::= LP numproperty(P) OF object(O) RP.   {A=pic_property_of(p,O,&P);}
+expr(A) ::= LP colorproperty(P) OF object(O) RP. {A=pic_property_of(p,O,&P);}
 
-expr ::= object DOT_L locproperty.
-expr ::= object DOT_L numproperty.
-expr ::= object DOT_L dashproperty.
-expr ::= object DOT_L colorproperty.
-expr(A) ::= object(O) DOT_E EDGE(E) DOT_L X. {A= pic_place_of_elem(p,O,&E).x;}
-expr(A) ::= object(O) DOT_E EDGE(E) DOT_L Y. {A= pic_place_of_elem(p,O,&E).y;}
-expr ::= LP locproperty OF object RP.
-expr ::= LP dashproperty OF object RP.
-expr ::= LP numproperty OF object RP.
-expr ::= LP colorproperty OF object RP.
-
-locproperty ::= X.
-locproperty ::= Y.
-locproperty ::= TOP.
-locproperty ::= BOTTOM.
-locproperty ::= LEFT.
-locproperty ::= RIGHT.
-
+locproperty(A) ::= X|Y|TOP|BOTTOM|LEFT|RIGHT(A).
 
 %code {
 
@@ -1890,6 +1850,68 @@ static PPoint pic_place_of_elem(Pic *p, PElem *pElem, PToken *pEdge){
   }else{
     return pElem->aPath[pElem->nPath-1];
   }
+}
+
+/* Do a linear interpolation of two positions
+*/
+static PPoint pic_position_between(Pic *p, PNum x, PPoint p1, PPoint p2){
+  PPoint out;
+  if( x<0.0 ) x = 0.0;
+  if( x>1.0 ) x = 1.0;
+  out.x = p1.x*x + p2.x*(1.0 - x);
+  out.y = p1.y*x + p2.y*(1.0 - x);
+  return out;
+}
+
+/* Return the value of a property of an object.
+*/
+static PNum pic_property_of(Pic *p, PElem *pElem, PToken *pProp){
+  PNum v = 0.0;
+  switch( pProp->eType ){
+    case T_HEIGHT:    v = pElem->prop.h;       break;
+    case T_WIDTH:     v = pElem->prop.w;       break;
+    case T_RX:        v = pElem->prop.rx;      break;
+    case T_RADIUS:    /* fall through */
+    case T_RY:        v = pElem->prop.ry;      break;
+    case T_DIAMETER:  v = pElem->prop.ry*2.0;  break;
+    case T_THICKNESS: v = pElem->prop.sw;      break;
+    case T_DASHED:    v = pElem->prop.dashed;  break;
+    case T_DOTTED:    v = pElem->prop.dotted;  break;
+    case T_CHOP:      v = pElem->prop.chop2;
+         if( v<=0.0 ) v = pElem->prop.chop1;   break;
+    case T_FILL:      v = pElem->prop.fill;    break;
+    case T_COLOR:     v = pElem->prop.color;   break;
+    case T_X:         v = pElem->ptAt.x;       break;
+    case T_Y:         v = pElem->ptAt.y;       break;
+    case T_TOP:       v = pElem->bbox.ne.y;    break;
+    case T_BOTTOM:    v = pElem->bbox.sw.y;    break;
+    case T_LEFT:      v = pElem->bbox.sw.x;    break;
+    case T_RIGHT:     v = pElem->bbox.ne.x;    break;
+  }
+  return v;
+}
+
+/* Compute one of the built-in functions
+*/
+static PNum pic_func(Pic *p, PToken *pFunc, PNum x, PNum y){
+  PNum v = 0.0;
+  switch( pFunc->eCode ){
+    case FN_COS:  v = cos(x);   break;
+    case FN_INT:  v = floor(x); break;
+    case FN_SIN:  v = sin(x);   break;
+    case FN_SQRT:
+      if( x<0.0 ){
+        pic_error(p, pFunc, "sqrt of negative value");
+        v = 0.0;
+      }else{
+        v = sqrt(x);
+      }
+      break;
+    case FN_MAX:  v = x>y ? x : y;   break;
+    case FN_MIN:  v = x<y ? x : y;   break;
+    default:      v = 0.0;
+  }
+  return v;
 }
 
 /* Attach a name to an element
