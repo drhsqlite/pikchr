@@ -139,6 +139,7 @@ struct PElem {
   } prop;
   PToken aTxt[3];          /* Text with .eCode holding TP flags */
   PPoint ptAt;             /* Reference point for the object */
+  int iLayer;              /* Rendering order */
   int inDir, outDir;       /* Entry and exit directions */
   unsigned char nTxt;      /* Number of text values */
   int nPath;               /* Number of path points */
@@ -346,7 +347,6 @@ attribute ::= WITH DOT_E EDGE(E) AT(A) position(P). { pic_set_at(p,&E,&P,&A); }
 attribute ::= WITH EDGE(E) AT(A) position(P).       { pic_set_at(p,&E,&P,&A); }
 attribute ::= SAME.
 attribute ::= SAME AS object.
-attribute ::= BEHIND object.
 attribute ::= STRING(T) textposition(P).        {pic_add_txt(p,&T,P);}
 
 // Properties that require an argument
@@ -1363,6 +1363,7 @@ static const PClass *pic_find_class(PToken *pId){
 */
 static PElem *pic_elem_new(Pic *p, PToken *pId, PToken *pStr,PEList *pSublist){
   PElem *pNew;
+  int miss = 0;
 
   pNew = malloc( sizeof(*pNew) );
   if( pNew==0 ){
@@ -1379,6 +1380,9 @@ static PElem *pic_elem_new(Pic *p, PToken *pId, PToken *pStr,PEList *pSublist){
   p->aRPath[0].pt.y = 0.0;
   pNew->outDir = pNew->inDir = p->eDir;
   pNew->prop.chop1 = pNew->prop.chop2 = -1.0;
+  pNew->iLayer = (int)pic_value(p, "layer", 5, &miss);
+  if( miss ) pNew->iLayer = 1000;
+  if( pNew->iLayer<0 ) pNew->iLayer = 0;
   if( pSublist ){
     pNew->type = &sublistClass;
     pNew->pSublist = pSublist;
@@ -2238,18 +2242,33 @@ static void pic_elem_render(Pic *p, PElem *pElem){
 */
 void pic_elist_render(Pic *p, PEList *pEList){
   int i;
-  for(i=0; i<pEList->n; i++){
-    PElem *pElem = pEList->a[i];
-    void (*xRender)(Pic*,PElem*);
-    pic_elem_render(p, pElem);
-    xRender = pElem->type->xRender;
-    if( xRender ){
-      xRender(p, pElem);
+  int iNextLayer = 0;
+  int iThisLayer;
+  int bMoreToDo;
+  do{
+    bMoreToDo = 0;
+    iThisLayer = iNextLayer;
+    iNextLayer = 0x7fffffff;
+    for(i=0; i<pEList->n; i++){
+      PElem *pElem = pEList->a[i];
+      if( pElem->iLayer>iThisLayer ){
+        if( pElem->iLayer<iNextLayer ) iNextLayer = pElem->iLayer;
+        bMoreToDo = 1;
+        continue; /* Defer until another round */
+      }else if( pElem->iLayer<iThisLayer ){
+        continue;
+      }
+      void (*xRender)(Pic*,PElem*);
+      pic_elem_render(p, pElem);
+      xRender = pElem->type->xRender;
+      if( xRender ){
+        xRender(p, pElem);
+      }
+      if( pElem->pSublist ){
+        pic_elist_render(p, pElem->pSublist);
+      }
     }
-    if( pElem->pSublist ){
-      pic_elist_render(p, pElem->pSublist);
-    }
-  }
+  }while( bMoreToDo );
 }
 
 /* Render a list of elements.  Write the SVG into p->zOut.
@@ -2347,7 +2366,6 @@ static const PicWord pic_keywords[] = {
   { "angle",      5,   T_ANGLE,     0         },
   { "as",         2,   T_AS,        0         },
   { "at",         2,   T_AT,        0         },
-  { "behind",     6,   T_BEHIND,    0         },
   { "below",      5,   T_BELOW,     0         },
   { "between",    7,   T_BETWEEN,   0         },
   { "bottom",     6,   T_BOTTOM,    0         },
