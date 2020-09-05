@@ -1876,7 +1876,7 @@ static PElem *pic_find_nth(Pic *p, PElem *pBasis, PToken *pNth){
 */
 static PElem *pic_find_byname(Pic *p, PElem *pBasis, PToken *pName){
   PEList *pList;
-  int i;
+  int i, j;
   if( pBasis==0 ){
     pList = p->list;
   }else{
@@ -1886,10 +1886,22 @@ static PElem *pic_find_byname(Pic *p, PElem *pBasis, PToken *pName){
     pic_error(p, pName, "no such object");
     return 0;
   }
+  /* First look explicitly tagged objects */
   for(i=pList->n-1; i>=0; i--){
     PElem *pElem = pList->a[i];
     if( pElem->zName && pic_token_eq(pName,pElem->zName)==0 ){
       return pElem;
+    }
+  }
+  /* If not found, do a second pass looking for any object containing
+  ** text which exactly matches pName */
+  for(i=pList->n-1; i>=0; i--){
+    PElem *pElem = pList->a[i];
+    for(j=0; j<pElem->nTxt; j++){
+      if( pElem->aTxt[j].n==pName->n+2
+       && memcmp(pElem->aTxt[j].z+1,pName->z,pName->n)==0 ){
+        return pElem;
+      }
     }
   }
   pic_error(p, pName, "no such object");

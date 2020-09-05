@@ -1,15 +1,4 @@
-//    circlerad = circlerad;
-//    linewid = linewid
-    circle "C0"
-    arrow
-    circle "C1"
-    arrow
-C2: circle "C2"
-A1: arrow
-C4: circle "C4"
-    arrow
-C6: circle "C6"
-C3: circle "C3" at (C4.x-C2.x) ne of C2
-    arrow
-    circle "C5"
-    arrow from C2.ne to C3.sw
+circle "C0"; arrow; circle "C1"; arrow; circle "C2"; arrow;
+    circle "C4";  arrow; circle "C6"
+circle "C3" at (C4.x-C2.x) ne of C2; arrow; circle "C5"
+arrow from C2.ne to C3.sw
