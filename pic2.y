@@ -173,7 +173,6 @@ struct Pic {
   PVar *pVar;              /* Application-defined variables */
   PBox bbox;               /* Bounding box around all elements */
   PNum rScale;             /* Multiple to convert inches to pixels */
-  char inDebug;            /* True if inside debugging print statement */
   char thenFlag;           /* True if "then" seen */
   int nRPath;              /* Number of entries on aRPath[] */
   const char *zClass;      /* Class name for the <svg> */
@@ -294,7 +293,7 @@ element(A) ::= COLOR(N) ASSIGN rvalue(X). {pic_set_var(p,&N,X); A = 0;}
 element(A) ::= PLACENAME(N) COLON unnamed_element(X).
                { A = X;  pic_elem_setname(p,X,&N); }
 element(A) ::= unnamed_element(X).  {A = X;}
-element(A) ::= print prlist.  {pic_append(p," -->\n",5); A=0; p->inDebug=0;}
+element(A) ::= print prlist.  {pic_append(p,"<br>\n",5); A=0;}
 
 // PLACENAME might actually be a color name (ex: DarkBlue).  But we
 // cannot make it part of expr due to parsing ambiguities.  The
@@ -302,7 +301,7 @@ element(A) ::= print prlist.  {pic_append(p," -->\n",5); A=0; p->inDebug=0;}
 rvalue(A) ::= expr(A).
 rvalue(A) ::= PLACENAME(C).  {A = pic_lookup_color(p,&C);}
 
-print ::= PRINT.  {pic_append(p,"<!-- ",5); p->inDebug = 1;}
+print ::= PRINT.
 prlist ::= pritem.
 prlist ::= prlist prsep pritem.
 pritem ::= rvalue(X). {pic_append_num(p,X);}
@@ -1206,10 +1205,6 @@ static void pic_error(Pic *p, PToken *pErr, const char *zMsg){
   char c;
   if( p->nErr ) return;
   p->nErr++;
-  if( p->inDebug ){
-    pic_append(p," -->\n", 5);
-    p->inDebug = 0;
-  }
   i = (int)(pErr->z - p->zIn);
   if( pErr==0 || zMsg==0 ){
     pic_append_text(p, "\n<div><p>Out of memory</p></div>\n", -1, 0);
