@@ -1,0 +1,10 @@
+B1: box "one"; line
+B2: box "two"; line
+B3: box "three"; line
+Macro: [
+  B4: box "four"
+  B5: box "five"
+  B6: box "six"
+] with n at 1 below s of 2nd box
+
+arrow from 1st box.e to 2nd box.s

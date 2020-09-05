@@ -934,7 +934,7 @@ static const PClass textClass =
 static void pic_chop(Pic *p, PPoint *f, PPoint *t, PNum amt){
   PNum dx = t->x - f->x;
   PNum dy = t->y - f->y;
-  PNum dist = sqrt(dx*dx + dy+dy);
+  PNum dist = sqrt(dx*dx + dy*dy);
   PNum r;
   if( dist<=amt ){
     *t = *f;
@@ -953,7 +953,7 @@ static void pic_chop(Pic *p, PPoint *f, PPoint *t, PNum amt){
 static void pic_draw_arrowhead(Pic *p, PPoint *f, PPoint *t, PElem *pElem){
   PNum dx = t->x - f->x;
   PNum dy = t->y - f->y;
-  PNum dist = sqrt(dx*dx + dy+dy);
+  PNum dist = sqrt(dx*dx + dy*dy);
   PNum h = p->hArrow * pElem->prop.sw;
   PNum w = p->wArrow * pElem->prop.sw;
   PNum e1, ddx, ddy;
