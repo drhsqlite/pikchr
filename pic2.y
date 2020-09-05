@@ -213,7 +213,7 @@ static void pic_elist_move(PEList*,PNum dx, PNum dy);
 static void pic_set_numprop(Pic*,PToken*,PNum,PNum);
 static void pic_set_dashed(Pic*,PToken*,PNum*);
 static void pic_then(Pic*,PToken*,PElem*);
-static void pic_add_direction(Pic*,PToken*,PNum*);
+static void pic_add_direction(Pic*,PToken*,PNum*,int);
 static void pic_set_from(Pic*,PElem*,PToken*,PPoint*);
 static void pic_add_to(Pic*,PElem*,PToken*,PPoint*);
 static void pic_set_at(Pic*,PToken*,PPoint*,PToken*);
@@ -330,8 +330,10 @@ attribute ::= numproperty(P) expr(X). { pic_set_numprop(p,&P,X,0.0); }
 attribute ::= dashproperty(P) expr(X).  { pic_set_dashed(p,&P,&X); }
 attribute ::= dashproperty(P).          { pic_set_dashed(p,&P,0);  }
 attribute ::= colorproperty(P) rvalue(X). { pic_set_numprop(p,&P,X,0.0); }
-attribute ::= direction(D) expr(X). { pic_add_direction(p,&D,&X);}
-attribute ::= direction(D).         { pic_add_direction(p,&D,0); }
+attribute ::= direction(D) expr(X) PERCENT.
+                                    { pic_add_direction(p,&D,&X,1);}
+attribute ::= direction(D) expr(X). { pic_add_direction(p,&D,&X,0);}
+attribute ::= direction(D).         { pic_add_direction(p,&D,0,0); }
 attribute ::= FROM(T) position(X).  { pic_set_from(p,p->cur,&T,&X); }
 attribute ::= TO(T) position(X).    { pic_add_to(p,p->cur,&T,&X); }
 attribute ::= THEN(T).              { pic_then(p, &T, p->cur); }
@@ -1519,13 +1521,21 @@ static int pic_next_rpath(Pic *p, PToken *pErr){
 }
 
 /* Add a direction term to an element.  "up 0.5", or "left 3", or "down".
+**
+** If the rel parameter is true, then the default distance is used but
+** is scaled by (*pVal)/100.  This implements things like "right 50%".
 */
-static void pic_add_direction(Pic *p, PToken *pDir, PNum *pVal){
+static void pic_add_direction(Pic *p, PToken *pDir, PNum *pVal, int rel){
   PElem *pElem = p->cur;
   int n;
+  PNum scale = 1.0;
   if( !pElem->type->isLine ){
     pic_error(p, pDir, "use with line-oriented elements only");
     return;
+  }
+  if( pVal && rel ){
+    scale = *pVal/100;
+    pVal = 0;
   }
   n = p->nRPath - 1;
   if( p->thenFlag || p->aRPath[n].isRel==0 || n==0 ){
@@ -1536,19 +1546,19 @@ static void pic_add_direction(Pic *p, PToken *pDir, PNum *pVal){
   switch( pDir->eType ){
     case T_UP:
        if( p->aRPath[n].pt.y!=0.0 ) n = pic_next_rpath(p, pDir);
-       p->aRPath[n].pt.y = pVal ? *pVal : pElem->prop.h;
+       p->aRPath[n].pt.y = pVal ? *pVal : pElem->prop.h*scale;
        break;
     case T_DOWN:
        if( p->aRPath[n].pt.y!=0.0 ) n = pic_next_rpath(p, pDir);
-       p->aRPath[n].pt.y = -(pVal ? *pVal : pElem->prop.h);
+       p->aRPath[n].pt.y = -(pVal ? *pVal : pElem->prop.h*scale);
        break;
     case T_RIGHT:
        if( p->aRPath[n].pt.x!=0.0 ) n = pic_next_rpath(p, pDir);
-       p->aRPath[n].pt.x = pVal ? *pVal : pElem->prop.w;
+       p->aRPath[n].pt.x = pVal ? *pVal : pElem->prop.w*scale;
        break;
     case T_LEFT:
        if( p->aRPath[n].pt.x!=0.0 ) n = pic_next_rpath(p, pDir);
-       p->aRPath[n].pt.x = -(pVal ? *pVal : pElem->prop.w);
+       p->aRPath[n].pt.x = -(pVal ? *pVal : pElem->prop.w*scale);
        break;
   }
   pElem->outDir = pDir->eType;
