@@ -701,6 +701,7 @@ static void circleInit(Pic *p, PElem *pElem){
   pElem->prop.w = pic_value(p, "circlerad",9,0)*2;
   pElem->prop.h = pElem->prop.w;
 }
+
 static void circleRender(Pic *p, PElem *pElem){
   PNum w = pElem->prop.w;
   PPoint pt = pElem->ptAt;
@@ -730,6 +731,25 @@ static void documentInit(Pic *p, PElem *pElem){
 static void ellipseInit(Pic *p, PElem *pElem){
   pElem->prop.w = pic_value(p, "ellipsewid",10,0);
   pElem->prop.h = pic_value(p, "ellipseht",9,0);
+}
+static PPoint ellipseOffset(Pic *p, PElem *pElem, int cp){
+  PPoint pt;
+  PNum w = pElem->prop.w*0.5;
+  PNum w2 = w*0.70710678118654747608;
+  PNum h = pElem->prop.h*0.5;
+  PNum h2 = w*0.70710678118654747608;
+  switch( cp ){
+    case CP_C:   pt.x = 0.0;   pt.y = 0.0;    break;
+    case CP_N:   pt.x = 0.0;   pt.y = h;      break;
+    case CP_NE:  pt.x = w2;    pt.y = h2;     break;
+    case CP_E:   pt.x = w;     pt.y = 0.0;    break;
+    case CP_SE:  pt.x = w2;    pt.y = -h2;    break;
+    case CP_S:   pt.x = 0.0;   pt.y = -h;     break;
+    case CP_SW:  pt.x = -w2;   pt.y = -h2;    break;
+    case CP_W:   pt.x = -w;    pt.y = 0.0;    break;
+    case CP_NW:  pt.x = -w2;   pt.y = h2;     break;
+  }
+  return pt;
 }
 static void ellipseRender(Pic *p, PElem *pElem){
   PNum w = pElem->prop.w;
@@ -843,7 +863,7 @@ static const PClass aClass[] = {
       /* isline */        0,
       /* xInit */         circleInit,
       /* xAfter */        0,
-      /* xOffset */       0,
+      /* xOffset */       ellipseOffset,
       /* xRender */       circleRender 
    },
    {  /* name */          "cylinder",
@@ -864,7 +884,7 @@ static const PClass aClass[] = {
       /* isline */        0,
       /* xInit */         ellipseInit,
       /* xAfter */        0,
-      /* xOffset */       0,
+      /* xOffset */       ellipseOffset,
       /* xRender */       ellipseRender
    },
    {  /* name */          "folder",
@@ -1513,7 +1533,12 @@ static void pic_add_to(Pic *p, PElem *pElem, PToken *pTk, PPoint *pPt){
     pic_error(p, pTk, "use \"at\" to position this object");
     return;
   }
-  if( p->aRPath[n].isRel ) n = pic_next_rpath(p, pTk);
+  if( p->aRPath[n].isRel==0 
+   || p->aRPath[n].pt.x!=0
+   || p->aRPath[n].pt.y!=0
+  ){
+    n = pic_next_rpath(p, pTk);
+  }
   p->aRPath[n].isRel = 0;
   p->aRPath[n].pt = *pPt;
 }
@@ -1973,11 +1998,7 @@ static void pic_after_adding_attributes(Pic *p, PElem *pElem){
         case T_DOWN:   pElem->ptAt.y -= h2;  break;
       }
     }
-    if( isConnected ){
-      pic_elem_set_exit(p, pElem, pElem->outDir);
-    }else{
-      pElem->ptExit = pElem->ptAt;
-    }
+    pic_elem_set_exit(p, pElem, pElem->outDir);
     pElem->bbox.sw.x = pElem->ptAt.x - w2;
     pElem->bbox.sw.y = pElem->ptAt.y - h2;
     pElem->bbox.ne.x = pElem->ptAt.x + w2;
