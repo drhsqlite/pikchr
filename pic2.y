@@ -788,7 +788,6 @@ static void lineRender(Pic *p, PElem *pElem){
     pic_append(p,"\" />\n", -1);
   }
   pic_append_txt(p, pElem);
-
 }
 
 /* Methods for the "move" class */
@@ -802,6 +801,46 @@ static void splineInit(Pic *p, PElem *pElem){
   pElem->prop.w = pic_value(p, "linewid",7,0);
   pElem->prop.h = pic_value(p, "lineht",6,0);
 }
+static void splineRender(Pic *p, PElem *pElem){
+  int i;
+  if( pElem->prop.sw>0.0 ){
+    int n = pElem->nPath;
+    const PPoint *a = pElem->aPath;
+    PPoint m2;
+    if( n<3 ){
+      lineRender(p,pElem);
+      return;
+    }
+    if( pElem->prop.chop1>0.0 ){
+      pic_chop(p,&pElem->aPath[1],&pElem->aPath[0],pElem->prop.chop1);
+    }
+    if( pElem->prop.chop2>0.0 ){
+      pic_chop(p,&pElem->aPath[n-2],&pElem->aPath[n-1],pElem->prop.chop2);
+    }
+    if( pElem->prop.larrow ){
+      pic_draw_arrowhead(p,&pElem->aPath[1],&pElem->aPath[0],pElem);
+    }
+    if( pElem->prop.rarrow ){
+      pic_draw_arrowhead(p,&pElem->aPath[n-2],&pElem->aPath[n-1],pElem);
+    }
+    pic_append_xy(p,"<path d=\"M", a[0].x, a[0].y);
+    m2.x = 0.5*(a[0].x+a[1].x);
+    m2.y = 0.5*(a[0].y+a[1].y);
+    pic_append_xy(p," L ",m2.x,m2.y);
+    for(i=1; i<pElem->nPath-1; i++){
+      m2.x = 0.5*(a[i].x+a[i+1].x);
+      m2.y = 0.5*(a[i].y+a[i+1].y);
+      pic_append_xy(p," Q ",a[i].x,a[i].y);
+      pic_append_xy(p," ",m2.x,m2.y);
+    }
+    pic_append_xy(p," L ",a[i].x,a[i].y);
+    pic_append(p,"\" ",-1);
+    pic_append_style(p,pElem);
+    pic_append(p,"\" />\n", -1);
+  }
+  pic_append_txt(p, pElem);
+}
+
 
 /* Methods for the "text" class */
 static void textInit(Pic *p, PElem *pElem){
@@ -911,7 +950,7 @@ static const PClass aClass[] = {
       /* xInit */         splineInit,
       /* xAfter */        0,
       /* xOffset */       0,
-      /* xRender */       lineRender
+      /* xRender */       splineRender
    },
 };
 static const PClass sublistClass = 
@@ -2035,7 +2074,7 @@ static PPoint pic_place_of_elem(Pic *p, PElem *pElem, PToken *pEdge){
     return pt;
   }
   if( pEdge->eType==T_START ){
-    return pElem->ptAt;
+    return pElem->aPath[0];
   }else{
     return pElem->aPath[pElem->nPath-1];
   }
