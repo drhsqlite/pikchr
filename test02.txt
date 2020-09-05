@@ -20,8 +20,8 @@ arrow from Main.C2 to Branch.C3 chop
 
 /* Now generate the background colors */
 layer = 0
-$featurecolor = #fedbce
-$maincolor = #d9fece
+$featurecolor = 0xfedbce
+$maincolor = 0xd9fece
 $divY = (Branch.y + Main.y)/2
 $divH = (Branch.y - Main.y)
 box fill $featurecolor color $featurecolor \

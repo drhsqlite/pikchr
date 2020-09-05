@@ -210,6 +210,7 @@ static PNum pic_value(Pic*,const char*,int,int*);
 static PNum pic_lookup_color(Pic*,PToken*);
 static PNum pic_get_var(Pic*,PToken*);
 static PNum pic_color_to_num(Pic*,const char*,int);
+static PNum pic_atof(Pic*,PToken*);
 static void pic_after_adding_attributes(Pic*,PElem*);
 static void pic_elem_move(PElem*,PNum dx, PNum dy);
 static void pic_elist_move(PEList*,PNum dx, PNum dy);
@@ -436,7 +437,7 @@ expr(A) ::= expr(X) SLASH(E) expr(Y).    {
 expr(A) ::= MINUS expr(X). [UMINUS]  {A=-X;}
 expr(A) ::= PLUS expr(X). [UMINUS]   {A=X;}
 expr(A) ::= LP expr(X) RP.           {A=X;}
-expr(A) ::= NUMBER(N).               {A=atof(N.z);}
+expr(A) ::= NUMBER(N).               {A=pic_atof(p,&N);}
 expr(A) ::= ID(N).                   {A=pic_get_var(p,&N);}
 expr(A) ::= HEXRGB(X).               {A=pic_color_to_num(p,X.z,X.n);}
 expr(A) ::= FUNC1(F) LP expr(X) RP.               {A = pic_func(p,&F,X,0.0);}
@@ -1247,6 +1248,45 @@ static void pic_elem_free(Pic *p, PElem *pElem){
   pic_elist_free(p, pElem->pSublist);
   free(pElem->aPath);
   free(pElem);
+}
+
+/* Convert a numeric literal into a number.  Return that number.
+** There is no error handling because the tokenizer has already
+** assured us that the numeric literal is valid.
+**
+** Allowed number forms:
+**
+**   (1)    Floating point literal
+**   (2)    Same as (1) but followed by a unit: "cm", "mm", "in",
+**          "px", "pt", or "pc".
+**   (3)    Hex integers: 0x000000
+**
+** This routine returns the result in inches.  If a different unit
+** is specified, the conversion happens automatically.
+*/
+PNum pic_atof(Pic *p, PToken *num){
+  char *endptr;
+  PNum ans;
+  if( num->n>=3 && num->z[0]=='0' && (num->z[1]=='x'||num->z[1]=='X') ){
+    return (PNum)strtol(num->z+2, 0, 16);
+  }
+  ans = strtod(num->z, &endptr);
+  if( (int)(endptr - num->z)==num->n-2 ){
+    char c1 = endptr[0];
+    char c2 = endptr[1];
+    if( c1=='c' && c2=='m' ){
+      ans /= 2.54;
+    }else if( c1=='m' && c2=='m' ){
+      ans /= 25.4;
+    }else if( c1=='p' && c2=='x' ){
+      ans /= 96;
+    }else if( c1=='p' && c2=='t' ){
+      ans /= 72;
+    }else if( c1=='p' && c2=='c' ){
+      ans /= 6;
+    }
+  }
+  return ans;
 }
 
 /* Return true if a bounding box is empty.
@@ -2462,13 +2502,14 @@ static const PicWord *pic_find_word(
 ** Return the length of next token  Write token type into *peType
 */
 static int pic_token_length(const char *zStart, int *peType, int *peCode){
+  const unsigned char *z = (const unsigned char*)zStart;
   int i;
-  char c;
-  switch( zStart[0] ){
+  unsigned char c, c2;
+  switch( z[0] ){
     case '\\': {
       *peType = T_WHITESPACE;
-      if( zStart[1]=='\n'  ) return 2;
-      if( zStart[1]=='\r' && zStart[2]=='\n' ) return 3;
+      if( z[1]=='\n'  ) return 2;
+      if( z[1]=='\r' && z[2]=='\n' ) return 3;
       *peType = T_ERROR;
       return 1;
     }
@@ -2478,7 +2519,7 @@ static int pic_token_length(const char *zStart, int *peType, int *peCode){
       return 1;
     }
     case '"': {
-      for(i=1; (c = zStart[i])!=0; i++){
+      for(i=1; (c = z[i])!=0; i++){
         if( c=='\\' ){ i++; continue; }
         if( c=='"' ){
           *peType = T_STRING;
@@ -2492,33 +2533,28 @@ static int pic_token_length(const char *zStart, int *peType, int *peCode){
     case '\t':
     case '\f':
     case '\r': {
-      for(i=1; (c = zStart[i])==' ' || c=='\t' || c=='\r' || c=='\t'; i++){}
+      for(i=1; (c = z[i])==' ' || c=='\t' || c=='\r' || c=='\t'; i++){}
       *peType = T_WHITESPACE;
       return i;
     }
     case '#': {
-      for(i=1; isxdigit(zStart[i]); i++){}
-      if( i==4 || i==7 ){
-        *peType = T_HEXRGB;
-        return i;
-      }
-      for(i=1; (c = zStart[i])!=0 && c!='\n'; i++){}
+      for(i=1; (c = z[i])!=0 && c!='\n'; i++){}
       *peType = T_WHITESPACE;
       return i;
     }
     case '/': {
-      if( zStart[1]=='*' ){
-        for(i=2; zStart[i]!=0 && (zStart[i]!='*' || zStart[i+1]!='/'); i++){}
-        if( zStart[i]=='*' ){
+      if( z[1]=='*' ){
+        for(i=2; z[i]!=0 && (z[i]!='*' || z[i+1]!='/'); i++){}
+        if( z[i]=='*' ){
           *peType = T_WHITESPACE;
           return i+2;
         }else{
           *peType = T_ERROR;
           return i;
         }
-      }else if( zStart[1]=='/' ){
-        for(i=2; zStart[i]!=0 && zStart[i]!='\n'; i++){}
-        if( zStart[i]!=0 ) i++;
+      }else if( z[1]=='/' ){
+        for(i=2; z[i]!=0 && z[i]!='\n'; i++){}
+        if( z[i]!=0 ) i++;
         *peType = T_WHITESPACE;
         return i;
       }else{
@@ -2537,7 +2573,7 @@ static int pic_token_length(const char *zStart, int *peType, int *peCode){
     case ':': {   *peType = T_COLON;   return 1; }
     case '=': {   *peType = T_ASSIGN;  return 1; }
     case '-': {
-      if( zStart[1]=='>' ){
+      if( z[1]=='>' ){
         *peType = T_RARROW;
         return 2;
       }else{
@@ -2546,8 +2582,8 @@ static int pic_token_length(const char *zStart, int *peType, int *peCode){
       }
     }
     case '<': { 
-      if( zStart[1]=='-' ){
-         if( zStart[2]=='>' ){
+      if( z[1]=='-' ){
+         if( z[2]=='>' ){
            *peType = T_LRARROW;
            return 3;
          }else{
@@ -2560,13 +2596,13 @@ static int pic_token_length(const char *zStart, int *peType, int *peCode){
       }
     }
     default: {
-      c = zStart[0];
+      c = z[0];
       if( c=='.' ){
-        char c1 = zStart[1];
-        if( c1>='a' && c1<='z' ){
+        unsigned char c1 = z[1];
+        if( islower(c1) ){
           const PicWord *pFound;
-          for(i=2; (c = zStart[i])>='a' && c<='z'; i++){}
-          pFound = pic_find_word(zStart+1, i-1,
+          for(i=2; (c = z[i])>='a' && c<='z'; i++){}
+          pFound = pic_find_word((const char*)z+1, i-1,
                                     pic_keywords, count(pic_keywords));
           if( pFound && pFound->eType==T_EDGE ){
             *peType = T_DOT_E;
@@ -2574,10 +2610,10 @@ static int pic_token_length(const char *zStart, int *peType, int *peCode){
             *peType = T_DOT_L;
           }
           return 1;
-        }else if( c1>='0' && c1<='9' ){
+        }else if( isdigit(c1) ){
           /* no-op.  Fall through to number handling */
-        }else if( c1>='A' && c1<='Z' ){
-          for(i=2; (c = zStart[i])!=0 && (isalnum(c) || c=='_'); i++){}
+        }else if( isupper(c1) ){
+          for(i=2; (c = z[i])!=0 && (isalnum(c) || c=='_'); i++){}
           *peType = T_DOT_U;
           return 1;
         }else{
@@ -2587,17 +2623,22 @@ static int pic_token_length(const char *zStart, int *peType, int *peCode){
       }
       if( (c>='0' && c<='9') || c=='.' ){
         int nDigit;
-        int notInt = 0;
+        int isInt = 1;
         if( c!='.' ){
           nDigit = 1;
-          for(i=1; (c = zStart[i])>='0' && c<='9'; i++){ nDigit++; }
+          for(i=1; (c = z[i])>='0' && c<='9'; i++){ nDigit++; }
+          if( i==1 && (c=='x' || c=='X') ){
+            for(i=3; (c = z[i])!=0 && isxdigit(c); i++){}
+            *peType = T_NUMBER;
+            return i;
+          }
         }else{
-          notInt = 1;
+          isInt = 0;
           nDigit = 0;
         }
         if( c=='.' ){
-          notInt = 1;
-          for(i++; (c = zStart[i])>='0' && c<='9'; i++){ nDigit++; }
+          isInt = 0;
+          for(i++; (c = z[i])>='0' && c<='9'; i++){ nDigit++; }
         }
         if( nDigit==0 ){
           *peType = T_ERROR;
@@ -2605,32 +2646,47 @@ static int pic_token_length(const char *zStart, int *peType, int *peCode){
         }
         if( c=='e' || c=='E' ){
           i++;
-          c = zStart[i];
-          if( c=='+' || c=='-' ){
+          c2 = z[i];
+          if( c2=='+' || c2=='-' ){
             i++;
-            c = zStart[i];
+            c2 = z[i];
           }
-          if( c<'0' || c>'9' ){
-            *peType = T_ERROR;
-            return i;
+          if( c2<'0' || c>'9' ){
+            /* This is not an exp */
+            i -= 2;
+          }else{
+            i++;
+            isInt = 0;
+            while( (c = z[i])>=0 && c<='9' ){ i++; }
           }
-          i++;
-          notInt = 1;
-          while( (c = zStart[i])>=0 && c<='9' ){ i++; }
-        }else if( (c=='t' && zStart[i+1]=='h')
-               || (c=='r' && zStart[i+1]=='d')
-               || (c=='n' && zStart[i+1]=='d')
-               || (c=='s' && zStart[i+1]=='t') ){
-          *peType = T_NTH;
-          if( notInt ) *peType = T_ERROR;
-          return i+2;
+        }
+        c2 = z[i+1];
+        if( isInt ){
+          if( (c=='t' && c2=='h')
+           || (c=='r' && c2=='d')
+           || (c=='n' && c2=='d')
+           || (c=='s' && c2=='t')
+          ){
+            *peType = T_NTH;
+            return i+2;
+          }
+        }
+        if( (c=='i' && c2=='n')
+         || (c=='c' && c2=='m')
+         || (c=='m' && c2=='m')
+         || (c=='p' && c2=='t')
+         || (c=='p' && c2=='x')
+         || (c=='p' && c2=='c')
+        ){
+          i += 2;
         }
         *peType = T_NUMBER;
         return i;
-      }else if( (c>='a' && c<='z') || c=='_' || c=='$' || c=='@' ){
+      }else if( islower(c) || c=='_' || c=='$' || c=='@' ){
         const PicWord *pFound;
-        for(i=1; (c =  zStart[i])!=0 && (isalnum(c) || c=='_'); i++){}
-        pFound = pic_find_word(zStart, i, pic_keywords, count(pic_keywords));
+        for(i=1; (c =  z[i])!=0 && (isalnum(c) || c=='_'); i++){}
+        pFound = pic_find_word((const char*)z, i,
+                               pic_keywords, count(pic_keywords));
         if( pFound ){
           *peType = pFound->eType;
           *peCode = pFound->eCode;
@@ -2639,7 +2695,7 @@ static int pic_token_length(const char *zStart, int *peType, int *peCode){
         }
         return i;
       }else if( c>='A' && c<='Z' ){
-        for(i=1; (c =  zStart[i])!=0 && (isalnum(c) || c=='_'); i++){}
+        for(i=1; (c =  z[i])!=0 && (isalnum(c) || c=='_'); i++){}
         *peType = T_PLACENAME;
         return i;
       }else{
