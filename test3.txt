@@ -1,12 +1,17 @@
-B1: box "one"; line
-B2: box "two"; line
-B3: box "three"; line
+right
+B1: box "One"; line
+B2: box "Two"; arrow
+B3: box "Three"; down; arrow; circle "Hi!"; left; arrow
 Macro: [
   B4: box "four"
   B5: box "five"
   B6: box "six"
-] with n at 1 below s of 2nd box
+] #/*at 1 below B2.s */ with n at 1 below s of 2nd box
 
-arrow from 1/2 of the way between 1st box.s and 1st box.se to Macro.w
-arrow from 3rd box.s to Macro.ne
+arrow from s of 2nd box to 1 below s of 2nd box
+
+#arrow from 1/2 of the way between 1st box.s and 1st box.se to Macro.w
+#arrow from 3rd box.s to Macro.ne
 box width Macro.width+0.1 height Macro.height+0.1 at Macro color Red
+box width Macro.B5.width+0.05 \
+    height Macro.B5.height+0.05 at Macro.B5 color blue

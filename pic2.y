@@ -169,7 +169,6 @@ struct Pic {
   int eDir;                /* Current direction */
   PElem *cur;              /* Element under construction */
   PEList *list;            /* Element list under construction */
-  PPoint ptStart;          /* Starting point when list is empty */
   PVar *pVar;              /* Application-defined variables */
   PBox bbox;               /* Bounding box around all elements */
   PNum rScale;             /* Multiple to convert inches to pixels */
@@ -817,6 +816,7 @@ static void sublistInit(Pic *p, PElem *pElem){
   pElem->prop.w = pElem->bbox.ne.x - pElem->bbox.sw.x;
   pElem->prop.h = pElem->bbox.ne.y - pElem->bbox.sw.y;
 }
+
 
 /*
 ** The following array holds all the different kinds of named
@@ -1611,7 +1611,15 @@ static void pic_set_at(Pic *p, PToken *pEdge, PPoint *pAt, PToken *pErrTok){
   }
   p->aRPath[0].isRel = 0;
   if( pElem->pSublist ){
-    pic_elist_move(pElem->pSublist, p->aRPath[0].pt.x, p->aRPath[0].pt.y);
+    PNum dx = 0.0, dy = 0.0;
+    switch( pElem->inDir ){
+      default:      dx = -pElem->prop.w/2;                         break;
+      case T_LEFT:  dx = +pElem->prop.w/2;                         break;
+      case T_DOWN:                         dy = +pElem->prop.h/2;  break;
+      case T_UP:                           dy = -pElem->prop.h/2;  break;
+    }
+    pic_elist_move(pElem->pSublist, 
+         p->aRPath[0].pt.x + dx,  p->aRPath[0].pt.y + dy);
   }
 }
 
@@ -2060,7 +2068,7 @@ static void pic_after_adding_attributes(Pic *p, PElem *pElem){
   if( p->aRPath[0].isRel ){
     PPoint ptStart;
     if( p->list==0 || p->list->n==0 ){
-      ptStart = p->ptStart;
+      ptStart.x = ptStart.y = 0;
     }else{
       PElem *pPrior = p->list->a[p->list->n-1];
       ptStart = pPrior->ptExit;
