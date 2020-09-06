@@ -253,7 +253,7 @@ static PPoint pik_position_at_hdg(Pik *p, PNum dist, PToken *pD, PPoint pt);
 %token_type {PToken}
 %extra_context {Pik *p}
 
-%fallback ID EDGE.
+%fallback ID EDGEPT.
 
 %type element_list {PEList*}
 %destructor element_list {pik_elist_free(p,$$);}
@@ -358,8 +358,8 @@ attribute ::= STRING(T) textposition(P).        {pik_add_txt(p,&T,P);}
 
 withclause ::= with.
 withclause ::= withclause AND with.
-with ::=  DOT_E EDGE(E) AT(A) position(P).{ pik_set_at(p,&E,&P,&A); }
-with ::=  EDGE(E) AT(A) position(P).      { pik_set_at(p,&E,&P,&A); }
+with ::=  DOT_E EDGEPT(E) AT(A) position(P).{ pik_set_at(p,&E,&P,&A); }
+with ::=  EDGEPT(E) AT(A) position(P).      { pik_set_at(p,&E,&P,&A); }
 //with ::=  HEIGHT expr.
 //with ::=  HEIGHT expr PERCENT.
 //with ::=  TOP AT expr.
@@ -408,18 +408,18 @@ position(A) ::= expr(X) ABOVE position(B).    {A=B; A.y += X;}
 position(A) ::= expr(X) BELOW position(B).    {A=B; A.y -= X;}
 position(A) ::= expr(X) LEFT OF position(B).  {A=B; A.x -= X;}
 position(A) ::= expr(X) RIGHT OF position(B). {A=B; A.x += X;}
-position(A) ::= expr(D) EDGE(E) OF position(P).
+position(A) ::= expr(D) EDGEPT(E) OF position(P).
                                         {A = pik_position_at_hdg(p,D,&E,P);}
 position(A) ::= expr(D) HEADING expr(G) FROM position(P).
                                         {A = pik_position_at_angle(p,D,G,P);}
 
 place(A) ::= object(O).                 {A = pik_place_of_elem(p,O,0);}
-place(A) ::= object(O) DOT_E EDGE(X).   {A = pik_place_of_elem(p,O,&X);}
+place(A) ::= object(O) DOT_E EDGEPT(X). {A = pik_place_of_elem(p,O,&X);}
 place(A) ::= object(O) DOT_L START(X).  {A = pik_place_of_elem(p,O,&X);}
 place(A) ::= object(O) DOT_L END(X).    {A = pik_place_of_elem(p,O,&X);}
 place(A) ::= START(X) OF object(O).     {A = pik_place_of_elem(p,O,&X);}
 place(A) ::= END(X) OF object(O).       {A = pik_place_of_elem(p,O,&X);}
-place(A) ::= EDGE(X) OF object(O).      {A = pik_place_of_elem(p,O,&X);}
+place(A) ::= EDGEPT(X) OF object(O).    {A = pik_place_of_elem(p,O,&X);}
 
 object(A) ::= objectname(A).
 object(A) ::= nth(N).                     {A = pik_find_nth(p,0,&N);}
@@ -461,8 +461,8 @@ expr(A) ::= object(O) DOT_L locproperty(P).    {A=pik_property_of(p,O,&P);}
 expr(A) ::= object(O) DOT_L numproperty(P).    {A=pik_property_of(p,O,&P);}
 expr(A) ::= object(O) DOT_L dashproperty(P).   {A=pik_property_of(p,O,&P);}
 expr(A) ::= object(O) DOT_L colorproperty(P).  {A=pik_property_of(p,O,&P);}
-expr(A) ::= object(O) DOT_E EDGE(E) DOT_L X.   {A=pik_place_of_elem(p,O,&E).x;}
-expr(A) ::= object(O) DOT_E EDGE(E) DOT_L Y.   {A=pik_place_of_elem(p,O,&E).y;}
+expr(A) ::= object(O) DOT_E EDGEPT(E) DOT_L X. {A=pik_place_of_elem(p,O,&E).x;}
+expr(A) ::= object(O) DOT_E EDGEPT(E) DOT_L Y. {A=pik_place_of_elem(p,O,&E).y;}
 expr(A) ::= LP locproperty(P) OF object(O) RP.   {A=pik_property_of(p,O,&P);}
 expr(A) ::= LP dashproperty(P) OF object(O) RP.  {A=pik_property_of(p,O,&P);}
 expr(A) ::= LP numproperty(P) OF object(O) RP.   {A=pik_property_of(p,O,&P);}
@@ -2109,7 +2109,7 @@ static PPoint pik_place_of_elem(Pik *p, PElem *pElem, PToken *pEdge){
     return pElem->ptAt;
   }
   pClass = pElem->type;
-  if( pEdge->eType==T_EDGE ){
+  if( pEdge->eType==T_EDGEPT ){
     if( pClass->isLine ){
       pik_error(0, pEdge,
           "line objects have only \"start\" and \"end\" points");
@@ -2498,7 +2498,7 @@ static const PikWord pik_keywords[] = {
   { "below",      5,   T_BELOW,     0         },
   { "between",    7,   T_BETWEEN,   0         },
   { "bottom",     6,   T_BOTTOM,    0         },
-  { "c",          1,   T_EDGE,      CP_C      },
+  { "c",          1,   T_EDGEPT,    CP_C      },
   { "ccw",        3,   T_CCW,       0         },
   { "center",     6,   T_CENTER,    0         },
   { "chop",       4,   T_CHOP,      0         },
@@ -2509,8 +2509,8 @@ static const PikWord pik_keywords[] = {
   { "diameter",   8,   T_DIAMETER,  0         },
   { "dotted",     6,   T_DOTTED,    0         },
   { "down",       4,   T_DOWN,      0         },
-  { "e",          1,   T_EDGE,      CP_E      },
-  { "east",       4,   T_EDGE,      CP_E      },
+  { "e",          1,   T_EDGEPT,    CP_E      },
+  { "east",       4,   T_EDGEPT,    CP_E      },
   { "end",        3,   T_END,       0         },
   { "fill",       4,   T_FILL,      0         },
   { "from",       4,   T_FROM,      0         },
@@ -2525,10 +2525,10 @@ static const PikWord pik_keywords[] = {
   { "ljust",      5,   T_LJUST,     0         },
   { "max",        3,   T_FUNC2,     FN_MAX    },
   { "min",        3,   T_FUNC2,     FN_MIN    },
-  { "n",          1,   T_EDGE,      CP_N      },
-  { "ne",         2,   T_EDGE,      CP_NE     },
-  { "north",      5,   T_EDGE,      CP_N      },
-  { "nw",         2,   T_EDGE,      CP_NW     },
+  { "n",          1,   T_EDGEPT,    CP_N      },
+  { "ne",         2,   T_EDGEPT,    CP_NE     },
+  { "north",      5,   T_EDGEPT,    CP_N      },
+  { "nw",         2,   T_EDGEPT,    CP_NW     },
   { "of",         2,   T_OF,        0         },
   { "print",      5,   T_PRINT,     0         },
   { "rad",        3,   T_RADIUS,    0         },
@@ -2537,23 +2537,23 @@ static const PikWord pik_keywords[] = {
   { "rjust",      5,   T_RJUST,     0         },
   { "rx",         2,   T_RX,        0         },
   { "ry",         2,   T_RY,        0         },
-  { "s",          1,   T_EDGE,      CP_S      },
+  { "s",          1,   T_EDGEPT,    CP_S      },
   { "same",       4,   T_SAME,      0         },
-  { "se",         2,   T_EDGE,      CP_SE     },
+  { "se",         2,   T_EDGEPT,    CP_SE     },
   { "sin",        3,   T_FUNC1,     FN_SIN    },
-  { "south",      5,   T_EDGE,      CP_S      },
+  { "south",      5,   T_EDGEPT,    CP_S      },
   { "sqrt",       4,   T_FUNC1,     FN_SQRT   },
   { "start",      5,   T_START,     0         },
-  { "sw",         2,   T_EDGE,      CP_SW     },
+  { "sw",         2,   T_EDGEPT,    CP_SW     },
   { "the",        3,   T_THE,       0         },
   { "then",       4,   T_THEN,      0         },
   { "thickness",  9,   T_THICKNESS, 0         },
   { "to",         2,   T_TO,        0         },
   { "top",        3,   T_TOP,       0         },
   { "up",         2,   T_UP,        0         },
-  { "w",          1,   T_EDGE,      CP_W      },
+  { "w",          1,   T_EDGEPT,    CP_W      },
   { "way",        3,   T_WAY,       0         },
-  { "west",       4,   T_EDGE,      CP_W      },
+  { "west",       4,   T_EDGEPT,    CP_W      },
   { "wid",        6,   T_WIDTH,     0         },
   { "width",      5,   T_WIDTH,     0         },
   { "with",       4,   T_WITH,      0         },
@@ -2697,7 +2697,7 @@ static int pik_token_length(const char *zStart, int *peType, int *peCode){
           for(i=2; (c = z[i])>='a' && c<='z'; i++){}
           pFound = pik_find_word((const char*)z+1, i-1,
                                     pik_keywords, count(pik_keywords));
-          if( pFound && pFound->eType==T_EDGE ){
+          if( pFound && pFound->eType==T_EDGEPT ){
             *peType = T_DOT_E;
           }else{
             *peType = T_DOT_L;
