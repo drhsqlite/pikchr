@@ -208,7 +208,6 @@ static void pic_set_var(Pic*,PToken*,PNum);
 static PNum pic_value(Pic*,const char*,int,int*);
 static PNum pic_lookup_color(Pic*,PToken*);
 static PNum pic_get_var(Pic*,PToken*);
-static PNum pic_color_to_num(Pic*,const char*,int);
 static PNum pic_atof(Pic*,PToken*);
 static void pic_after_adding_attributes(Pic*,PElem*);
 static void pic_elem_move(PElem*,PNum dx, PNum dy);
@@ -438,7 +437,6 @@ expr(A) ::= PLUS expr(X). [UMINUS]   {A=X;}
 expr(A) ::= LP expr(X) RP.           {A=X;}
 expr(A) ::= NUMBER(N).               {A=pic_atof(p,&N);}
 expr(A) ::= ID(N).                   {A=pic_get_var(p,&N);}
-expr(A) ::= HEXRGB(X).               {A=pic_color_to_num(p,X.z,X.n);}
 expr(A) ::= FUNC1(F) LP expr(X) RP.               {A = pic_func(p,&F,X,0.0);}
 expr(A) ::= FUNC2(F) LP expr(X) COMMA expr(Y) RP. {A = pic_func(p,&F,X,Y);}
 
@@ -458,10 +456,15 @@ locproperty(A) ::= X|Y|TOP|BOTTOM|LEFT|RIGHT(A).
 %code {
 
 
-/* Chart of the 140 official HTML color names */
+/* Chart of the 140 official HTML color names with their
+** corresponding RGB value.
+**
+** Two new names "None" and "Off" are added with a value
+** of -1.
+*/
 static const struct {
   const char *zName;  /* Name of the color */
-  unsigned int val;   /* RGB value */
+  int val;            /* RGB value */
 } aColor[] = {
   { "AliceBlue",                   0xf0f8ff },
   { "AntiqueWhite",                0xfaebd7 },
@@ -559,6 +562,8 @@ static const struct {
   { "Moccasin",                    0xffe4b5 },
   { "NavajoWhite",                 0xffdead },
   { "Navy",                        0x000080 },
+  { "None",                              -1 },  /* Non-standard addition */
+  { "Off",                               -1 },  /* Non-standard addition */
   { "OldLace",                     0xfdf5e6 },
   { "Olive",                       0x808000 },
   { "OliveDrab",                   0x6b8e23 },
@@ -640,6 +645,7 @@ static void arcInit(Pic *p, PElem *pElem){
 static void arrowInit(Pic *p, PElem *pElem){
   pElem->prop.w = pic_value(p, "linewid",7,0);
   pElem->prop.h = pic_value(p, "lineht",6,0);
+  pElem->prop.fill = -1.0;
   pElem->prop.rarrow = 1;
 }
 
@@ -806,6 +812,7 @@ static void folderInit(Pic *p, PElem *pElem){
 static void lineInit(Pic *p, PElem *pElem){
   pElem->prop.w = pic_value(p, "linewid",7,0);
   pElem->prop.h = pic_value(p, "lineht",6,0);
+  pElem->prop.fill = -1.0;
 }
 static void lineRender(Pic *p, PElem *pElem){
   int i;
@@ -828,6 +835,9 @@ static void lineRender(Pic *p, PElem *pElem){
       pic_append_xy(p,z,pElem->aPath[i].x,pElem->aPath[i].y);
       z = "L";
     }
+    if( pElem->prop.fill>=0.0 && pElem->nPath>2 ){
+      pic_append(p,"Z",1);
+    }
     pic_append(p,"\" ",-1);
     pic_append_style(p,pElem);
     pic_append(p,"\" />\n", -1);
@@ -839,12 +849,19 @@ static void lineRender(Pic *p, PElem *pElem){
 static void moveInit(Pic *p, PElem *pElem){
   pElem->prop.w = pic_value(p, "movewid",7,0);
   pElem->prop.h = pic_value(p, "moveht",6,0);
+  pElem->prop.fill = -1.0;
+  pElem->prop.color = -1.0;
+  pElem->prop.sw = -1.0;
+}
+static void moveRender(Pic *p, PElem *pElem){
+  /* No-op */
 }
 
 /* Methods for the "spline" class */
 static void splineInit(Pic *p, PElem *pElem){
   pElem->prop.w = pic_value(p, "linewid",7,0);
   pElem->prop.h = pic_value(p, "lineht",6,0);
+  pElem->prop.fill = -1.0;  /* Disable fill by default */
 }
 static void splineRender(Pic *p, PElem *pElem){
   int i;
@@ -988,7 +1005,7 @@ static const PClass aClass[] = {
       /* xInit */         moveInit,
       /* xAfter */        0,
       /* xOffset */       0,
-      /* xRender */       0
+      /* xRender */       moveRender
    },
    {  /* name */          "spline",
       /* isline */        1,
@@ -1047,6 +1064,8 @@ static void pic_draw_arrowhead(Pic *p, PPoint *f, PPoint *t, PElem *pElem){
   PNum w = p->wArrow * pElem->prop.sw;
   PNum e1, ddx, ddy;
   PNum bx, by;
+  if( pElem->prop.color<0.0 ) return;
+  if( pElem->prop.sw<=0.0 ) return;
   if( dist<=0.0 ) return;  /* Unable */
   dx /= dist;
   dy /= dist;
@@ -1201,7 +1220,7 @@ static void pic_append_style(Pic *p, PElem *pElem){
   }else{
     pic_append(p,"fill:none;",-1);
   }
-  if( pElem->prop.sw>0.0 ){
+  if( pElem->prop.sw>0.0 && pElem->prop.color>=0.0 ){
     PNum sw = pElem->prop.sw;
     if( sw*p->rScale<1.0 ) sw = 1.1/p->rScale;
     pic_append_dis(p, "stroke-width:", sw, ";");
@@ -1257,7 +1276,7 @@ static void pic_append_txt(Pic *p, PElem *pElem){
     }else{
       pic_append(p, " text-anchor=\"middle\"", -1);
     }
-    if( pElem->prop.color>0 ){
+    if( pElem->prop.color>=0.0 ){
       pic_append_clr(p, " fill=\"", pElem->prop.color, "\"");
     }
     pic_append(p, " dominant-baseline=\"central\">", -1);
@@ -1891,10 +1910,14 @@ static PNum pic_value(Pic *p, const char *z, int n, int *pMiss){
 }
 
 /*
-** Look up a color-name.  Return negative if not found.
-** Unlike most other things, the color-names are not case
-** sensitive.  So "DarkBlue" and "darkblue" and "DARKBLUE"
-** all find the same value (139).
+** Look up a color-name.  Unlike other names in this program, the
+** color-names are not case sensitive.  So "DarkBlue" and "darkblue"
+** and "DARKBLUE" all find the same value (139).
+**
+** If not found, return -1.0.  Also post an error if p!=NULL.
+**
+** Special color names "None" and "Off" return -1.0 without causing
+** an error.
 */
 static PNum pic_lookup_color(Pic *p, PToken *pId){
   int first, last, mid, c;
@@ -1943,35 +1966,6 @@ static PNum pic_get_var(Pic *p, PToken *pId){
   if( v>=0.0 ) return v;
   pic_error(p,pId,"no such variable");
   return 0.0;
-}
-
-/*
-** Convert a hex digit into an integer
-*/
-static int pic_hexval(char c){
-  if( c>='0' && c<='9' ) return c - '0';
-  if( c>='a' && c<='f' ) return (c - 'a')+10;
-  if( c>='A' && c<='F' ) return (c - 'A')+10;
-  return 0;
-}
-
-/*
-** Convert an RGV color value of the form #HHH or #HHHHHH into
-** a PNum.
-*/
-static PNum pic_color_to_num(Pic *p, const char *z, int n){
-  int x;
-  if( n==4 ){
-    x = pic_hexval(z[1])*0x110000 
-         + pic_hexval(z[2])*0x1100
-         + pic_hexval(z[3])*0x11;
-  }else if( n==7 ){
-    int i;
-    for(i=1, x=0; i<=6; i++){
-      x = x*16 + pic_hexval(z[i]);
-    }
-  }
-  return (PNum)x;
 }
 
 /* Convert a T_NTH token (ex: "2nd", "5th"} into a numeric value and
@@ -2693,6 +2687,7 @@ static int pic_token_length(const char *zStart, int *peType, int *peCode){
           }
           return 1;
         }else if( isdigit(c1) ){
+          i = 0;
           /* no-op.  Fall through to number handling */
         }else if( isupper(c1) ){
           for(i=2; (c = z[i])!=0 && (isalnum(c) || c=='_'); i++){}

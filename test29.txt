@@ -1,0 +1,9 @@
+# Demonstrate the ability to close and fill a line with the "fill"
+# attribute - treating it as a polygon.
+#
+line right 1 then down 0.25 then up .5 right 0.5 \
+   then up .5 left 0.5 then down 0.25 then left 1 fill blue
+move
+box "Box to right" "of the" "polygon" at 1in below 0.5in right of last line
+move
+line "not a" "polygon" right 1in fill red
