@@ -351,11 +351,19 @@ attribute ::= TO(T) position(X).    { pik_add_to(p,p->cur,&T,&X); }
 attribute ::= THEN(T).              { pik_then(p, &T, p->cur); }
 attribute ::= boolproperty.
 attribute ::= AT(A) position(P).                    { pik_set_at(p,0,&P,&A); }
-attribute ::= WITH DOT_E EDGE(E) AT(A) position(P). { pik_set_at(p,&E,&P,&A); }
-attribute ::= WITH EDGE(E) AT(A) position(P).       { pik_set_at(p,&E,&P,&A); }
+attribute ::= WITH withclause.
 attribute ::= SAME.
 attribute ::= SAME AS object.
 attribute ::= STRING(T) textposition(P).        {pik_add_txt(p,&T,P);}
+
+withclause ::= with.
+withclause ::= withclause AND with.
+with ::=  DOT_E EDGE(E) AT(A) position(P).{ pik_set_at(p,&E,&P,&A); }
+with ::=  EDGE(E) AT(A) position(P).      { pik_set_at(p,&E,&P,&A); }
+//with ::=  HEIGHT expr.
+//with ::=  HEIGHT expr PERCENT.
+//with ::=  TOP AT expr.
+
 
 // Properties that require an argument
 numproperty(A) ::= HEIGHT|WIDTH|RADIUS|RX|RY|DIAMETER|THICKNESS(P).  {A = P;}
@@ -2506,7 +2514,7 @@ static const PikWord pik_keywords[] = {
   { "end",        3,   T_END,       0         },
   { "fill",       4,   T_FILL,      0         },
   { "from",       4,   T_FROM,      0         },
-  { "heading",    8,   T_HEADING,   0         },
+  { "heading",    7,   T_HEADING,   0         },
   { "height",     6,   T_HEIGHT,    0         },
   { "ht",         2,   T_HEIGHT,    0         },
   { "in",         2,   T_IN,        0         },
