@@ -2,20 +2,20 @@ CC = gcc
 CFLAGS = -O0 -g -Wall
 LIBS = -lm
 
-all:	pic
+all:	pikchr
 
-pic:	pic.c
-	$(CC) $(CFLAGS) pic.c -o pic $(LIBS)
+pikchr:	pikchr.c
+	$(CC) $(CFLAGS) pikchr.c -o pikchr $(LIBS)
 
-pic.c:	pic.y lempar.c lemon
-	./lemon pic.y
+pikchr.c:	pikchr.y lempar.c lemon
+	./lemon pikchr.y
 
 lemon:	lemon.c
 	$(CC) $(CFLAGS) lemon.c -o lemon
 
-test:	pic
-	./pic test*.txt >out.html
+test:	pikchr
+	./pikchr test*.txt >out.html
 	open out.html
 
 clean:	
-	rm -f pic pic.c pic.h pic.out lemon
+	rm -f pikchr pikchr.c pikchr.h pikchr.out lemon out.html
