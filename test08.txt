@@ -13,4 +13,5 @@ box "six"
 up
 box "seven" width 50% height 50%
 
-line from 0.1 right of B4.e right 1 then down 1 then to B5.e
+spline from 0.1 right of B4.e right 1 then down to B5.e.y \
+      then to 0.1 right of B5.e <->

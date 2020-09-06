@@ -178,7 +178,7 @@ struct Pic {
   const char *zClass;      /* Class name for the <svg> */
   int wSVG, hSVG;          /* Width and height of the <svg> */
   struct {
-    char isRel;               /* True for relative */
+    char isRel;               /* True for relative.  1 for x, 2 for y */
     PPoint pt;                /* Location */
   } aRPath[1000];          /* Path under construction */
 };
@@ -269,6 +269,12 @@ static PPoint pic_position_at_hdg(Pic *p, PNum dist, PToken *pD, PPoint pt);
 %type textposition {int}
 %type rvalue {PNum}
 
+%left OF.
+%left PLUS MINUS.
+%left STAR SLASH PERCENT.
+%right UMINUS.
+%left TO.
+
 %syntax_error {
   if( TOKEN.z && TOKEN.z[0] ){
     pic_error(p, &TOKEN, "syntax error");
@@ -334,10 +340,10 @@ attribute ::= numproperty(P) expr(X). { pic_set_numprop(p,&P,X,0.0); }
 attribute ::= dashproperty(P) expr(X).  { pic_set_dashed(p,&P,&X); }
 attribute ::= dashproperty(P).          { pic_set_dashed(p,&P,0);  }
 attribute ::= colorproperty(P) rvalue(X). { pic_set_numprop(p,&P,X,0.0); }
-attribute ::= direction(D) expr(X) PERCENT.
-                                    { pic_add_direction(p,&D,&X,1);}
-attribute ::= direction(D) expr(X). { pic_add_direction(p,&D,&X,0);}
-attribute ::= direction(D).         { pic_add_direction(p,&D,0,0); }
+attribute ::= direction(D) expr(X) PERCENT.  { pic_add_direction(p,&D,&X,1);}
+attribute ::= direction(D) TO expr(X).       { pic_add_direction(p,&D,&X,2);}
+attribute ::= direction(D) expr(X).          { pic_add_direction(p,&D,&X,0);}
+attribute ::= direction(D). [OF]             { pic_add_direction(p,&D,0,0); }
 attribute ::= FROM(T) position(X).  { pic_set_from(p,p->cur,&T,&X); }
 attribute ::= TO(T) position(X).    { pic_add_to(p,p->cur,&T,&X); }
 attribute ::= THEN(T).              { pic_then(p, &T, p->cur); }
@@ -421,10 +427,6 @@ nth(A) ::= NTH(N) LB(ID) RB.         {A=ID; A.eCode = pic_nth_value(p,&N);}
 nth(A) ::= NTH(N) LAST LB(ID) RB.    {A=ID; A.eCode = -pic_nth_value(p,&N);}
 nth(A) ::= LAST LB(ID) RB.           {A=ID; A.eCode = -1; }
 
-%left OF.
-%left PLUS MINUS.
-%left STAR SLASH PERCENT.
-%right UMINUS.
 
 expr(A) ::= expr(X) PLUS expr(Y).     {A=X+Y;}
 expr(A) ::= expr(X) MINUS expr(Y).    {A=X-Y;}
@@ -1494,7 +1496,7 @@ static PElem *pic_elem_new(Pic *p, PToken *pId, PToken *pStr,PEList *pSublist){
   p->cur = pNew;
   p->nRPath = 1;
   p->thenFlag = 0;
-  p->aRPath[0].isRel = 1;
+  p->aRPath[0].isRel = 3;
   p->aRPath[0].pt.x = 0.0;
   p->aRPath[0].pt.y = 0.0;
   pNew->outDir = pNew->inDir = p->eDir;
@@ -1678,49 +1680,70 @@ static int pic_next_rpath(Pic *p, PToken *pErr){
   return n;
 }
 
-/* Add a direction term to an element.  "up 0.5", or "left 3", or "down".
+/* Add a direction term to an element.  Examples:
 **
-** If the rel parameter is true, then the default distance is used but
-** is scaled by (*pVal)/100.  This implements things like "right 50%".
+**   (1)    up
+**   (2)    left 15px
+**   (3)    right 50%
+**   (4)    down to Obj1.n.y
+**
+** The first example moves up by the standard amount (usually lineht).
+** The second example moves left by 15 pixels.  The third example
+** move right by 50% of the standard amount.  The fourth example
+** moves down as far as needed until the y coordinate equals Obj1.n.y. 
+**
+** The flg parameter and whether or not *pVal==NULL determines the form:
+**
+**                            bFlg                 *pVal
+**                           ------            ---------------
+**   (1)    up                  0                  NULL
+**   (2)    left 15px           0                 0.15625
+**   (3)    right 50%           1                 50.0
+**   (4)    down to ...         2                 Obj1.n.y
 */
-static void pic_add_direction(Pic *p, PToken *pDir, PNum *pVal, int rel){
+static void pic_add_direction(Pic *p, PToken *pDir, PNum *pVal, int bFlg){
   PElem *pElem = p->cur;
   int n;
+  int relMask = 0;
   PNum scale = 1.0;
   if( !pElem->type->isLine ){
     pic_error(p, pDir, "use with line-oriented elements only");
     return;
   }
-  if( pVal && rel ){
+  if( pVal && bFlg==1 ){
     scale = *pVal/100;
     pVal = 0;
   }
   n = p->nRPath - 1;
-  if( p->thenFlag || p->aRPath[n].isRel==0 || n==0 ){
+  if( p->thenFlag || p->aRPath[n].isRel!=3 || n==0 ){
     n = pic_next_rpath(p, pDir);
-    p->aRPath[n].isRel = 1;
+    p->aRPath[n].isRel = 3;
     p->thenFlag = 0;
   }
   switch( pDir->eType ){
     case T_UP:
        if( p->aRPath[n].pt.y!=0.0 ) n = pic_next_rpath(p, pDir);
        p->aRPath[n].pt.y = pVal ? *pVal : pElem->prop.h*scale;
+       relMask = 1;
        break;
     case T_DOWN:
        if( p->aRPath[n].pt.y!=0.0 ) n = pic_next_rpath(p, pDir);
        p->aRPath[n].pt.y = -(pVal ? *pVal : pElem->prop.h*scale);
+       relMask = 1;
        break;
     case T_RIGHT:
        if( p->aRPath[n].pt.x!=0.0 ) n = pic_next_rpath(p, pDir);
        p->aRPath[n].pt.x = pVal ? *pVal : pElem->prop.w*scale;
+       relMask = 2;
        break;
     case T_LEFT:
        if( p->aRPath[n].pt.x!=0.0 ) n = pic_next_rpath(p, pDir);
        p->aRPath[n].pt.x = -(pVal ? *pVal : pElem->prop.w*scale);
+       relMask = 2;
        break;
   }
   pElem->outDir = pDir->eType;
-  p->aRPath[n].isRel = 1;
+  p->aRPath[n].isRel = (bFlg==2) ? relMask : 3;
 }
 
 /* Set the "from" of an element
@@ -1730,7 +1753,7 @@ static void pic_set_from(Pic *p, PElem *pElem, PToken *pTk, PPoint *pPt){
     pic_error(p, pTk, "use \"at\" to position this object");
     return;
   }
-  if( p->aRPath[0].isRel==0 ){
+  if( p->aRPath[0].isRel!=3 ){
     pic_error(p, pTk, "location already fixed");
     return;
   }
@@ -1746,7 +1769,7 @@ static void pic_add_to(Pic *p, PElem *pElem, PToken *pTk, PPoint *pPt){
     pic_error(p, pTk, "use \"at\" to position this object");
     return;
   }
-  if( p->aRPath[n].isRel==0 
+  if( p->aRPath[n].isRel!=3
    || p->aRPath[n].pt.x!=0
    || p->aRPath[n].pt.y!=0
   ){
@@ -1766,7 +1789,7 @@ static void pic_set_at(Pic *p, PToken *pEdge, PPoint *pAt, PToken *pErrTok){
     pic_error(p, pErrTok, "use \"from\" and \"to\" to position this object");
     return;
   }
-  if( p->aRPath[0].isRel==0 ){
+  if( p->aRPath[0].isRel!=3 ){
     pic_error(p, pErrTok, "location already fixed");
     return;
   }
@@ -2259,7 +2282,7 @@ static void pic_after_adding_attributes(Pic *p, PElem *pElem){
   if( pElem->type->isLine && p->nRPath<2 ){
     PPoint *pPt = &p->aRPath[1].pt;
     p->nRPath = 2;
-    p->aRPath[1].isRel = 1;
+    p->aRPath[1].isRel = 3;
     switch( pElem->inDir ){
       default:      pPt->x = +pElem->prop.w; pPt->y = 0.0; break;
       case T_LEFT:  pPt->x = -pElem->prop.w; pPt->y = 0.0; break;
@@ -2270,11 +2293,13 @@ static void pic_after_adding_attributes(Pic *p, PElem *pElem){
 
   /* Convert the path to absolute coordinates */
   for(i=1; i<p->nRPath; i++){
-    if( p->aRPath[i].isRel ){
+    if( p->aRPath[i].isRel & 1 ){
       p->aRPath[i].pt.x += p->aRPath[i-1].pt.x;
-      p->aRPath[i].pt.y += p->aRPath[i-1].pt.y;
-      p->aRPath[i].isRel = 0;
     }
+    if( p->aRPath[i].isRel & 2 ){
+      p->aRPath[i].pt.y += p->aRPath[i-1].pt.y;
+    }
+    p->aRPath[i].isRel = 0;
   }
 
   /* Fix up the chop parameters */

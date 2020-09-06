@@ -12,6 +12,11 @@ C: circle "Center"
    arrow from SW to S chop <->
    circle "ESE" at 2.0 angle 112.5 from Center thickness 150% fill lightblue
    arrow from Center to ESE thickness 150% <-> chop
-   arrow from ESE up 1.35 then to NE chop
+   arrow from ESE up to NE.e.y then to NE chop
    line dashed <- from E.e to (ESE.x,E.y)
    line dotted <-> thickness 50% from N to NW chop
+   spline -> dashed \
+      from N.e \
+      up 0.5cm right to ESE.ne.x+0.5cm \
+      then down to ESE.n.y+0.5cm \
+      then to ESE.ne
