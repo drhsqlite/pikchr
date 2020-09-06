@@ -1,0 +1,3 @@
+line dashed right 1 then down 0.5 left 1 then right 1
+spline from start of last line \
+  right 1 then down 0.5 left 1 then right 1 <->

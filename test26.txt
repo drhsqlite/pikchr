@@ -1,0 +1,4 @@
+line from 0,0  right 1 then up 1 then right 1 then down 1.5 \
+   then left 0.6 dashed;
+spline from 0,0  right 1 then up 1 then right 1 then down 1.5 \
+   then left 0.6
