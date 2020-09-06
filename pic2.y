@@ -615,6 +615,7 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
   { "boxwid",      0.75 },
   { "circlerad",   0.25 },
   { "color",       0.0  },
+  { "cylrad",      0.075 },
   { "dashwid",     0.05 },
   { "ellipseht",   0.5  },
   { "ellipsewid",  0.75 },
@@ -702,8 +703,52 @@ static void circleRender(Pic *p, PElem *pElem){
 /* Methods for the "cylinder" class */
 static void cylinderInit(Pic *p, PElem *pElem){
   pElem->prop.w = pic_value(p, "boxwid",6,0);
-  pElem->prop.h = pic_value(p, "boxht",5,0)*2;
+  pElem->prop.h = pic_value(p, "boxht",5,0);
+  pElem->prop.ry = pic_value(p, "cylrad",6,0);
 }
+static void cylinderRender(Pic *p, PElem *pElem){
+  PNum w2 = 0.5*pElem->prop.w;
+  PNum h2 = 0.5*pElem->prop.h;
+  PNum ry = pElem->prop.ry;
+  PPoint pt = pElem->ptAt;
+  if( pElem->prop.sw>0.0 ){
+    pic_append_xy(p,"<path d=\"M", pt.x-w2,pt.y+h2-ry);
+    pic_append_xy(p,"L", pt.x-w2,pt.y-h2+ry);
+    pic_append_dis(p,"A",w2," ");
+    pic_append_dis(p,"",ry," 0 0 0 ");
+    pic_append_xy(p,"",pt.x+w2,pt.y-h2+ry);
+    pic_append_xy(p,"L", pt.x+w2,pt.y+h2-ry);
+    pic_append_dis(p,"A",w2," ");
+    pic_append_dis(p,"",ry," 0 0 0 ");
+    pic_append_xy(p,"",pt.x-w2,pt.y+h2-ry);
+    pic_append_dis(p,"A",w2," ");
+    pic_append_dis(p,"",ry," 0 0 0 ");
+    pic_append_xy(p,"",pt.x+w2,pt.y+h2-ry);
+    pic_append(p,"\" ",-1);
+    pic_append_style(p,pElem);
+    pic_append(p,"\" />\n", -1);
+  }
+  pic_append_txt(p, pElem);
+}
+static PPoint cylinderOffset(Pic *p, PElem *pElem, int cp){
+  PPoint pt;
+  PNum w2 = pElem->prop.w*0.5;
+  PNum h1 = pElem->prop.h*0.5;
+  PNum h2 = h1 - pElem->prop.ry;
+  switch( cp ){
+    case CP_C:   pt.x = 0.0;   pt.y = 0.0;    break;
+    case CP_N:   pt.x = 0.0;   pt.y = h1;     break;
+    case CP_NE:  pt.x = w2;    pt.y = h2;     break;
+    case CP_E:   pt.x = w2;    pt.y = 0.0;    break;
+    case CP_SE:  pt.x = w2;    pt.y = -h2;    break;
+    case CP_S:   pt.x = 0.0;   pt.y = -h1;    break;
+    case CP_SW:  pt.x = -w2;   pt.y = -h2;    break;
+    case CP_W:   pt.x = -w2;   pt.y = 0.0;    break;
+    case CP_NW:  pt.x = -w2;   pt.y = h2;     break;
+  }
+  return pt;
+}
+
 
 /* Methods for the "document" class */
 static void documentInit(Pic *p, PElem *pElem){
@@ -907,8 +952,8 @@ static const PClass aClass[] = {
       /* isline */        0,
       /* xInit */         cylinderInit,
       /* xAfter */        0,
-      /* xOffset */       0,
-      /* xRender */       0 
+      /* xOffset */       cylinderOffset,
+      /* xRender */       cylinderRender
    },
    {  /* name */          "document",
       /* isline */        0,
