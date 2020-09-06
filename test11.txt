@@ -10,7 +10,7 @@ C: circle "Center"
    arrow from 2nd circle to 3rd circle chop
    arrow from 4th circle to 3rd circle chop
    arrow from SW to S chop <->
-   circle "ESE" at 2.0 angle 112.5 from Center thickness 150% fill lightblue
+   circle "ESE" at 2.0 heading 112.5 from Center thickness 150% fill lightblue
    arrow from Center to ESE thickness 150% <-> chop
    arrow from ESE up 1.35 then to NE chop
    line dashed <- from E.e to (ESE.x,E.y)

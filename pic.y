@@ -394,7 +394,7 @@ position(A) ::= expr(X) LEFT OF position(B).  {A=B; A.x -= X;}
 position(A) ::= expr(X) RIGHT OF position(B). {A=B; A.x += X;}
 position(A) ::= expr(D) EDGE(E) OF position(P).
                                         {A = pic_position_at_hdg(p,D,&E,P);}
-position(A) ::= expr(D) ANGLE expr(G) FROM position(P).
+position(A) ::= expr(D) HEADING expr(G) FROM position(P).
                                         {A = pic_position_at_angle(p,D,G,P);}
 
 place(A) ::= object(O).                 {A = pic_place_of_elem(p,O,0);}
@@ -2482,7 +2482,6 @@ typedef struct PicWord {
 static const PicWord pic_keywords[] = {
   { "above",      5,   T_ABOVE,     0         },
   { "and",        3,   T_AND,       0         },
-  { "angle",      5,   T_ANGLE,     0         },
   { "as",         2,   T_AS,        0         },
   { "at",         2,   T_AT,        0         },
   { "below",      5,   T_BELOW,     0         },
@@ -2504,7 +2503,9 @@ static const PicWord pic_keywords[] = {
   { "end",        3,   T_END,       0         },
   { "fill",       4,   T_FILL,      0         },
   { "from",       4,   T_FROM,      0         },
+  { "heading",    8,   T_HEADING,   0         },
   { "height",     6,   T_HEIGHT,    0         },
+  { "ht",         2,   T_HEIGHT,    0         },
   { "in",         2,   T_IN,        0         },
   { "int",        3,   T_FUNC1,     FN_INT    },
   { "invisible",  9,   T_INVIS,     0         },
@@ -2519,6 +2520,7 @@ static const PicWord pic_keywords[] = {
   { "nw",         2,   T_EDGE,      CP_NW     },
   { "of",         2,   T_OF,        0         },
   { "print",      5,   T_PRINT,     0         },
+  { "rad",        3,   T_RADIUS,    0         },
   { "radius",     6,   T_RADIUS,    0         },
   { "right",      5,   T_RIGHT,     0         },
   { "rjust",      5,   T_RJUST,     0         },
@@ -2541,6 +2543,7 @@ static const PicWord pic_keywords[] = {
   { "w",          1,   T_EDGE,      CP_W      },
   { "way",        3,   T_WAY,       0         },
   { "west",       4,   T_EDGE,      CP_W      },
+  { "wid",        6,   T_WIDTH,     0         },
   { "width",      5,   T_WIDTH,     0         },
   { "with",       4,   T_WITH,      0         },
   { "x",          1,   T_X,         0         },
