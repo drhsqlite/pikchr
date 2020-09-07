@@ -173,6 +173,7 @@ struct PElem {
   char cw;                 /* True for clockwise arc */
   char larrow;             /* Arrow at beginning */
   char rarrow;             /* Arrow at end */
+  char bClose;             /* True if "close" is seen */
   unsigned char nTxt;      /* Number of text values */
   unsigned mProp;          /* Masks of properties set so far */
   unsigned mCalc;          /* Values computed from other constraints */
@@ -255,6 +256,7 @@ static void pik_then(Pik*,PToken*,PElem*);
 static void pik_add_direction(Pik*,PToken*,PNum*,int);
 static void pik_set_from(Pik*,PElem*,PToken*,PPoint*);
 static void pik_add_to(Pik*,PElem*,PToken*,PPoint*);
+static void pik_close_path(Pik*,PToken*);
 static void pik_set_at(Pik*,PToken*,PPoint*,PToken*);
 static short int pik_nth_value(Pik*,PToken*);
 static PElem *pik_find_nth(Pik*,PElem*,PToken*);
@@ -374,6 +376,7 @@ attribute ::= direction(D) expr(X) PERCENT.
                                     { pik_add_direction(p,&D,&X,1);}
 attribute ::= direction(D) expr(X). { pik_add_direction(p,&D,&X,0);}
 attribute ::= direction(D).         { pik_add_direction(p,&D,0,0); }
+attribute ::= CLOSE(E).             { pik_close_path(p,&E); }
 attribute ::= FROM(T) position(X).  { pik_set_from(p,p->cur,&T,&X); }
 attribute ::= TO(T) position(X).    { pik_add_to(p,p->cur,&T,&X); }
 attribute ::= THEN(T).              { pik_then(p, &T, p->cur); }
@@ -890,8 +893,10 @@ static void lineRender(Pik *p, PElem *pElem){
       pik_append_xy(p,z,pElem->aPath[i].x,pElem->aPath[i].y);
       z = "L";
     }
-    if( pElem->fill>=0.0 && pElem->nPath>2 ){
+    if( pElem->bClose ){
       pik_append(p,"Z",1);
+    }else{
+      pElem->fill = -1.0;
     }
     pik_append(p,"\" ",-1);
     pik_append_style(p,pElem);
@@ -1637,7 +1642,7 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
 */
 static void pik_elem_set_exit(Pik *p, PElem *pElem, int eDir){
   pElem->outDir = eDir;
-  if( !pElem->type->isLine ){
+  if( !pElem->type->isLine || pElem->bClose ){
     pElem->ptExit = pElem->ptAt;
     switch( pElem->outDir ){
       default:       pElem->ptExit.x += pElem->w*0.5;  break;
@@ -1934,6 +1939,10 @@ static void pik_set_from(Pik *p, PElem *pElem, PToken *pTk, PPoint *pPt){
     pik_error(p, pTk, "line start location already fixed");
     return;
   }
+  if( pElem->bClose ){
+    pik_error(p, pTk, "polygon is closed");
+    return;
+  }
   p->aTPath[0] = *pPt;
   p->mTPath = 3;
   pElem->mProp |= A_FROM;
@@ -1947,12 +1956,31 @@ static void pik_add_to(Pik *p, PElem *pElem, PToken *pTk, PPoint *pPt){
     pik_error(p, pTk, "use \"at\" to position this object");
     return;
   }
+  if( pElem->bClose ){
+    pik_error(p, pTk, "polygon is closed");
+    return;
+  }
   if( p->mTPath || p->mTPath ){
     n = pik_next_rpath(p, pTk);
   }
   p->aTPath[n] = *pPt;
   p->mTPath = 3;
 }
+
+static void pik_close_path(Pik *p, PToken *pErr){
+  PElem *pElem = p->cur;
+  if( p->nTPath<3 ){
+    pik_error(p, pErr,
+      "need at least 3 vertexes in order to close the polygon");
+    return;
+  }
+  if( pElem->bClose ){
+    pik_error(p, pErr, "polygon already closed");
+    return;
+  }
+  pElem->bClose = 1;
+}
+
 
 /* Set the "at" of an element
 */
@@ -2452,6 +2480,12 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
     ** of the bounding box over vertexes */
     pElem->w = pElem->bbox.ne.x - pElem->bbox.sw.x;
     pElem->h = pElem->bbox.ne.y - pElem->bbox.sw.y;
+
+    /* If this is a polygon (if it has the "close" attribute), then
+    ** adjust the exit point */
+    if( pElem->bClose ){
+      pik_elem_set_exit(p, pElem, pElem->inDir);
+    }
   }else{
     PNum w2 = pElem->w/2.0;
     PNum h2 = pElem->h/2.0;
@@ -2642,6 +2676,7 @@ static const PikWord pik_keywords[] = {
   { "ccw",        3,   T_CCW,       0         },
   { "center",     6,   T_CENTER,    0         },
   { "chop",       4,   T_CHOP,      0         },
+  { "close",      5,   T_CLOSE,     0         },
   { "color",      5,   T_COLOR,     0         },
   { "cos",        3,   T_FUNC1,     FN_COS    },
   { "cw",         2,   T_CW,        0         },
