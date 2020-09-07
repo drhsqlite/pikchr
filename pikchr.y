@@ -1632,10 +1632,29 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
   return 0;
 }
 
+/*
+** Set the output direction and exit point for an element.
+*/
+static void pik_elem_set_exit(Pik *p, PElem *pElem, int eDir){
+  pElem->outDir = eDir;
+  if( !pElem->type->isLine ){
+    pElem->ptExit = pElem->ptAt;
+    switch( pElem->outDir ){
+      default:       pElem->ptExit.x += pElem->w*0.5;  break;
+      case T_LEFT:   pElem->ptExit.x -= pElem->w*0.5;  break;
+      case T_UP:     pElem->ptExit.y += pElem->h*0.5;  break;
+      case T_DOWN:   pElem->ptExit.y -= pElem->h*0.5;  break;
+    }
+  }
+}
+
 /* Change the direction of travel
 */
 static void pik_set_direction(Pik *p, int eDir){
   p->eDir = eDir;
+  if( p->list && p->list->n ){
+    pik_elem_set_exit(p, p->list->a[p->list->n-1], eDir);
+  }
 }
 
 /* Move all coordinates contained within an element (and within its

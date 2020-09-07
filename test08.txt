@@ -2,8 +2,8 @@ box "one" width 80% height 80%
 box "two" width 150% color DarkRed
 arrow "xyz" above
 box "three" height 150% color DarkBlue
-arrow down from last box.s
-//arrow
+down
+arrow
 B4: box "four"
 box "4.5" fill SkyBlue
 move
