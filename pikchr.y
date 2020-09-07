@@ -2639,14 +2639,15 @@ static void pik_render(Pik *p, PEList *pEList){
     PNum thickness;  /* Line thickness */
     PNum wArrow;     /* Width of arrowheads */
     PNum margin;     /* Extra bounding box margin */
+    PNum leftmargin; /* Extra bounding box area on the left */
     PNum w, h;       /* Drawing width and height */
 
     /* Set up rendering parameters */
     thickness = pik_value(p,"thickness",9,0);
     if( thickness<=0.01 ) thickness = 0.01;
     margin = pik_value(p,"margin",6,0);
-    if( margin<0 ) margin = 0;
     margin += thickness;
+    leftmargin = pik_value(p,"leftmargin",10,0);
     wArrow = 0.5*pik_value(p,"arrowwid",8,0);
     p->wArrow = wArrow/thickness;
     p->hArrow = pik_value(p,"arrowht",7,0)/thickness;
@@ -2678,7 +2679,7 @@ static void pik_render(Pik *p, PEList *pEList){
     ** and the optional "margin = EXPR" setting. */
     p->bbox.ne.x += margin;
     p->bbox.ne.y += margin;
-    p->bbox.sw.x -= margin;
+    p->bbox.sw.x -= margin + leftmargin;
     p->bbox.sw.y -= margin;
 
     /* Output the SVG */
