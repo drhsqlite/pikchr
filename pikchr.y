@@ -909,7 +909,7 @@ static PPoint ellipseOffset(Pik *p, PElem *pElem, int cp){
   PNum w = pElem->w*0.5;
   PNum w2 = w*0.70710678118654747608;
   PNum h = pElem->h*0.5;
-  PNum h2 = w*0.70710678118654747608;
+  PNum h2 = h*0.70710678118654747608;
   switch( cp ){
     case CP_C:   pt.x = 0.0;   pt.y = 0.0;    break;
     case CP_N:   pt.x = 0.0;   pt.y = h;      break;
