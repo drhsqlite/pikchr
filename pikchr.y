@@ -423,11 +423,11 @@ textposition(A) ::= textposition(B) CENTER|LJUST|RJUST|ABOVE|BELOW(F).
 position(A) ::= expr(X) COMMA expr(Y).                {A.x=X; A.y=Y;}
 position(A) ::= place(A).
 position(A) ::= place(B) PLUS expr(X) COMMA expr(Y).  {A.x=B.x+X; A.y=B.y+Y;}
-position(A) ::= place(B) MINUS expr(X) COMMA expr(Y). {A.x=B.x+X; A.y=B.y+Y;}
+position(A) ::= place(B) MINUS expr(X) COMMA expr(Y). {A.x=B.x-X; A.y=B.y-Y;}
 position(A) ::= place(B) PLUS LP expr(X) COMMA expr(Y) RP.
                                                       {A.x=B.x+X; A.y=B.y+Y;}
 position(A) ::= place(B) MINUS LP expr(X) COMMA expr(Y) RP.
-                                                      {A.x=B.x+X; A.y=B.y+Y;}
+                                                      {A.x=B.x-X; A.y=B.y-Y;}
 position(A) ::= LP position(X) COMMA position(Y) RP.  {A.x=X.x; A.y=Y.y;}
 position(A) ::= LP position(X) RP.                    {A=X;}
 position(A) ::= expr(X) OF THE WAY BETWEEN position(P1) AND position(P2).
