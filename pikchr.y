@@ -2511,7 +2511,10 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
   p->eDir = pElem->outDir;
 }
 
-/* Render a single element
+/* Show basic information about each element as a comment in the
+** generated HTML.  Used for testing and debugging.  Activated
+** by the (undocumented) "debug = 1;"
+** command.
 */
 static void pik_elem_render(Pik *p, PElem *pElem){
   char *zDir;
@@ -2549,6 +2552,7 @@ void pik_elist_render(Pik *p, PEList *pEList){
   int iNextLayer = 0;
   int iThisLayer;
   int bMoreToDo;
+  int mDebug = (int)pik_value(p, "debug", 5, 0);
   do{
     bMoreToDo = 0;
     iThisLayer = iNextLayer;
@@ -2563,7 +2567,7 @@ void pik_elist_render(Pik *p, PEList *pEList){
         continue;
       }
       void (*xRender)(Pik*,PElem*);
-      pik_elem_render(p, pElem);
+      if( mDebug & 1 ) pik_elem_render(p, pElem);
       xRender = pElem->type->xRender;
       if( xRender ){
         xRender(p, pElem);

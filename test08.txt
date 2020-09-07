@@ -1,3 +1,4 @@
+debug = 1;
 box "one" width 80% height 80%
 box "two" width 150% color DarkRed
 arrow "xyz" above
