@@ -704,7 +704,40 @@ static void arcInit(Pik *p, PElem *pElem){
   pElem->w = pik_value(p, "arcrad",6,0);
   pElem->h = pElem->w;
 }
+/* Arcs are here rendered as quadratic Bezier curves, in as much
+** as I cannot figure out what the original PIC parameters are suppose
+** to mean... */
 static void arcRender(Pik *p, PElem *pElem){
+  PNum dx, dy;
+  PPoint f, m, t;
+  if( pElem->nPath<2 ) return;
+  if( pElem->sw<=0.0 ) return;
+  f = pElem->aPath[0];
+  t = pElem->aPath[1];
+  m.x = 0.5*(f.x+t.x);
+  m.y = 0.5*(f.y+t.y);
+  dx = t.x - f.x;
+  dy = t.y - f.y;
+  if( pElem->cw ){
+    m.x -= 0.4*dy;
+    m.y += 0.4*dx;
+  }else{
+    m.x += 0.4*dy;
+    m.y -= 0.4*dx;
+  }
+  if( pElem->larrow ){
+    pik_draw_arrowhead(p,&m,&f,pElem);
+  }
+  if( pElem->rarrow ){
+    pik_draw_arrowhead(p,&m,&t,pElem);
+  }
+  pik_append_xy(p,"<path d=\"M", f.x, f.y);
+  pik_append_xy(p,"Q", m.x, m.y);
+  pik_append_xy(p," ", t.x, t.y);
+  pik_append(p,"\" ",2);
+  pik_append_style(p,pElem);
+  pik_append(p,"\" />\n", -1);
+
   pik_append_txt(p, pElem);
 }
 
@@ -2542,9 +2575,18 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
     assert( p->nTPath==2 );
     switch( pElem->inDir ){
       default:        p->aTPath[1].x += pElem->w; break;
+      case DIR_DOWN:  p->aTPath[1].y -= pElem->h; break;
       case DIR_LEFT:  p->aTPath[1].x -= pElem->w; break;
       case DIR_UP:    p->aTPath[1].y += pElem->h; break;
-      case DIR_DOWN:  p->aTPath[1].y -= pElem->h; break;
+    }
+    if( strcmp(pElem->type->zName,"arc")==0 ){
+      p->eDir = pElem->outDir = (pElem->inDir + (pElem->cw ? 1 : 3))%4;
+      switch( pElem->outDir ){
+        default:        p->aTPath[1].x += pElem->w; break;
+        case DIR_DOWN:  p->aTPath[1].y -= pElem->h; break;
+        case DIR_LEFT:  p->aTPath[1].x -= pElem->w; break;
+        case DIR_UP:    p->aTPath[1].y += pElem->h; break;
+      }
     }
   }
 
