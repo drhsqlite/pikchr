@@ -14,7 +14,7 @@ lemon:	lemon.c
 	$(CC) $(CFLAGS) lemon.c -o lemon
 
 test:	pikchr
-	./pikchr test*.txt >out.html
+	./pikchr tests/*.txt >out.html
 	open out.html
 
 clean:	

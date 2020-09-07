@@ -669,6 +669,7 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
   { "color",       0.0  },
   { "cylrad",      0.075 },
   { "dashwid",     0.05 },
+  { "dotrad",      0.01 },
   { "ellipseht",   0.5  },
   { "ellipsewid",  0.75 },
   { "fill",        -1.0 },
@@ -814,12 +815,29 @@ static PPoint cylinderOffset(Pik *p, PElem *pElem, int cp){
   return pt;
 }
 
-
-/* Methods for the "document" class */
-static void documentInit(Pik *p, PElem *pElem){
-  pElem->w = pik_value(p, "boxwid",6,0);
-  pElem->h = pik_value(p, "boxht",5,0)*2;
+/* Methods for the "dot" class */
+static void dotInit(Pik *p, PElem *pElem){
+  pElem->ry = pik_value(p, "dotrad",6,0)*2;
+  pElem->h = pElem->w = pElem->ry*3;
+  pElem->fill = pElem->color;
 }
+static void dotNumProp(Pik *p, PElem *pElem, PToken *pId){
+  /* no-op */
+}
+static void dotRender(Pik *p, PElem *pElem){
+  PNum r = pElem->ry;
+  PPoint pt = pElem->ptAt;
+  if( pElem->sw>0.0 ){
+    pik_append_x(p,"<circle cx=\"", pt.x, "\"");
+    pik_append_y(p," cy=\"", pt.y, "\"");
+    pik_append_dis(p," r=\"", 0.5*r, "\"");
+    pik_append_style(p,pElem);
+    pik_append(p,"\" />\n", -1);
+  }
+  pik_append_txt(p, pElem);
+}
+
+
 
 /* Methods for the "ellipse" class */
 static void ellipseInit(Pik *p, PElem *pElem){
@@ -858,13 +876,6 @@ static void ellipseRender(Pik *p, PElem *pElem){
     pik_append(p,"\" />\n", -1);
   }
   pik_append_txt(p, pElem);
-}
-
-
-/* Methods for the "folder" class */
-static void folderInit(Pik *p, PElem *pElem){
-  pElem->w = pik_value(p, "boxwid",6,0);
-  pElem->h = pik_value(p, "boxht",5,0)*1.5;
 }
 
 /* Methods for the "line" class */
@@ -1036,12 +1047,12 @@ static const PClass aClass[] = {
       /* xOffset */       cylinderOffset,
       /* xRender */       cylinderRender
    },
-   {  /* name */          "document",
+   {  /* name */          "dot",
       /* isline */        0,
-      /* xInit */         documentInit,
-      /* xNumProp */      0,
-      /* xOffset */       0,
-      /* xRender */       0 
+      /* xInit */         dotInit,
+      /* xNumProp */      dotNumProp,
+      /* xOffset */       ellipseOffset,
+      /* xRender */       dotRender 
    },
    {  /* name */          "ellipse",
       /* isline */        0,
@@ -1049,13 +1060,6 @@ static const PClass aClass[] = {
       /* xNumProp */      0,
       /* xOffset */       ellipseOffset,
       /* xRender */       ellipseRender
-   },
-   {  /* name */          "folder",
-      /* isline */        0,
-      /* xInit */         folderInit,
-      /* xNumProp */      0,
-      /* xOffset */       0,
-      /* xRender */       0 
    },
    {  /* name */          "line",
       /* isline */        1,
