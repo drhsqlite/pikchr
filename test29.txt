@@ -7,3 +7,5 @@ move
 box "Box to right" "of the" "polygon"
 move
 line "not a" "polygon" right 1in fill red
+move
+line same as 1st line

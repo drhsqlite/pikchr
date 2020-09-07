@@ -274,6 +274,7 @@ static PNum pik_func(Pik*,PToken*,PNum,PNum);
 static PPoint pik_position_between(Pik *p, PNum x, PPoint p1, PPoint p2);
 static PPoint pik_position_at_angle(Pik *p, PNum dist, PNum r, PPoint pt);
 static PPoint pik_position_at_hdg(Pik *p, PNum dist, PToken *pD, PPoint pt);
+static void pik_same(Pik *p, PElem*, PToken*);
 
 
 } // end %include
@@ -383,8 +384,8 @@ attribute ::= THEN(T).              { pik_then(p, &T, p->cur); }
 attribute ::= boolproperty.
 attribute ::= AT(A) position(P).                    { pik_set_at(p,0,&P,&A); }
 attribute ::= WITH withclause.
-attribute ::= SAME.
-attribute ::= SAME AS object.
+attribute ::= SAME(E).                          {pik_same(p,0,&E);}
+attribute ::= SAME(E) AS object(X).             {pik_same(p,X,&E);}
 attribute ::= STRING(T) textposition(P).        {pik_add_txt(p,&T,P);}
 
 withclause ::= with.
@@ -2280,6 +2281,55 @@ static PElem *pik_find_byname(Pik *p, PElem *pBasis, PToken *pName){
   return 0;
 }
 
+/* Change most of the settings for the current object to be the
+** same as the pElem object, or the most recent element of the same
+** type if pElem is NULL.
+*/
+static void pik_same(Pik *p, PElem *pOther, PToken *pErrTok){
+  PElem *pElem = p->cur;
+  if( p->nErr ) return;
+  if( pOther==0 ){
+    int i;
+    for(i=(p->list ? p->list->n : 0)-1; i>=0; i--){
+      pOther = p->list->a[i];
+      if( pOther->type==pElem->type ) break;
+    }
+    if( i<0 ){
+      pik_error(p, pErrTok, "no prior objects of the same type");
+    }
+  }
+  if( pOther->nPath && pElem->type->isLine ){
+    PNum dx, dy;
+    int i;
+    dx = p->aTPath[0].x - pOther->aPath[0].x;
+    dy = p->aTPath[0].y - pOther->aPath[0].y;
+    for(i=1; i<pOther->nPath; i++){
+      p->aTPath[i].x = pOther->aPath[i].x + dx;
+      p->aTPath[i].y = pOther->aPath[i].y + dy;
+    }
+    p->nTPath = pOther->nPath;
+    p->mTPath = 3;
+  }
+  pElem->w = pOther->w;
+  pElem->h = pOther->h;
+  pElem->rx = pOther->rx;
+  pElem->ry = pOther->ry;
+  pElem->sw = pOther->sw;
+  pElem->dashed = pOther->dashed;
+  pElem->dotted = pOther->dashed;
+  pElem->chop1 = pOther->chop1;
+  pElem->chop2 = pOther->chop2;
+  pElem->fill = pOther->fill;
+  pElem->color = pOther->color;
+  pElem->cw = pOther->cw;
+  pElem->larrow = pOther->larrow;
+  pElem->rarrow = pOther->rarrow;
+  pElem->bClose = pOther->bClose;
+  pElem->inDir = pOther->inDir;
+  pElem->outDir = pOther->outDir;
+}
+
+
 /* Return a "Place" associated with element pElem.  If pEdge is NULL
 ** return the center of the object.  Otherwise, return the corner
 ** described by pEdge.
@@ -2698,6 +2748,7 @@ static const PikWord pik_keywords[] = {
   { "ht",         2,   T_HEIGHT,    0         },
   { "in",         2,   T_IN,        0         },
   { "int",        3,   T_FUNC1,     FN_INT    },
+  { "invis",      5,   T_INVIS,     0         },
   { "invisible",  9,   T_INVIS,     0         },
   { "last",       4,   T_LAST,      0         },
   { "left",       4,   T_LEFT,      0         },
@@ -2733,7 +2784,7 @@ static const PikWord pik_keywords[] = {
   { "w",          1,   T_EDGEPT,    CP_W      },
   { "way",        3,   T_WAY,       0         },
   { "west",       4,   T_EDGEPT,    CP_W      },
-  { "wid",        6,   T_WIDTH,     0         },
+  { "wid",        3,   T_WIDTH,     0         },
   { "width",      5,   T_WIDTH,     0         },
   { "with",       4,   T_WITH,      0         },
   { "x",          1,   T_X,         0         },
