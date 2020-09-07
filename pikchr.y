@@ -36,6 +36,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <assert.h>
 #define count(X) (sizeof(X)/sizeof(X[0]))
 
 typedef struct Pik Pik;          /* Complete parsing context */
@@ -125,36 +126,62 @@ static int pik_token_eq(PToken *pToken, const char *z){
 #define T_WHITESPACE 1000
 #define T_ERROR      1001
 
+/* Bitmask for the various attributes that are */
+#define A_WIDTH         0x000001
+#define A_HEIGHT        0x000002
+#define A_RX            0x000004
+#define A_RY            0x000008 /* Radius for circles */
+#define A_THICKNESS     0x000010
+#define A_DASHED        0x000020 /* Includes "dotted" */
+#define A_CHOP1         0x000040
+#define A_CHOP2         0x000080
+#define A_FILL          0x000100
+#define A_COLOR         0x000200
+#define A_ARROW         0x000400
+#define A_TOP           0x000800
+#define A_BOTTOM        0x001000
+#define A_LEFT          0x002000
+#define A_RIGHT         0x004000
+#define A_CORNER        0x008000
+#define A_FROM          0x010000
+#define A_CW            0x020000
+#define A_AT            0x040000
+
 
 /* A single element */
 struct PElem {
   const PClass *type;      /* Element type */
+  PPoint ptAt;             /* Reference point for the object */
+  PPoint ptEnter, ptExit;  /* Entry and exit points */
   PEList *pSublist;        /* Substructure for [] elements */
   char *zName;             /* Name assigned to this element */
-  struct PProp {
-    PNum w;                /* width */
-    PNum h;                /* height */
-    PNum rx;               /* x-radius */
-    PNum ry;               /* y-radius */
-    PNum sw;               /* stroke width ("thinkness") */
-    PNum dotted;           /* dotted:  <=0.0 for off */
-    PNum dashed;           /* dashed:  <=0.0 for off */
-    PNum chop1, chop2;     /* chop:    <=0.0 for off */
-    PNum fill;             /* fill color.  Negative for off */
-    PNum color;            /* Stroke color */
-    char cw;               /* True for clockwise arc */
-    char larrow;           /* Arrow at beginning */
-    char rarrow;           /* Arrow at end */
-  } prop;
+  PNum w;                  /* width */
+  PNum h;                  /* height */
+  PNum rx, ry;             /* x- and y-radius */
+  PNum sw;                 /* stroke width ("thinkness") */
+  PNum dotted;             /* dotted:  <=0.0 for off */
+  PNum dashed;             /* dashed:  <=0.0 for off */
+  PNum chop1, chop2;       /* chop:    <=0.0 for off */
+  PNum fill;               /* fill color.  Negative for off */
+  PNum color;              /* Stroke color */
+  PNum top;                /* Top edge */
+  PNum bottom;             /* Bottom edge */
+  PNum left;               /* Left edge */
+  PNum right;              /* Right edge */
+  PPoint with;             /* Position constraint from WITH clause */
+  char eWith;              /* Type of heading point on WITH clause */
+  char cw;                 /* True for clockwise arc */
+  char larrow;             /* Arrow at beginning */
+  char rarrow;             /* Arrow at end */
+  unsigned char nTxt;      /* Number of text values */
+  unsigned mProp;          /* Masks of properties set so far */
+  unsigned mCalc;          /* Values computed from other constraints */
   PToken aTxt[3];          /* Text with .eCode holding TP flags */
-  PPoint ptAt;             /* Reference point for the object */
   int iLayer;              /* Rendering order */
   int inDir, outDir;       /* Entry and exit directions */
-  unsigned char nTxt;      /* Number of text values */
   int nPath;               /* Number of path points */
   PPoint *aPath;           /* Array of path points */
   PBox bbox;               /* Bounding box */
-  PPoint ptEnter, ptExit;  /* Entry and exit points */
 };
 
 /* A list of elements */
@@ -183,19 +210,20 @@ struct Pik {
   PBox bbox;               /* Bounding box around all elements */
   PNum rScale;             /* Multiple to convert inches to pixels */
   char thenFlag;           /* True if "then" seen */
-  int nRPath;              /* Number of entries on aRPath[] */
   const char *zClass;      /* Class name for the <svg> */
   int wSVG, hSVG;          /* Width and height of the <svg> */
-  struct {
-    char isRel;               /* True for relative */
-    PPoint pt;                /* Location */
-  } aRPath[1000];          /* Path under construction */
+  /* Paths for lines are constructed here first, then transferred into
+  ** the PElem object at the end: */
+  int nTPath;              /* Number of entries on aTPath[] */
+  int mTPath;              /* For last entry, 1: x set,  2: y set */
+  PPoint aTPath[1000];     /* Path under construction */
 };
 
 /* Forward declarations */
 static void pik_append(Pik*, const char*,int);
 static void pik_append_text(Pik*,const char*,int,int);
-static void pik_append_num(Pik*,PNum);
+static void pik_append_num(Pik*,const char*,PNum);
+static void pik_append_point(Pik*,const char*,PPoint*);
 static void pik_append_x(Pik*,const char*,PNum,const char*);
 static void pik_append_y(Pik*,const char*,PNum,const char*);
 static void pik_append_xy(Pik*,const char*,PNum,PNum);
@@ -312,7 +340,7 @@ rvalue(A) ::= PLACENAME(C).  {A = pik_lookup_color(p,&C);}
 print ::= PRINT.
 prlist ::= pritem.
 prlist ::= prlist prsep pritem.
-pritem ::= rvalue(X). {pik_append_num(p,X);}
+pritem ::= rvalue(X). {pik_append_num(p,"",X);}
 pritem ::= STRING(S). {pik_append_text(p,S.z+1,S.n-2,0);}
 prsep  ::= COMMA. {pik_append(p, " ", 1);}
 
@@ -323,7 +351,7 @@ basetype(A) ::= ID(N).                   {A = pik_elem_new(p,&N,0,0); }
 basetype(A) ::= STRING(N) textposition(P).
                             {N.eCode = P; A = pik_elem_new(p,0,&N,0); }
 basetype(A) ::= LB savelist(L) element_list(X) RB.
-      { A = pik_elem_new(p,0,0,X); p->list = L; }
+      { p->list = L; A = pik_elem_new(p,0,0,X); }
 
 %type savelist {PEList*}
 %destructor savelist {pik_elist_free(p,$$);}
@@ -360,9 +388,7 @@ withclause ::= with.
 withclause ::= withclause AND with.
 with ::=  DOT_E EDGEPT(E) AT(A) position(P).{ pik_set_at(p,&E,&P,&A); }
 with ::=  EDGEPT(E) AT(A) position(P).      { pik_set_at(p,&E,&P,&A); }
-//with ::=  HEIGHT expr.
-//with ::=  HEIGHT expr PERCENT.
-//with ::=  TOP AT expr.
+with ::=  TOP|BOTTOM|LEFT|RIGHT(P) AT expr(X).{ pik_set_numprop(p,&P,X,0);}
 
 
 // Properties that require an argument
@@ -378,12 +404,12 @@ colorproperty(A) ::= FILL(A).
 colorproperty(A) ::= COLOR(A).
 
 // Properties with no argument
-boolproperty ::= CW.          {p->cur->prop.cw = 1;}
-boolproperty ::= CCW.         {p->cur->prop.cw = 0;}
-boolproperty ::= LARROW.      {p->cur->prop.larrow=1; p->cur->prop.rarrow=0; }
-boolproperty ::= RARROW.      {p->cur->prop.larrow=0; p->cur->prop.rarrow=1; }
-boolproperty ::= LRARROW.     {p->cur->prop.larrow=1; p->cur->prop.rarrow=1; }
-boolproperty ::= INVIS.       {p->cur->prop.sw = 0.0;}
+boolproperty ::= CW.          {p->cur->cw = 1;}
+boolproperty ::= CCW.         {p->cur->cw = 0;}
+boolproperty ::= LARROW.      {p->cur->larrow=1; p->cur->rarrow=0; }
+boolproperty ::= RARROW.      {p->cur->larrow=0; p->cur->rarrow=1; }
+boolproperty ::= LRARROW.     {p->cur->larrow=1; p->cur->rarrow=1; }
+boolproperty ::= INVIS.       {p->cur->sw = 0.0;}
 
 textposition(A) ::= .   {A = 0;}
 textposition(A) ::= textposition(B) CENTER|LJUST|RJUST|ABOVE|BELOW(F).
@@ -654,27 +680,27 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
 
 /* Methods for the "arc" class */
 static void arcInit(Pik *p, PElem *pElem){
-  pElem->prop.w = pik_value(p, "arcrad",6,0);
-  pElem->prop.h = pElem->prop.w;
+  pElem->w = pik_value(p, "arcrad",6,0);
+  pElem->h = pElem->w;
 }
 
 /* Methods for the "arrow" class */
 static void arrowInit(Pik *p, PElem *pElem){
-  pElem->prop.w = pik_value(p, "linewid",7,0);
-  pElem->prop.h = pik_value(p, "lineht",6,0);
-  pElem->prop.fill = -1.0;
-  pElem->prop.rarrow = 1;
+  pElem->w = pik_value(p, "linewid",7,0);
+  pElem->h = pik_value(p, "lineht",6,0);
+  pElem->fill = -1.0;
+  pElem->rarrow = 1;
 }
 
 /* Methods for the "box" class */
 static void boxInit(Pik *p, PElem *pElem){
-  pElem->prop.w = pik_value(p, "boxwid",6,0);
-  pElem->prop.h = pik_value(p, "boxht",5,0);
+  pElem->w = pik_value(p, "boxwid",6,0);
+  pElem->h = pik_value(p, "boxht",5,0);
 }
 static PPoint boxOffset(Pik *p, PElem *pElem, int cp){
   PPoint pt;
-  pt.x = pElem->prop.w*0.5;
-  pt.y = pElem->prop.h*0.5;
+  pt.x = pElem->w*0.5;
+  pt.y = pElem->h*0.5;
   switch( cp ){
     case CP_C:   pt.x = 0.0;   pt.y = 0.0;    break;
     case CP_N:   pt.x = 0.0;                  break;
@@ -689,10 +715,10 @@ static PPoint boxOffset(Pik *p, PElem *pElem, int cp){
   return pt;
 }
 static void boxRender(Pik *p, PElem *pElem){
-  PNum w2 = 0.5*pElem->prop.w;
-  PNum h2 = 0.5*pElem->prop.h;
+  PNum w2 = 0.5*pElem->w;
+  PNum h2 = 0.5*pElem->h;
   PPoint pt = pElem->ptAt;
-  if( pElem->prop.sw>0.0 ){
+  if( pElem->sw>0.0 ){
     pik_append_xy(p,"<path d=\"M", pt.x-w2,pt.y-h2);
     pik_append_xy(p,"L", pt.x+w2,pt.y-h2);
     pik_append_xy(p,"L", pt.x+w2,pt.y+h2);
@@ -706,14 +732,26 @@ static void boxRender(Pik *p, PElem *pElem){
 
 /* Methods for the "circle" class */
 static void circleInit(Pik *p, PElem *pElem){
-  pElem->prop.w = pik_value(p, "circlerad",9,0)*2;
-  pElem->prop.h = pElem->prop.w;
+  pElem->w = pik_value(p, "circlerad",9,0)*2;
+  pElem->ry = pElem->h = pElem->w;
 }
-
+static void circleNumProp(Pik *p, PElem *pElem, PToken *pId){
+  switch( pId->eType ){
+    case T_RADIUS:
+      pElem->w = pElem->h = pElem->ry;
+      break;
+    case T_WIDTH:
+      pElem->ry = pElem->h = pElem->w;
+      break;
+    case T_HEIGHT:
+      pElem->w = pElem->ry = pElem->h;
+      break;
+  }
+}
 static void circleRender(Pik *p, PElem *pElem){
-  PNum w = pElem->prop.w;
+  PNum w = pElem->w;
   PPoint pt = pElem->ptAt;
-  if( pElem->prop.sw>0.0 ){
+  if( pElem->sw>0.0 ){
     pik_append_x(p,"<circle cx=\"", pt.x, "\"");
     pik_append_y(p," cy=\"", pt.y, "\"");
     pik_append_dis(p," r=\"", w/2.0, "\"");
@@ -725,16 +763,16 @@ static void circleRender(Pik *p, PElem *pElem){
 
 /* Methods for the "cylinder" class */
 static void cylinderInit(Pik *p, PElem *pElem){
-  pElem->prop.w = pik_value(p, "boxwid",6,0);
-  pElem->prop.h = pik_value(p, "boxht",5,0);
-  pElem->prop.ry = pik_value(p, "cylrad",6,0);
+  pElem->w = pik_value(p, "boxwid",6,0);
+  pElem->h = pik_value(p, "boxht",5,0);
+  pElem->ry = pik_value(p, "cylrad",6,0);
 }
 static void cylinderRender(Pik *p, PElem *pElem){
-  PNum w2 = 0.5*pElem->prop.w;
-  PNum h2 = 0.5*pElem->prop.h;
-  PNum ry = pElem->prop.ry;
+  PNum w2 = 0.5*pElem->w;
+  PNum h2 = 0.5*pElem->h;
+  PNum ry = pElem->ry;
   PPoint pt = pElem->ptAt;
-  if( pElem->prop.sw>0.0 ){
+  if( pElem->sw>0.0 ){
     pik_append_xy(p,"<path d=\"M", pt.x-w2,pt.y+h2-ry);
     pik_append_xy(p,"L", pt.x-w2,pt.y-h2+ry);
     pik_append_dis(p,"A",w2," ");
@@ -755,9 +793,9 @@ static void cylinderRender(Pik *p, PElem *pElem){
 }
 static PPoint cylinderOffset(Pik *p, PElem *pElem, int cp){
   PPoint pt;
-  PNum w2 = pElem->prop.w*0.5;
-  PNum h1 = pElem->prop.h*0.5;
-  PNum h2 = h1 - pElem->prop.ry;
+  PNum w2 = pElem->w*0.5;
+  PNum h1 = pElem->h*0.5;
+  PNum h2 = h1 - pElem->ry;
   switch( cp ){
     case CP_C:   pt.x = 0.0;   pt.y = 0.0;    break;
     case CP_N:   pt.x = 0.0;   pt.y = h1;     break;
@@ -775,20 +813,20 @@ static PPoint cylinderOffset(Pik *p, PElem *pElem, int cp){
 
 /* Methods for the "document" class */
 static void documentInit(Pik *p, PElem *pElem){
-  pElem->prop.w = pik_value(p, "boxwid",6,0);
-  pElem->prop.h = pik_value(p, "boxht",5,0)*2;
+  pElem->w = pik_value(p, "boxwid",6,0);
+  pElem->h = pik_value(p, "boxht",5,0)*2;
 }
 
 /* Methods for the "ellipse" class */
 static void ellipseInit(Pik *p, PElem *pElem){
-  pElem->prop.w = pik_value(p, "ellipsewid",10,0);
-  pElem->prop.h = pik_value(p, "ellipseht",9,0);
+  pElem->w = pik_value(p, "ellipsewid",10,0);
+  pElem->h = pik_value(p, "ellipseht",9,0);
 }
 static PPoint ellipseOffset(Pik *p, PElem *pElem, int cp){
   PPoint pt;
-  PNum w = pElem->prop.w*0.5;
+  PNum w = pElem->w*0.5;
   PNum w2 = w*0.70710678118654747608;
-  PNum h = pElem->prop.h*0.5;
+  PNum h = pElem->h*0.5;
   PNum h2 = w*0.70710678118654747608;
   switch( cp ){
     case CP_C:   pt.x = 0.0;   pt.y = 0.0;    break;
@@ -804,10 +842,10 @@ static PPoint ellipseOffset(Pik *p, PElem *pElem, int cp){
   return pt;
 }
 static void ellipseRender(Pik *p, PElem *pElem){
-  PNum w = pElem->prop.w;
-  PNum h = pElem->prop.h;
+  PNum w = pElem->w;
+  PNum h = pElem->h;
   PPoint pt = pElem->ptAt;
-  if( pElem->prop.sw>0.0 ){
+  if( pElem->sw>0.0 ){
     pik_append_x(p,"<ellipse cx=\"", pt.x, "\"");
     pik_append_y(p," cy=\"", pt.y, "\"");
     pik_append_dis(p," rx=\"", w/2.0, "\"");
@@ -821,38 +859,38 @@ static void ellipseRender(Pik *p, PElem *pElem){
 
 /* Methods for the "folder" class */
 static void folderInit(Pik *p, PElem *pElem){
-  pElem->prop.w = pik_value(p, "boxwid",6,0);
-  pElem->prop.h = pik_value(p, "boxht",5,0)*1.5;
+  pElem->w = pik_value(p, "boxwid",6,0);
+  pElem->h = pik_value(p, "boxht",5,0)*1.5;
 }
 
 /* Methods for the "line" class */
 static void lineInit(Pik *p, PElem *pElem){
-  pElem->prop.w = pik_value(p, "linewid",7,0);
-  pElem->prop.h = pik_value(p, "lineht",6,0);
-  pElem->prop.fill = -1.0;
+  pElem->w = pik_value(p, "linewid",7,0);
+  pElem->h = pik_value(p, "lineht",6,0);
+  pElem->fill = -1.0;
 }
 static void lineRender(Pik *p, PElem *pElem){
   int i;
-  if( pElem->prop.sw>0.0 ){
+  if( pElem->sw>0.0 ){
     const char *z = "<path d=\"M";
     int n = pElem->nPath;
-    if( pElem->prop.chop1>0.0 ){
-      pik_chop(p,&pElem->aPath[1],&pElem->aPath[0],pElem->prop.chop1);
+    if( pElem->chop1>0.0 ){
+      pik_chop(p,&pElem->aPath[1],&pElem->aPath[0],pElem->chop1);
     }
-    if( pElem->prop.chop2>0.0 ){
-      pik_chop(p,&pElem->aPath[n-2],&pElem->aPath[n-1],pElem->prop.chop2);
+    if( pElem->chop2>0.0 ){
+      pik_chop(p,&pElem->aPath[n-2],&pElem->aPath[n-1],pElem->chop2);
     }
-    if( pElem->prop.larrow ){
+    if( pElem->larrow ){
       pik_draw_arrowhead(p,&pElem->aPath[1],&pElem->aPath[0],pElem);
     }
-    if( pElem->prop.rarrow ){
+    if( pElem->rarrow ){
       pik_draw_arrowhead(p,&pElem->aPath[n-2],&pElem->aPath[n-1],pElem);
     }
     for(i=0; i<pElem->nPath; i++){
       pik_append_xy(p,z,pElem->aPath[i].x,pElem->aPath[i].y);
       z = "L";
     }
-    if( pElem->prop.fill>=0.0 && pElem->nPath>2 ){
+    if( pElem->fill>=0.0 && pElem->nPath>2 ){
       pik_append(p,"Z",1);
     }
     pik_append(p,"\" ",-1);
@@ -864,11 +902,11 @@ static void lineRender(Pik *p, PElem *pElem){
 
 /* Methods for the "move" class */
 static void moveInit(Pik *p, PElem *pElem){
-  pElem->prop.w = pik_value(p, "movewid",7,0);
-  pElem->prop.h = pik_value(p, "moveht",6,0);
-  pElem->prop.fill = -1.0;
-  pElem->prop.color = -1.0;
-  pElem->prop.sw = -1.0;
+  pElem->w = pik_value(p, "movewid",7,0);
+  pElem->h = pik_value(p, "moveht",6,0);
+  pElem->fill = -1.0;
+  pElem->color = -1.0;
+  pElem->sw = -1.0;
 }
 static void moveRender(Pik *p, PElem *pElem){
   /* No-op */
@@ -876,13 +914,13 @@ static void moveRender(Pik *p, PElem *pElem){
 
 /* Methods for the "spline" class */
 static void splineInit(Pik *p, PElem *pElem){
-  pElem->prop.w = pik_value(p, "linewid",7,0);
-  pElem->prop.h = pik_value(p, "lineht",6,0);
-  pElem->prop.fill = -1.0;  /* Disable fill by default */
+  pElem->w = pik_value(p, "linewid",7,0);
+  pElem->h = pik_value(p, "lineht",6,0);
+  pElem->fill = -1.0;  /* Disable fill by default */
 }
 static void splineRender(Pik *p, PElem *pElem){
   int i;
-  if( pElem->prop.sw>0.0 ){
+  if( pElem->sw>0.0 ){
     int n = pElem->nPath;
     const PPoint *a = pElem->aPath;
     PPoint m2;
@@ -890,16 +928,16 @@ static void splineRender(Pik *p, PElem *pElem){
       lineRender(p,pElem);
       return;
     }
-    if( pElem->prop.chop1>0.0 ){
-      pik_chop(p,&pElem->aPath[1],&pElem->aPath[0],pElem->prop.chop1);
+    if( pElem->chop1>0.0 ){
+      pik_chop(p,&pElem->aPath[1],&pElem->aPath[0],pElem->chop1);
     }
-    if( pElem->prop.chop2>0.0 ){
-      pik_chop(p,&pElem->aPath[n-2],&pElem->aPath[n-1],pElem->prop.chop2);
+    if( pElem->chop2>0.0 ){
+      pik_chop(p,&pElem->aPath[n-2],&pElem->aPath[n-1],pElem->chop2);
     }
-    if( pElem->prop.larrow ){
+    if( pElem->larrow ){
       pik_draw_arrowhead(p,&pElem->aPath[1],&pElem->aPath[0],pElem);
     }
-    if( pElem->prop.rarrow ){
+    if( pElem->rarrow ){
       pik_draw_arrowhead(p,&pElem->aPath[n-2],&pElem->aPath[n-1],pElem);
     }
     pik_append_xy(p,"<path d=\"M", a[0].x, a[0].y);
@@ -923,9 +961,9 @@ static void splineRender(Pik *p, PElem *pElem){
 
 /* Methods for the "text" class */
 static void textInit(Pik *p, PElem *pElem){
-  pElem->prop.w = pik_value(p, "textwid",7,0);
-  pElem->prop.h = pik_value(p, "textht",6,0);
-  pElem->prop.sw = 0.0;
+  pElem->w = pik_value(p, "textwid",7,0);
+  pElem->h = pik_value(p, "textht",6,0);
+  pElem->sw = 0.0;
 }
 
 /* Methods for the "sublist" class */
@@ -936,8 +974,11 @@ static void sublistInit(Pik *p, PElem *pElem){
   for(i=0; i<pList->n; i++){
     pik_bbox_addbox(&pElem->bbox, &pList->a[i]->bbox);
   }
-  pElem->prop.w = pElem->bbox.ne.x - pElem->bbox.sw.x;
-  pElem->prop.h = pElem->bbox.ne.y - pElem->bbox.sw.y;
+  pElem->w = pElem->bbox.ne.x - pElem->bbox.sw.x;
+  pElem->h = pElem->bbox.ne.y - pElem->bbox.sw.y;
+  pElem->ptAt.x = 0.5*(pElem->bbox.ne.x + pElem->bbox.sw.x);
+  pElem->ptAt.y = 0.5*(pElem->bbox.ne.y + pElem->bbox.sw.y);
+  pElem->mCalc |= A_WIDTH|A_HEIGHT;
 }
 
 
@@ -946,88 +987,88 @@ static void sublistInit(Pik *p, PElem *pElem){
 ** elements.  The special STRING and [] elements are separate.
 */
 struct PClass {
-  const char *zName;                 /* Name of class */
-  char isLine;                       /* True if a line class */
-  void (*xInit)(Pik*,PElem*);        /* Initializer */
-  void (*xAfter)(Pik*,PElem*);       /* Processing after attributes rcvd */
-  PPoint (*xOffset)(Pik*,PElem*,int); /* Compute rel offset to compass pt */
-  void (*xRender)(Pik*,PElem*);      /* Render */
+  const char *zName;                     /* Name of class */
+  char isLine;                           /* True if a line class */
+  void (*xInit)(Pik*,PElem*);            /* Initializer */
+  void (*xNumProp)(Pik*,PElem*,PToken*); /* Value change notification */
+  PPoint (*xOffset)(Pik*,PElem*,int);    /* Offset from center to edge point */
+  void (*xRender)(Pik*,PElem*);          /* Render */
 };
 static const PClass aClass[] = {
    {  /* name */          "arc",
       /* isline */        1,
       /* xInit */         arcInit,
-      /* xAfter */        0,
+      /* xNumProp */      0,
       /* xOffset */       0,
       /* xRender */       0 
    },
    {  /* name */          "arrow",
       /* isline */        1,
       /* xInit */         arrowInit,
-      /* xAfter */        0,
+      /* xNumProp */      0,
       /* xOffset */       0,
       /* xRender */       lineRender 
    },
    {  /* name */          "box",
       /* isline */        0,
       /* xInit */         boxInit,
-      /* xAfter */        0,
+      /* xNumProp */      0,
       /* xOffset */       0,
       /* xRender */       boxRender 
    },
    {  /* name */          "circle",
       /* isline */        0,
       /* xInit */         circleInit,
-      /* xAfter */        0,
+      /* xNumProp */      circleNumProp,
       /* xOffset */       ellipseOffset,
       /* xRender */       circleRender 
    },
    {  /* name */          "cylinder",
       /* isline */        0,
       /* xInit */         cylinderInit,
-      /* xAfter */        0,
+      /* xNumProp */      0,
       /* xOffset */       cylinderOffset,
       /* xRender */       cylinderRender
    },
    {  /* name */          "document",
       /* isline */        0,
       /* xInit */         documentInit,
-      /* xAfter */        0,
+      /* xNumProp */      0,
       /* xOffset */       0,
       /* xRender */       0 
    },
    {  /* name */          "ellipse",
       /* isline */        0,
       /* xInit */         ellipseInit,
-      /* xAfter */        0,
+      /* xNumProp */      0,
       /* xOffset */       ellipseOffset,
       /* xRender */       ellipseRender
    },
    {  /* name */          "folder",
       /* isline */        0,
       /* xInit */         folderInit,
-      /* xAfter */        0,
+      /* xNumProp */      0,
       /* xOffset */       0,
       /* xRender */       0 
    },
    {  /* name */          "line",
       /* isline */        1,
       /* xInit */         lineInit,
-      /* xAfter */        0,
+      /* xNumProp */      0,
       /* xOffset */       0,
       /* xRender */       lineRender
    },
    {  /* name */          "move",
       /* isline */        1,
       /* xInit */         moveInit,
-      /* xAfter */        0,
+      /* xNumProp */      0,
       /* xOffset */       0,
       /* xRender */       moveRender
    },
    {  /* name */          "spline",
       /* isline */        1,
       /* xInit */         splineInit,
-      /* xAfter */        0,
+      /* xNumProp */      0,
       /* xOffset */       0,
       /* xRender */       splineRender
    },
@@ -1036,7 +1077,7 @@ static const PClass sublistClass =
    {  /* name */          "[]",
       /* isline */        0,
       /* xInit */         sublistInit,
-      /* xAfter */        0,
+      /* xNumProp */      0,
       /* xOffset */       0,
       /* xRender */       0 
    };
@@ -1044,7 +1085,7 @@ static const PClass textClass =
    {  /* name */          "text",
       /* isline */        0,
       /* xInit */         textInit,
-      /* xAfter */        0,
+      /* xNumProp */      0,
       /* xOffset */       0,
       /* xRender */       boxRender 
    };
@@ -1077,12 +1118,12 @@ static void pik_draw_arrowhead(Pik *p, PPoint *f, PPoint *t, PElem *pElem){
   PNum dx = t->x - f->x;
   PNum dy = t->y - f->y;
   PNum dist = sqrt(dx*dx + dy*dy);
-  PNum h = p->hArrow * pElem->prop.sw;
-  PNum w = p->wArrow * pElem->prop.sw;
+  PNum h = p->hArrow * pElem->sw;
+  PNum w = p->wArrow * pElem->sw;
   PNum e1, ddx, ddy;
   PNum bx, by;
-  if( pElem->prop.color<0.0 ) return;
-  if( pElem->prop.sw<=0.0 ) return;
+  if( pElem->color<0.0 ) return;
+  if( pElem->sw<=0.0 ) return;
   if( dist<=0.0 ) return;  /* Unable */
   dx /= dist;
   dy /= dist;
@@ -1098,7 +1139,7 @@ static void pik_draw_arrowhead(Pik *p, PPoint *f, PPoint *t, PElem *pElem){
   pik_append_xy(p,"<polygon points=\"", t->x, t->y);
   pik_append_xy(p," ",bx-ddx, by-ddy);
   pik_append_xy(p," ",bx+ddx, by+ddy);
-  pik_append_clr(p,"\" style=\"fill:",pElem->prop.color,"\"/>\n");
+  pik_append_clr(p,"\" style=\"fill:",pElem->color,"\"/>\n");
   pik_chop(p,f,t,h/2);
 }
 
@@ -1177,10 +1218,22 @@ static void pik_append_text(Pik *p, const char *zText, int n, int mFlags){
 
 /* Append a PNum value
 */
-static void pik_append_num(Pik *p, PNum v){
+static void pik_append_num(Pik *p, const char *z,PNum v){
   char buf[100];
   snprintf(buf, sizeof(buf)-1, "%.10g", (double)v);
   buf[sizeof(buf)-1] = 0;
+  pik_append(p, z, -1);
+  pik_append(p, buf, -1);
+}
+
+/* Append a PPoint value  (Used for debugging only)
+*/
+static void pik_append_point(Pik *p, const char *z, PPoint *pPt){
+  char buf[100];
+  snprintf(buf, sizeof(buf)-1, "%.10g,%.10g", 
+          (double)pPt->x, (double)pPt->y);
+  buf[sizeof(buf)-1] = 0;
+  pik_append(p, z, -1);
   pik_append(p, buf, -1);
 }
 
@@ -1232,23 +1285,23 @@ static void pik_append_clr(Pik *p, const char *z1, PNum v, const char *z2){
 */
 static void pik_append_style(Pik *p, PElem *pElem){
   pik_append(p, "style=\"", -1);
-  if( pElem->prop.fill>=0 ){
-    pik_append_clr(p, "fill:", pElem->prop.fill, ";");
+  if( pElem->fill>=0 ){
+    pik_append_clr(p, "fill:", pElem->fill, ";");
   }else{
     pik_append(p,"fill:none;",-1);
   }
-  if( pElem->prop.sw>0.0 && pElem->prop.color>=0.0 ){
-    PNum sw = pElem->prop.sw;
+  if( pElem->sw>0.0 && pElem->color>=0.0 ){
+    PNum sw = pElem->sw;
     if( sw*p->rScale<1.0 ) sw = 1.1/p->rScale;
     pik_append_dis(p, "stroke-width:", sw, ";");
-    pik_append_clr(p, "stroke:",pElem->prop.color,";");
-    if( pElem->prop.dotted>0.0 ){
-      PNum v = pElem->prop.dotted;
+    pik_append_clr(p, "stroke:",pElem->color,";");
+    if( pElem->dotted>0.0 ){
+      PNum v = pElem->dotted;
       if( sw<2.1/p->rScale ) sw = 2.1/p->rScale;
       pik_append_dis(p,"stroke-dasharray:",sw,"");
       pik_append_dis(p,",",v,";");
-    }else if( pElem->prop.dashed>0.0 ){
-      PNum v = pElem->prop.dashed;
+    }else if( pElem->dashed>0.0 ){
+      PNum v = pElem->dashed;
       pik_append_dis(p,"stroke-dasharray:",v,"");
       pik_append_dis(p,",",v,";");
     }
@@ -1293,8 +1346,8 @@ static void pik_append_txt(Pik *p, PElem *pElem){
     }else{
       pik_append(p, " text-anchor=\"middle\"", -1);
     }
-    if( pElem->prop.color>=0.0 ){
-      pik_append_clr(p, " fill=\"", pElem->prop.color, "\"");
+    if( pElem->color>=0.0 ){
+      pik_append_clr(p, " fill=\"", pElem->color, "\"");
     }
     pik_append(p, " dominant-baseline=\"central\">", -1);
     z = t->z+1;
@@ -1323,6 +1376,7 @@ static void pik_error(Pik *p, PToken *pErr, const char *zMsg){
   int iCol;
   int nExtra;
   char c;
+  if( p==0 ) return;
   if( p->nErr ) return;
   p->nErr++;
   i = (int)(pErr->z - p->zIn);
@@ -1528,13 +1582,24 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
   }
   memset(pNew, 0, sizeof(*pNew));
   p->cur = pNew;
-  p->nRPath = 1;
+  p->nTPath = 1;
   p->thenFlag = 0;
-  p->aRPath[0].isRel = 1;
-  p->aRPath[0].pt.x = 0.0;
-  p->aRPath[0].pt.y = 0.0;
+  if( p->list==0 || p->list->n==0 ){
+    pNew->ptAt.x = pNew->ptAt.y = 0.0;
+  }else{
+    PElem *pPrior = p->list->a[p->list->n-1];
+    pNew->ptAt = pPrior->ptExit;
+    switch( p->eDir ){
+      default:       pNew->eWith = CP_W;   break;
+      case T_LEFT:   pNew->eWith = CP_E;   break;
+      case T_UP:     pNew->eWith = CP_S;   break;
+      case T_DOWN:   pNew->eWith = CP_N;   break;
+    }
+  }
+  p->aTPath[0] = pNew->ptAt;
+  pNew->with = pNew->ptAt;
   pNew->outDir = pNew->inDir = p->eDir;
-  pNew->prop.chop1 = pNew->prop.chop2 = -1.0;
+  pNew->chop1 = pNew->chop2 = -1.0;
   pNew->iLayer = (int)pik_value(p, "layer", 5, &miss);
   if( miss ) pNew->iLayer = 1000;
   if( pNew->iLayer<0 ) pNew->iLayer = 0;
@@ -1554,9 +1619,9 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
     const PClass *pClass = pik_find_class(pId);
     if( pClass ){
       pNew->type = pClass;
-      pNew->prop.sw = pik_value(p, "thickness",9,0);
-      pNew->prop.fill = pik_value(p, "fill",4,0);
-      pNew->prop.color = pik_value(p, "color",5,0);
+      pNew->sw = pik_value(p, "thickness",9,0);
+      pNew->fill = pik_value(p, "fill",4,0);
+      pNew->color = pik_value(p, "color",5,0);
       pClass->xInit(p, pNew);
       return pNew;
     }
@@ -1567,29 +1632,10 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
   return 0;
 }
 
-/*
-** Set the output direction and exit point for an element.
-*/
-static void pik_elem_set_exit(Pik *p, PElem *pElem, int eDir){
-  pElem->outDir = eDir;
-  if( !pElem->type->isLine ){
-    pElem->ptExit = pElem->ptAt;
-    switch( pElem->outDir ){
-      default:       pElem->ptExit.x += pElem->prop.w*0.5;  break;
-      case T_LEFT:   pElem->ptExit.x -= pElem->prop.w*0.5;  break;
-      case T_UP:     pElem->ptExit.y += pElem->prop.h*0.5;  break;
-      case T_DOWN:   pElem->ptExit.y -= pElem->prop.h*0.5;  break;
-    }
-  }
-}
-
 /* Change the direction of travel
 */
 static void pik_set_direction(Pik *p, int eDir){
   p->eDir = eDir;
-  if( p->list && p->list->n ){
-    pik_elem_set_exit(p, p->list->a[p->list->n-1], eDir);
-  }
 }
 
 /* Move all coordinates contained within an element (and within its
@@ -1623,25 +1669,104 @@ static void pik_elist_move(PEList *pList, PNum dx, PNum dy){
 }
 
 /*
+** Check to see if it is ok to set the value of paraemeter mThis.
+** Return 0 if it is ok. If it not ok, generate an appropriate
+** error message and return non-zero.
+**
+** Flags are set in pElem so that the same element or conflicting
+** elements may not be set again.
+**
+** To be ok, bit mThis must be clear and no more than one of
+** the bits identified by mBlockers may be set.
+*/
+static int pik_param_ok(
+  Pik *p,             /* For storing the error message (if any) */
+  PElem *pElem,       /* The element under construction */
+  PToken *pId,        /* Make the error point to this token */
+  int mThis,          /* Value we are trying to set */
+  int mBlockers       /* Other value that might block this one */
+){
+  int m;
+  if( pElem->mProp & mThis ){
+    pik_error(p, pId, "value is already set");
+    return 1;
+  }
+  if( pElem->mCalc & mThis ){
+    pik_error(p, pId, "value already fixed by prior constraints");
+    return 1;
+  }
+  m = pElem->mProp & mBlockers;
+  if( m ){
+    pElem->mCalc |= mThis|mBlockers;
+  }
+  pElem->mProp |= mThis;
+  return 0;
+}
+
+
+/*
 ** Set a numeric property like "width 7" or "radius 200%".
 **
 ** The rAbs term is an absolute value to add in.  rRel is
 ** a relative value by which to change the current value.
 */
 void pik_set_numprop(Pik *p, PToken *pId, PNum rAbs, PNum rRel){
-  struct PProp *pProp = &p->cur->prop;
+  PElem *pElem = p->cur;
   switch( pId->eType ){
-    case T_HEIGHT:     pProp->h = pProp->h*rRel + rAbs;    break;
-    case T_WIDTH:      pProp->w = pProp->w*rRel + rAbs;    break;
-    case T_RADIUS:     rAbs *= 2.0;                        /* fall through */
-    case T_DIAMETER:   pProp->w = pProp->w*rRel + rAbs;
-                       pProp->h = pProp->h*rRel + rAbs;    break;
-    case T_RX:         pProp->rx = pProp->rx*rRel + rAbs;  break;
-    case T_RY:         pProp->ry = pProp->ry*rRel + rAbs;  break;
-    case T_THICKNESS:  pProp->sw = pProp->sw*rRel + rAbs;  break;
-    case T_FILL:       pProp->fill = rAbs;                 break;
-    case T_COLOR:      pProp->color = rAbs;                break;
+    case T_HEIGHT:
+      if( pik_param_ok(p, pElem, pId, A_HEIGHT, A_BOTTOM|A_TOP|A_AT) ) return;
+      pElem->h = pElem->h*rRel + rAbs;
+      break;
+    case T_TOP:
+      if( pik_param_ok(p, pElem, pId, A_TOP, A_BOTTOM|A_WIDTH|A_AT) ) return;
+      pElem->top = rAbs;
+      break;
+    case T_BOTTOM:
+      if( pik_param_ok(p, pElem, pId, A_BOTTOM, A_TOP|A_WIDTH|A_AT) ) return;
+      pElem->bottom = rAbs;
+      break;
+    case T_WIDTH:
+      if( pik_param_ok(p, pElem, pId, A_WIDTH, A_RIGHT|A_LEFT|A_AT) ) return;
+      pElem->w = pElem->w*rRel + rAbs;
+      break;
+    case T_RIGHT:
+      if( pik_param_ok(p, pElem, pId, A_RIGHT, A_WIDTH|A_LEFT|A_AT) ) return;
+      pElem->right = rAbs;
+      break;
+    case T_LEFT:
+      if( pik_param_ok(p, pElem, pId, A_LEFT, A_WIDTH|A_RIGHT|A_AT) ) return;
+      pElem->left = rAbs;
+      break;
+    case T_RX:
+      if( pik_param_ok(p, pElem, pId, A_RX, 0) ) return;
+      pElem->rx = pElem->rx*rRel + rAbs;
+      break;
+    case T_RADIUS:
+    case T_RY:
+      if( pik_param_ok(p, pElem, pId, A_RY, 0) ) return;
+      pElem->ry = pElem->ry*rRel + rAbs;
+      break;
+    case T_DIAMETER:
+      if( pik_param_ok(p, pElem, pId, A_RY, 0) ) return;
+      pElem->ry = pElem->rx*rRel + 0.5*rAbs; /* diam it 2x radius */
+      break;
+    case T_THICKNESS:
+      if( pik_param_ok(p, pElem, pId, A_THICKNESS, 0) ) return;
+      pElem->sw = pElem->sw*rRel + rAbs;
+      break;
+    case T_FILL:
+      if( pik_param_ok(p, pElem, pId, A_FILL, 0) ) return;
+      pElem->fill = rAbs;
+      break;
+    case T_COLOR:
+      if( pik_param_ok(p, pElem, pId, A_COLOR, 0) ) return;
+      pElem->color = rAbs;
+      break;
   }
+  if( pElem->type->xNumProp ){
+    pElem->type->xNumProp(p, pElem, pId);
+  }
+  return;
 }
 
 /*
@@ -1651,27 +1776,27 @@ void pik_set_numprop(Pik *p, PToken *pId, PNum rAbs, PNum rRel){
 ** a default.
 */
 void pik_set_dashed(Pik *p, PToken *pId, PNum *pVal){
-  struct PProp *pProp = &p->cur->prop;
+  PElem *pElem = p->cur;
   PNum v;
   switch( pId->eType ){
     case T_DOTTED:  {
       v = pVal==0 ? pik_value(p,"dashwid",7,0) : *pVal;
-      pProp->dotted = v;
-      pProp->dashed = 0.0;
+      pElem->dotted = v;
+      pElem->dashed = 0.0;
       break;
     }
     case T_DASHED:  {
       v = pVal==0 ? pik_value(p,"dashwid",7,0) : *pVal;
-      pProp->dashed = v;
-      pProp->dotted = 0.0;
+      pElem->dashed = v;
+      pElem->dotted = 0.0;
       break;
     }
     case T_CHOP: {
       v = pVal==0 ? pik_value(p,"circlerad",9,0) : *pVal;
-      if( pProp->chop1<0.0 ){
-        pProp->chop1 = v;
-      }else if( pProp->chop2<0.0 ){
-        pProp->chop2 = v;
+      if( pElem->chop1<0.0 ){
+        pElem->chop1 = v;
+      }else if( pElem->chop2<0.0 ){
+        pElem->chop2 = v;
       }else{
         pik_error(p, pId, "too many \"chop\" terms");
       }
@@ -1691,7 +1816,7 @@ static void pik_then(Pik *p, PToken *pToken, PElem *pElem){
     pik_error(p, pToken, "use with line-oriented elements only");
     return;
   }
-  n = p->nRPath - 1;
+  n = p->nTPath - 1;
   if( n<1 ){
     pik_error(p, pToken, "no prior path points");
     return;
@@ -1699,25 +1824,36 @@ static void pik_then(Pik *p, PToken *pToken, PElem *pElem){
   p->thenFlag = 1;
 }
 
-/* Advance to the next entry in p->aRPath.  Return its index.
+/* Advance to the next entry in p->aTPath.  Return its index.
 */
 static int pik_next_rpath(Pik *p, PToken *pErr){
-  int n = p->nRPath - 1;
-  if( n+1>=count(p->aRPath) ){
+  int n = p->nTPath - 1;
+  if( n+1>=count(p->aTPath) ){
     pik_error(0, pErr, "too many path elements");
     return n;
   }
   n++;
-  p->nRPath++;
-  p->aRPath[n].pt.x = 0.0;
-  p->aRPath[n].pt.y = 0.0;
+  p->nTPath++;
+  p->aTPath[n] = p->aTPath[n-1];
+  p->mTPath = 0;
   return n;
 }
 
-/* Add a direction term to an element.  "up 0.5", or "left 3", or "down".
+/* Add a direction term to an element.  "up 0.5", or "left 3", or "down"
+** or "down to 1.3".  Specific processing depends on parameters:
 **
-** If the rel parameter is true, then the default distance is used but
-** is scaled by (*pVal)/100.  This implements things like "right 50%".
+**   pVal==0   Add the default width or height to the coordinate.
+**             Used to implement "down" and similar.
+**
+**   rel==0    Add or subtract *pVal to the path coordinate.  Used to
+**             implement "up 0.5" and similar.
+**
+**   rel==1    Multiple 0.01*pVal with the width or height (as appropriate)
+**             and add that to the coordinate.  Used for "left 50%" and
+**             similar.
+**
+**   rel==2    Make the coordinate exactly equal to *pVal.  Used to
+**             implement things like "down to 1.3".
 */
 static void pik_add_direction(Pik *p, PToken *pDir, PNum *pVal, int rel){
   PElem *pElem = p->cur;
@@ -1727,36 +1863,45 @@ static void pik_add_direction(Pik *p, PToken *pDir, PNum *pVal, int rel){
     pik_error(p, pDir, "use with line-oriented elements only");
     return;
   }
-  if( pVal && rel ){
+  if( pVal && rel==1 ){
     scale = *pVal/100;
     pVal = 0;
   }
-  n = p->nRPath - 1;
-  if( p->thenFlag || p->aRPath[n].isRel==0 || n==0 ){
+  if( rel==2 ){
+    pElem->mProp |= A_FROM;
+  }
+  n = p->nTPath - 1;
+  if( p->thenFlag || p->mTPath==3 || n==0 ){
     n = pik_next_rpath(p, pDir);
-    p->aRPath[n].isRel = 1;
     p->thenFlag = 0;
   }
   switch( pDir->eType ){
     case T_UP:
-       if( p->aRPath[n].pt.y!=0.0 ) n = pik_next_rpath(p, pDir);
-       p->aRPath[n].pt.y = pVal ? *pVal : pElem->prop.h*scale;
+       if( p->mTPath & 2 ) n = pik_next_rpath(p, pDir);
+       if( rel==2 ) p->aTPath[n].y = 0;
+       p->aTPath[n].y += (pVal ? *pVal : pElem->h*scale);
+       p->mTPath |= 2;
        break;
     case T_DOWN:
-       if( p->aRPath[n].pt.y!=0.0 ) n = pik_next_rpath(p, pDir);
-       p->aRPath[n].pt.y = -(pVal ? *pVal : pElem->prop.h*scale);
+       if( p->mTPath & 2 ) n = pik_next_rpath(p, pDir);
+       if( rel==2 ) p->aTPath[n].y = 0;
+       p->aTPath[n].y -= (pVal ? *pVal : pElem->h*scale);
+       p->mTPath |= 2;
        break;
     case T_RIGHT:
-       if( p->aRPath[n].pt.x!=0.0 ) n = pik_next_rpath(p, pDir);
-       p->aRPath[n].pt.x = pVal ? *pVal : pElem->prop.w*scale;
+       if( p->mTPath & 1 ) n = pik_next_rpath(p, pDir);
+       if( rel==2 ) p->aTPath[n].x = 0;
+       p->aTPath[n].x += (pVal ? *pVal : pElem->w*scale);
+       p->mTPath |= 1;
        break;
     case T_LEFT:
-       if( p->aRPath[n].pt.x!=0.0 ) n = pik_next_rpath(p, pDir);
-       p->aRPath[n].pt.x = -(pVal ? *pVal : pElem->prop.w*scale);
+       if( p->mTPath & 1 ) n = pik_next_rpath(p, pDir);
+       if( rel==2 ) p->aTPath[n].x = 0;
+       p->aTPath[n].x -= (pVal ? *pVal : pElem->w*scale);
+       p->mTPath |= 1;
        break;
   }
   pElem->outDir = pDir->eType;
-  p->aRPath[n].isRel = 1;
 }
 
 /* Set the "from" of an element
@@ -1766,30 +1911,28 @@ static void pik_set_from(Pik *p, PElem *pElem, PToken *pTk, PPoint *pPt){
     pik_error(p, pTk, "use \"at\" to position this object");
     return;
   }
-  if( p->aRPath[0].isRel==0 ){
-    pik_error(p, pTk, "location already fixed");
+  if( pElem->mProp & A_FROM ){
+    pik_error(p, pTk, "line start location already fixed");
     return;
   }
-  p->aRPath[0].pt = *pPt;
-  p->aRPath[0].isRel = 0;
+  p->aTPath[0] = *pPt;
+  p->mTPath = 3;
+  pElem->mProp |= A_FROM;
 }
 
 /* Set the "to" of an element
 */
 static void pik_add_to(Pik *p, PElem *pElem, PToken *pTk, PPoint *pPt){
-  int n = p->nRPath-1;
+  int n = p->nTPath-1;
   if( !pElem->type->isLine ){
     pik_error(p, pTk, "use \"at\" to position this object");
     return;
   }
-  if( p->aRPath[n].isRel==0 
-   || p->aRPath[n].pt.x!=0
-   || p->aRPath[n].pt.y!=0
-  ){
+  if( p->mTPath || p->mTPath ){
     n = pik_next_rpath(p, pTk);
   }
-  p->aRPath[n].isRel = 0;
-  p->aRPath[n].pt = *pPt;
+  p->aTPath[n] = *pPt;
+  p->mTPath = 3;
 }
 
 /* Set the "at" of an element
@@ -1798,33 +1941,28 @@ static void pik_set_at(Pik *p, PToken *pEdge, PPoint *pAt, PToken *pErrTok){
   PElem *pElem;
   if( p->nErr ) return;
   pElem = p->cur;
+
   if( pElem->type->isLine ){
     pik_error(p, pErrTok, "use \"from\" and \"to\" to position this object");
     return;
   }
-  if( p->aRPath[0].isRel==0 ){
-    pik_error(p, pErrTok, "location already fixed");
+  if( pElem->mProp & A_AT ){
+    pik_error(p, pErrTok, "location fixed by prior \"at\"");
     return;
   }
-  if( pEdge ){
-    PPoint ofst = pik_elem_offset(p,pElem,pEdge->eCode);
-    p->aRPath[0].pt.x = pAt->x - ofst.x;
-    p->aRPath[0].pt.y = pAt->y - ofst.y;
-  }else{   
-    p->aRPath[0].pt = *pAt;
+  if( pElem->mCalc & A_AT ){
+    pik_error(p, pErrTok, "location fixed by prior constraints");
+    return;
   }
-  p->aRPath[0].isRel = 0;
-  if( pElem->pSublist ){
-    PNum dx = 0.0, dy = 0.0;
-    switch( pElem->inDir ){
-      default:      dx = -pElem->prop.w/2;                         break;
-      case T_LEFT:  dx = +pElem->prop.w/2;                         break;
-      case T_DOWN:                         dy = +pElem->prop.h/2;  break;
-      case T_UP:                           dy = -pElem->prop.h/2;  break;
-    }
-    pik_elist_move(pElem->pSublist, 
-         p->aRPath[0].pt.x + dx,  p->aRPath[0].pt.y + dy);
+  if( pElem->mProp & (A_WIDTH|A_LEFT|A_RIGHT) ){
+    pElem->mCalc |= (A_WIDTH|A_LEFT|A_RIGHT|A_AT);
   }
+  if( pElem->mProp & (A_HEIGHT|A_TOP|A_BOTTOM) ){
+    pElem->mCalc |= (A_HEIGHT|A_TOP|A_BOTTOM|A_AT);
+  }
+  pElem->mProp |= A_AT;
+  pElem->eWith = pEdge ? pEdge->eCode : CP_C;
+  pElem->with = *pAt;
 }
 
 /*
@@ -2170,19 +2308,19 @@ static PPoint pik_position_at_hdg(Pik *p, PNum dist, PToken *pD, PPoint pt){
 static PNum pik_property_of(Pik *p, PElem *pElem, PToken *pProp){
   PNum v = 0.0;
   switch( pProp->eType ){
-    case T_HEIGHT:    v = pElem->prop.h;       break;
-    case T_WIDTH:     v = pElem->prop.w;       break;
-    case T_RX:        v = pElem->prop.rx;      break;
+    case T_HEIGHT:    v = pElem->h;       break;
+    case T_WIDTH:     v = pElem->w;       break;
+    case T_RX:        v = pElem->rx;      break;
     case T_RADIUS:    /* fall through */
-    case T_RY:        v = pElem->prop.ry;      break;
-    case T_DIAMETER:  v = pElem->prop.ry*2.0;  break;
-    case T_THICKNESS: v = pElem->prop.sw;      break;
-    case T_DASHED:    v = pElem->prop.dashed;  break;
-    case T_DOTTED:    v = pElem->prop.dotted;  break;
-    case T_CHOP:      v = pElem->prop.chop2;
+    case T_RY:        v = pElem->ry;      break;
+    case T_DIAMETER:  v = pElem->ry*2.0;  break;
+    case T_THICKNESS: v = pElem->sw;      break;
+    case T_DASHED:    v = pElem->dashed;  break;
+    case T_DOTTED:    v = pElem->dotted;  break;
+    case T_CHOP:      v = pElem->chop2;
          if( v<0.0 )  v = 0.0;                 break;
-    case T_FILL:      v = pElem->prop.fill;    break;
-    case T_COLOR:     v = pElem->prop.color;   break;
+    case T_FILL:      v = pElem->fill;    break;
+    case T_COLOR:     v = pElem->color;   break;
     case T_X:         v = pElem->ptAt.x;       break;
     case T_Y:         v = pElem->ptAt.y;       break;
     case T_TOP:       v = pElem->bbox.ne.y;    break;
@@ -2237,80 +2375,54 @@ static void pik_elem_setname(Pik *p, PElem *pElem, PToken *pName){
 */
 static void pik_after_adding_attributes(Pik *p, PElem *pElem){
   int i;
-  int isConnected;
+  PPoint ofst;
+  PNum dx, dy;
 
-  /* Convert the starting point to absolute coordinates.  If
-  ** the starting point is currently relative (meaning that it
-  ** is unspecified by attributes) then make the starting point
-  ** equal to the exit point of the previous object.
-  */
-  if( p->aRPath[0].isRel ){
-    PPoint ptStart;
-    if( p->list==0 || p->list->n==0 ){
-      ptStart.x = ptStart.y = 0;
-    }else{
-      PElem *pPrior = p->list->a[p->list->n-1];
-      ptStart = pPrior->ptExit;
-    }
-    p->aRPath[0].pt.x = ptStart.x;
-    p->aRPath[0].pt.y = ptStart.y;
-    p->aRPath[0].isRel = 0;
-    if( pElem->pSublist ){
-      pik_elist_move(pElem->pSublist, ptStart.x, ptStart.y);
-    }
-    isConnected = 1;
-  }else{
-    /* Absolute location was specified */
-    isConnected = 0;
+  if( p->nErr ) return;
+  ofst = pik_elem_offset(p, pElem, pElem->eWith);
+  dx = (pElem->with.x - ofst.x) - pElem->ptAt.x;
+  dy = (pElem->with.y - ofst.y) - pElem->ptAt.y;
+  if( dx!=0 || dy!=0 ){
+    pik_elem_move(pElem, dx, dy);
   }
 
   /* For a line object with no movement specified, a single movement
   ** of the default length in the current direction
   */
-  if( pElem->type->isLine && p->nRPath<2 ){
-    PPoint *pPt = &p->aRPath[1].pt;
-    p->nRPath = 2;
-    p->aRPath[1].isRel = 1;
+  if( pElem->type->isLine && p->nTPath<2 ){
+    pik_next_rpath(p, 0);
+    assert( p->nTPath==2 );
     switch( pElem->inDir ){
-      default:      pPt->x = +pElem->prop.w; pPt->y = 0.0; break;
-      case T_LEFT:  pPt->x = -pElem->prop.w; pPt->y = 0.0; break;
-      case T_UP:    pPt->y = +pElem->prop.h; pPt->x = 0.0; break;
-      case T_DOWN:  pPt->y = -pElem->prop.h; pPt->x = 0.0; break;
-    }
-  }
-
-  /* Convert the path to absolute coordinates */
-  for(i=1; i<p->nRPath; i++){
-    if( p->aRPath[i].isRel ){
-      p->aRPath[i].pt.x += p->aRPath[i-1].pt.x;
-      p->aRPath[i].pt.y += p->aRPath[i-1].pt.y;
-      p->aRPath[i].isRel = 0;
+      default:      p->aTPath[1].x += pElem->w; break;
+      case T_LEFT:  p->aTPath[1].x -= pElem->w; break;
+      case T_UP:    p->aTPath[1].y += pElem->h; break;
+      case T_DOWN:  p->aTPath[1].y -= pElem->h; break;
     }
   }
 
   /* Fix up the chop parameters */
-  if( pElem->prop.chop1>=0.0 && pElem->prop.chop2<0.0 ){
-    pElem->prop.chop2 = pElem->prop.chop1;
+  if( pElem->chop1>=0.0 && pElem->chop2<0.0 ){
+    pElem->chop2 = pElem->chop1;
   }
 
   /* Compute final bounding box, entry and exit points, center
   ** point (ptAt) and path for the element
   */
   pik_bbox_init(&pElem->bbox);
-  pElem->ptEnter = p->aRPath[0].pt;
   if( pElem->type->isLine ){
-    pElem->aPath = malloc( sizeof(PPoint)*p->nRPath );
+    pElem->aPath = malloc( sizeof(PPoint)*p->nTPath );
     if( pElem->aPath==0 ){
       pik_error(p, 0, 0);
       pElem->nPath = 0;
     }else{
-      pElem->nPath = p->nRPath;
-      for(i=0; i<p->nRPath; i++){
-        pElem->aPath[i] = p->aRPath[i].pt;
+      pElem->nPath = p->nTPath;
+      for(i=0; i<p->nTPath; i++){
+        pElem->aPath[i] = p->aTPath[i];
         pik_bbox_addpt(&pElem->bbox, &pElem->aPath[i]);
       }
     }
-    pElem->ptExit = p->aRPath[p->nRPath-1].pt;
+    pElem->ptEnter = p->aTPath[0];
+    pElem->ptExit = p->aTPath[p->nTPath-1];
 
     /* Compute the center of the line based on the bounding box over
     ** the vertexes */
@@ -2319,21 +2431,25 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
 
     /* Reset the width and height of the object to be the width and height
     ** of the bounding box over vertexes */
-    pElem->prop.w = pElem->bbox.ne.x - pElem->bbox.sw.x;
-    pElem->prop.h = pElem->bbox.ne.y - pElem->bbox.sw.y;
+    pElem->w = pElem->bbox.ne.x - pElem->bbox.sw.x;
+    pElem->h = pElem->bbox.ne.y - pElem->bbox.sw.y;
   }else{
-    PNum w2 = pElem->prop.w/2.0;
-    PNum h2 = pElem->prop.h/2.0;
-    pElem->ptAt = p->aRPath[0].pt;
-    if( isConnected ){
-      switch( pElem->inDir ){
-        default:       pElem->ptAt.x += w2;  break;
-        case T_LEFT:   pElem->ptAt.x -= w2;  break;
-        case T_UP:     pElem->ptAt.y += h2;  break;
-        case T_DOWN:   pElem->ptAt.y -= h2;  break;
-      }
+    PNum w2 = pElem->w/2.0;
+    PNum h2 = pElem->h/2.0;
+    pElem->ptEnter = pElem->ptAt;
+    pElem->ptExit = pElem->ptAt;
+    switch( pElem->inDir ){
+      default:       pElem->ptEnter.x -= w2;  break;
+      case T_LEFT:   pElem->ptEnter.x += w2;  break;
+      case T_UP:     pElem->ptEnter.y -= h2;  break;
+      case T_DOWN:   pElem->ptEnter.y += h2;  break;
     }
-    pik_elem_set_exit(p, pElem, pElem->outDir);
+    switch( pElem->outDir ){
+      default:       pElem->ptExit.x += w2;  break;
+      case T_LEFT:   pElem->ptExit.x -= w2;  break;
+      case T_UP:     pElem->ptExit.y += h2;  break;
+      case T_DOWN:   pElem->ptExit.y -= h2;  break;
+    }
     pElem->bbox.sw.x = pElem->ptAt.x - w2;
     pElem->bbox.sw.y = pElem->ptAt.y - h2;
     pElem->bbox.ne.x = pElem->ptAt.x + w2;
@@ -2345,6 +2461,7 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
 /* Render a single element
 */
 static void pik_elem_render(Pik *p, PElem *pElem){
+  char *zDir;
   if( pElem==0 ) return;
   pik_append(p,"<!-- ", -1);
   if( pElem->zName ){
@@ -2357,14 +2474,18 @@ static void pik_elem_render(Pik *p, PElem *pElem){
     pik_append_text(p, pElem->aTxt[0].z+1, pElem->aTxt[0].n-2, 1);
     pik_append(p, "\"", 1);
   }
-  pik_append(p, " width ", 7);
-  pik_append_num(p, pElem->prop.w);
-  pik_append(p, " height ", 8);
-  pik_append_num(p, pElem->prop.h);
-  pik_append(p, " at ", 4);
-  pik_append_num(p, pElem->ptAt.x);
-  pik_append(p, ",", 1);
-  pik_append_num(p, pElem->ptAt.y);
+  pik_append_num(p, " w=", pElem->w);
+  pik_append_num(p, " h=", pElem->h);
+  pik_append_point(p, " center=", &pElem->ptAt);
+  pik_append_point(p, " enter=", &pElem->ptEnter);
+  switch( pElem->outDir ){
+    default:      zDir = " right";  break;
+    case T_LEFT:  zDir = " left";   break;
+    case T_UP:    zDir = " up";     break;
+    case T_DOWN:  zDir = " down";   break;
+  }
+  pik_append_point(p, " exit=", &pElem->ptExit);
+  pik_append(p, zDir, -1);
   pik_append(p, " -->\n", -1);
 }
 
@@ -2434,11 +2555,11 @@ static void pik_render(Pik *p, PEList *pEList){
 
       /* Expand the bounding box to account for arrowheads on lines */
       if( pElem->type->isLine && pElem->nPath>0 ){
-        if( pElem->prop.larrow ){
+        if( pElem->larrow ){
           pik_bbox_addellipse(&p->bbox, pElem->aPath[0].x, pElem->aPath[0].y,
                               wArrow, wArrow);
         }
-        if( pElem->prop.rarrow ){
+        if( pElem->rarrow ){
           j = pElem->nPath-1;
           pik_bbox_addellipse(&p->bbox, pElem->aPath[j].x, pElem->aPath[j].y,
                               wArrow, wArrow);
