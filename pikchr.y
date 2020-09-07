@@ -459,7 +459,7 @@ place(A) ::= object(O) DOT_L START(X).  {A = pik_place_of_elem(p,O,&X);}
 place(A) ::= object(O) DOT_L END(X).    {A = pik_place_of_elem(p,O,&X);}
 place(A) ::= START(X) OF object(O).     {A = pik_place_of_elem(p,O,&X);}
 place(A) ::= END(X) OF object(O).       {A = pik_place_of_elem(p,O,&X);}
-place(A) ::= edge(X) OF object(O).    {A = pik_place_of_elem(p,O,&X);}
+place(A) ::= edge(X) OF object(O).      {A = pik_place_of_elem(p,O,&X);}
 place(A) ::= NTH(N) VERTEX(E) OF object(X). {A = pik_nth_vertex(p,&N,&E,X);}
 
 object(A) ::= objectname(A).
@@ -2016,6 +2016,15 @@ static void pik_set_from(Pik *p, PElem *pElem, PToken *pTk, PPoint *pPt){
     pik_error(p, pTk, "polygon is closed");
     return;
   }
+  if( p->nTPath>1 ){
+    PNum dx = pPt->x - p->aTPath[0].x;
+    PNum dy = pPt->y - p->aTPath[0].y;
+    int i;
+    for(i=1; i<p->nTPath; i++){
+      p->aTPath[i].x += dx;
+      p->aTPath[i].y += dy;
+    }
+  }
   p->aTPath[0] = *pPt;
   p->mTPath = 3;
   pElem->mProp |= A_FROM;
@@ -2416,7 +2425,7 @@ static PPoint pik_place_of_elem(Pik *p, PElem *pElem, PToken *pEdge){
     return pElem->ptAt;
   }
   pClass = pElem->type;
-  if( pEdge->eType==T_EDGEPT ){
+  if( pEdge->eType==T_EDGEPT || pEdge->eEdge>0 ){
     if( pClass->isLine ){
       pik_error(0, pEdge,
           "line objects have only \"start\" and \"end\" points");
@@ -3193,7 +3202,7 @@ char *pikchr(
     }else{
 #if 0
       printf("******** Token %s (%d): \"%.*s\" **************\n",
-             yyTokenName[token.eType], eType,
+             yyTokenName[token.eType], token.eType,
              isspace(token.z[0]) ? 0 : token.n, token.z);
 #endif
       token.n = (unsigned short)(sz & 0xffff);
