@@ -500,6 +500,11 @@ expr(A) ::= LP dashproperty(P) OF object(O) RP.  {A=pik_property_of(p,O,&P);}
 expr(A) ::= LP numproperty(P) OF object(O) RP.   {A=pik_property_of(p,O,&P);}
 expr(A) ::= LP colorproperty(P) OF object(O) RP. {A=pik_property_of(p,O,&P);}
 
+expr(A) ::= NTH(N) VERTEX(E) OF object(X) DOT_L X.
+                                             {A = pik_nth_vertex(p,&N,&E,X).x;}
+expr(A) ::= NTH(N) VERTEX(E) OF object(X) DOT_L Y.
+                                             {A = pik_nth_vertex(p,&N,&E,X).y;}
+
 locproperty(A) ::= X|Y|TOP|BOTTOM|LEFT|RIGHT(A).
 
 %code {
@@ -2417,13 +2422,14 @@ static PPoint pik_position_at_hdg(Pik *p, PNum dist, PToken *pD, PPoint pt){
 */
 static PPoint pik_nth_vertex(Pik *p, PToken *pNth, PToken *pErr, PElem *pObj){
   static const PPoint zero;
-  int n = atoi(pNth->z);
+  int n;
   if( p->nErr || pObj==0 ) return p->aTPath[0];
   if( !pObj->type->isLine ){
     pik_error(p, pErr, "object is not a line");
     return zero;
   }
-  if( n==0 || n>pObj->nPath ){
+  n = atoi(pNth->z);
+  if( n<1 || n>pObj->nPath ){
     pik_error(p, pNth, "no such vertex");
     return zero;
   }

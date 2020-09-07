@@ -12,3 +12,5 @@ dot same color blue at 4th vertex of 1st spline
 dot same color red at 1st vertex of 2nd spline
 dot same color green at 2nd vertex of 2nd spline
 dot same color blue at 3rd vertex of 2nd spline
+
+print 2nd vertex of 1st spline.x, 2nd vertex of 1st spline.y
