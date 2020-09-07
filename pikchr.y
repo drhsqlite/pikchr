@@ -126,6 +126,15 @@ static int pik_token_eq(PToken *pToken, const char *z){
 #define T_WHITESPACE 1000
 #define T_ERROR      1001
 
+/* Directions of movement */
+#define DIR_RIGHT     0
+#define DIR_DOWN      1
+#define DIR_LEFT      2
+#define DIR_UP        3
+#define ValidDir(X)     ((X)>=0 && (X)<=3)
+#define IsUpDown(X)     (((X)&1)==1)
+#define IsLeftRight(X)  (((X)&1)==0)
+
 /* Bitmask for the various attributes that are */
 #define A_WIDTH         0x000001
 #define A_HEIGHT        0x000002
@@ -204,7 +213,7 @@ struct Pik {
   unsigned int nOutAlloc;  /* Space allocated to zOut[] */
   PNum wArrow;             /* Width of arrowhead at the fat end */
   PNum hArrow;             /* Height of arrowhead - dist from tip to fat end */
-  int eDir;                /* Current direction */
+  unsigned char eDir;      /* Current direction */
   PElem *cur;              /* Element under construction */
   PEList *list;            /* Element list under construction */
   PVar *pVar;              /* Application-defined variables */
@@ -326,7 +335,7 @@ element_list(A) ::= element_list(B) EOL element(X).
 
 
 element(A) ::= .   { A = 0; }
-element(A) ::= direction(D).  { pik_set_direction(p,D.eType);  A=0; }
+element(A) ::= direction(D).  { pik_set_direction(p,D.eCode);  A=0; }
 element(A) ::= ID(N) ASSIGN rvalue(X). {pik_set_var(p,&N,X); A = 0;}
 element(A) ::= FILL(N) ASSIGN rvalue(X). {pik_set_var(p,&N,X); A = 0;}
 element(A) ::= COLOR(N) ASSIGN rvalue(X). {pik_set_var(p,&N,X); A = 0;}
@@ -695,6 +704,10 @@ static void arcInit(Pik *p, PElem *pElem){
   pElem->w = pik_value(p, "arcrad",6,0);
   pElem->h = pElem->w;
 }
+static void arcRender(Pik *p, PElem *pElem){
+  pik_append_txt(p, pElem);
+}
+
 
 /* Methods for the "arrow" class */
 static void arrowInit(Pik *p, PElem *pElem){
@@ -1031,7 +1044,7 @@ static const PClass aClass[] = {
       /* xInit */         arcInit,
       /* xNumProp */      0,
       /* xOffset */       0,
-      /* xRender */       0 
+      /* xRender */       arcRender
    },
    {  /* name */          "arrow",
       /* isline */        1,
@@ -1614,10 +1627,10 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
     PElem *pPrior = p->list->a[p->list->n-1];
     pNew->ptAt = pPrior->ptExit;
     switch( p->eDir ){
-      default:       pNew->eWith = CP_W;   break;
-      case T_LEFT:   pNew->eWith = CP_E;   break;
-      case T_UP:     pNew->eWith = CP_S;   break;
-      case T_DOWN:   pNew->eWith = CP_N;   break;
+      default:         pNew->eWith = CP_W;   break;
+      case DIR_LEFT:   pNew->eWith = CP_E;   break;
+      case DIR_UP:     pNew->eWith = CP_S;   break;
+      case DIR_DOWN:   pNew->eWith = CP_N;   break;
     }
   }
   p->aTPath[0] = pNew->ptAt;
@@ -1660,14 +1673,15 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
 ** Set the output direction and exit point for an element.
 */
 static void pik_elem_set_exit(Pik *p, PElem *pElem, int eDir){
+  assert( ValidDir(eDir) );
   pElem->outDir = eDir;
   if( !pElem->type->isLine || pElem->bClose ){
     pElem->ptExit = pElem->ptAt;
     switch( pElem->outDir ){
-      default:       pElem->ptExit.x += pElem->w*0.5;  break;
-      case T_LEFT:   pElem->ptExit.x -= pElem->w*0.5;  break;
-      case T_UP:     pElem->ptExit.y += pElem->h*0.5;  break;
-      case T_DOWN:   pElem->ptExit.y -= pElem->h*0.5;  break;
+      default:         pElem->ptExit.x += pElem->w*0.5;  break;
+      case DIR_LEFT:   pElem->ptExit.x -= pElem->w*0.5;  break;
+      case DIR_UP:     pElem->ptExit.y += pElem->h*0.5;  break;
+      case DIR_DOWN:   pElem->ptExit.y -= pElem->h*0.5;  break;
     }
   }
 }
@@ -1675,6 +1689,7 @@ static void pik_elem_set_exit(Pik *p, PElem *pElem, int eDir){
 /* Change the direction of travel
 */
 static void pik_set_direction(Pik *p, int eDir){
+  assert( ValidDir(eDir) );
   p->eDir = eDir;
   if( p->list && p->list->n ){
     pik_elem_set_exit(p, p->list->a[p->list->n-1], eDir);
@@ -1918,33 +1933,33 @@ static void pik_add_direction(Pik *p, PToken *pDir, PNum *pVal, int rel){
     n = pik_next_rpath(p, pDir);
     p->thenFlag = 0;
   }
-  switch( pDir->eType ){
-    case T_UP:
+  switch( pDir->eCode ){
+    case DIR_UP:
        if( p->mTPath & 2 ) n = pik_next_rpath(p, pDir);
        if( rel==2 ) p->aTPath[n].y = 0;
        p->aTPath[n].y += (pVal ? *pVal : pElem->h*scale);
        p->mTPath |= 2;
        break;
-    case T_DOWN:
+    case DIR_DOWN:
        if( p->mTPath & 2 ) n = pik_next_rpath(p, pDir);
        if( rel==2 ) p->aTPath[n].y = 0;
        p->aTPath[n].y -= (pVal ? *pVal : pElem->h*scale);
        p->mTPath |= 2;
        break;
-    case T_RIGHT:
+    case DIR_RIGHT:
        if( p->mTPath & 1 ) n = pik_next_rpath(p, pDir);
        if( rel==2 ) p->aTPath[n].x = 0;
        p->aTPath[n].x += (pVal ? *pVal : pElem->w*scale);
        p->mTPath |= 1;
        break;
-    case T_LEFT:
+    case DIR_LEFT:
        if( p->mTPath & 1 ) n = pik_next_rpath(p, pDir);
        if( rel==2 ) p->aTPath[n].x = 0;
        p->aTPath[n].x -= (pVal ? *pVal : pElem->w*scale);
        p->mTPath |= 1;
        break;
   }
-  pElem->outDir = pDir->eType;
+  pElem->outDir = pDir->eCode;
 }
 
 /* Set the "from" of an element
@@ -2526,10 +2541,10 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
     pik_next_rpath(p, 0);
     assert( p->nTPath==2 );
     switch( pElem->inDir ){
-      default:      p->aTPath[1].x += pElem->w; break;
-      case T_LEFT:  p->aTPath[1].x -= pElem->w; break;
-      case T_UP:    p->aTPath[1].y += pElem->h; break;
-      case T_DOWN:  p->aTPath[1].y -= pElem->h; break;
+      default:        p->aTPath[1].x += pElem->w; break;
+      case DIR_LEFT:  p->aTPath[1].x -= pElem->w; break;
+      case DIR_UP:    p->aTPath[1].y += pElem->h; break;
+      case DIR_DOWN:  p->aTPath[1].y -= pElem->h; break;
     }
   }
 
@@ -2578,16 +2593,16 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
     pElem->ptEnter = pElem->ptAt;
     pElem->ptExit = pElem->ptAt;
     switch( pElem->inDir ){
-      default:       pElem->ptEnter.x -= w2;  break;
-      case T_LEFT:   pElem->ptEnter.x += w2;  break;
-      case T_UP:     pElem->ptEnter.y -= h2;  break;
-      case T_DOWN:   pElem->ptEnter.y += h2;  break;
+      default:         pElem->ptEnter.x -= w2;  break;
+      case DIR_LEFT:   pElem->ptEnter.x += w2;  break;
+      case DIR_UP:     pElem->ptEnter.y -= h2;  break;
+      case DIR_DOWN:   pElem->ptEnter.y += h2;  break;
     }
     switch( pElem->outDir ){
-      default:       pElem->ptExit.x += w2;  break;
-      case T_LEFT:   pElem->ptExit.x -= w2;  break;
-      case T_UP:     pElem->ptExit.y += h2;  break;
-      case T_DOWN:   pElem->ptExit.y -= h2;  break;
+      default:         pElem->ptExit.x += w2;  break;
+      case DIR_LEFT:   pElem->ptExit.x -= w2;  break;
+      case DIR_UP:     pElem->ptExit.y += h2;  break;
+      case DIR_DOWN:   pElem->ptExit.y -= h2;  break;
     }
     pElem->bbox.sw.x = pElem->ptAt.x - w2;
     pElem->bbox.sw.y = pElem->ptAt.y - h2;
@@ -2621,10 +2636,10 @@ static void pik_elem_render(Pik *p, PElem *pElem){
   pik_append_point(p, " center=", &pElem->ptAt);
   pik_append_point(p, " enter=", &pElem->ptEnter);
   switch( pElem->outDir ){
-    default:      zDir = " right";  break;
-    case T_LEFT:  zDir = " left";   break;
-    case T_UP:    zDir = " up";     break;
-    case T_DOWN:  zDir = " down";   break;
+    default:        zDir = " right";  break;
+    case DIR_LEFT:  zDir = " left";   break;
+    case DIR_UP:    zDir = " up";     break;
+    case DIR_DOWN:  zDir = " down";   break;
   }
   pik_append_point(p, " exit=", &pElem->ptExit);
   pik_append(p, zDir, -1);
@@ -2774,7 +2789,7 @@ static const PikWord pik_keywords[] = {
   { "dashed",     6,   T_DASHED,    0         },
   { "diameter",   8,   T_DIAMETER,  0         },
   { "dotted",     6,   T_DOTTED,    0         },
-  { "down",       4,   T_DOWN,      0         },
+  { "down",       4,   T_DOWN,      DIR_DOWN  },
   { "e",          1,   T_EDGEPT,    CP_E      },
   { "east",       4,   T_EDGEPT,    CP_E      },
   { "end",        3,   T_END,       0         },
@@ -2788,7 +2803,7 @@ static const PikWord pik_keywords[] = {
   { "invis",      5,   T_INVIS,     0         },
   { "invisible",  9,   T_INVIS,     0         },
   { "last",       4,   T_LAST,      0         },
-  { "left",       4,   T_LEFT,      0         },
+  { "left",       4,   T_LEFT,      DIR_LEFT  },
   { "ljust",      5,   T_LJUST,     0         },
   { "max",        3,   T_FUNC2,     FN_MAX    },
   { "min",        3,   T_FUNC2,     FN_MIN    },
@@ -2800,7 +2815,7 @@ static const PikWord pik_keywords[] = {
   { "print",      5,   T_PRINT,     0         },
   { "rad",        3,   T_RADIUS,    0         },
   { "radius",     6,   T_RADIUS,    0         },
-  { "right",      5,   T_RIGHT,     0         },
+  { "right",      5,   T_RIGHT,     DIR_RIGHT },
   { "rjust",      5,   T_RJUST,     0         },
   { "rx",         2,   T_RX,        0         },
   { "ry",         2,   T_RY,        0         },
@@ -2817,7 +2832,7 @@ static const PikWord pik_keywords[] = {
   { "thickness",  9,   T_THICKNESS, 0         },
   { "to",         2,   T_TO,        0         },
   { "top",        3,   T_TOP,       0         },
-  { "up",         2,   T_UP,        0         },
+  { "up",         2,   T_UP,        DIR_UP    },
   { "vertex",     6,   T_VERTEX,    0         },
   { "w",          1,   T_EDGEPT,    CP_W      },
   { "way",        3,   T_WAY,       0         },
@@ -3101,7 +3116,7 @@ char *pikchr(
   memset(&s, 0, sizeof(s));
   s.zIn = zText;
   s.nIn = (unsigned int)strlen(zText);
-  s.eDir = T_RIGHT;
+  s.eDir = DIR_RIGHT;
   s.zClass = zClass;
   pik_parserInit(&sParse, &s);
 #if 0
