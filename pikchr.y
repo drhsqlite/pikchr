@@ -275,6 +275,7 @@ static PPoint pik_position_between(Pik *p, PNum x, PPoint p1, PPoint p2);
 static PPoint pik_position_at_angle(Pik *p, PNum dist, PNum r, PPoint pt);
 static PPoint pik_position_at_hdg(Pik *p, PNum dist, PToken *pD, PPoint pt);
 static void pik_same(Pik *p, PElem*, PToken*);
+static PPoint pik_nth_vertex(Pik *p, PToken *pNth, PToken *pErr, PElem *pElem);
 
 
 } // end %include
@@ -450,6 +451,7 @@ place(A) ::= object(O) DOT_L END(X).    {A = pik_place_of_elem(p,O,&X);}
 place(A) ::= START(X) OF object(O).     {A = pik_place_of_elem(p,O,&X);}
 place(A) ::= END(X) OF object(O).       {A = pik_place_of_elem(p,O,&X);}
 place(A) ::= EDGEPT(X) OF object(O).    {A = pik_place_of_elem(p,O,&X);}
+place(A) ::= NTH(N) VERTEX(E) OF object(X). {A = pik_nth_vertex(p,&N,&E,X);}
 
 object(A) ::= objectname(A).
 object(A) ::= nth(N).                     {A = pik_find_nth(p,0,&N);}
@@ -669,7 +671,7 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
   { "color",       0.0  },
   { "cylrad",      0.075 },
   { "dashwid",     0.05 },
-  { "dotrad",      0.01 },
+  { "dotrad",      0.015 },
   { "ellipseht",   0.5  },
   { "ellipsewid",  0.75 },
   { "fill",        -1.0 },
@@ -822,7 +824,14 @@ static void dotInit(Pik *p, PElem *pElem){
   pElem->fill = pElem->color;
 }
 static void dotNumProp(Pik *p, PElem *pElem, PToken *pId){
-  /* no-op */
+  switch( pId->eType ){
+    case T_COLOR:
+      pElem->fill = pElem->color;
+      break;
+    case T_FILL:
+      pElem->color = pElem->fill;
+      break;
+  }
 }
 static void dotRender(Pik *p, PElem *pElem){
   PNum r = pElem->ry;
@@ -2404,6 +2413,23 @@ static PPoint pik_position_at_hdg(Pik *p, PNum dist, PToken *pD, PPoint pt){
   return pik_position_at_angle(p, dist, pik_hdg_angle[pD->eCode], pt);
 }
 
+/* Return the coordinates for the n-th vertex of a line.
+*/
+static PPoint pik_nth_vertex(Pik *p, PToken *pNth, PToken *pErr, PElem *pObj){
+  static const PPoint zero;
+  int n = atoi(pNth->z);
+  if( p->nErr || pObj==0 ) return p->aTPath[0];
+  if( !pObj->type->isLine ){
+    pik_error(p, pErr, "object is not a line");
+    return zero;
+  }
+  if( n==0 || n>pObj->nPath ){
+    pik_error(p, pNth, "no such vertex");
+    return zero;
+  }
+  return pObj->aPath[n-1];
+}
+
 /* Return the value of a property of an object.
 */
 static PNum pik_property_of(Pik *p, PElem *pElem, PToken *pProp){
@@ -2786,6 +2812,7 @@ static const PikWord pik_keywords[] = {
   { "to",         2,   T_TO,        0         },
   { "top",        3,   T_TOP,       0         },
   { "up",         2,   T_UP,        0         },
+  { "vertex",     6,   T_VERTEX,    0         },
   { "w",          1,   T_EDGEPT,    CP_W      },
   { "way",        3,   T_WAY,       0         },
   { "west",       4,   T_EDGEPT,    CP_W      },

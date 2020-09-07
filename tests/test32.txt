@@ -3,3 +3,12 @@ move right 2cm
 spline right then up left then down ->
 move right 2cm
 dot; dot; dot;
+
+dot radius 4px color red at 1st vertex of 1st spline
+dot same color orange at 2nd vertex of 1st spline
+dot same color green at 3rd vertex of 1st spline
+dot same color blue at 4th vertex of 1st spline
+
+dot same color red at 1st vertex of 2nd spline
+dot same color green at 2nd vertex of 2nd spline
+dot same color blue at 3rd vertex of 2nd spline
