@@ -322,6 +322,21 @@ struct Pik {
   PPoint aTPath[1000];     /* Path under construction */
 };
 
+/*
+** The behavior of an object class is defined by an instance of
+** this structure. This it the "virtual method" table.
+*/
+struct PClass {
+  const char *zName;                     /* Name of class */
+  char isLine;                           /* True if a line class */
+  void (*xInit)(Pik*,PElem*);            /* Initializer */
+  void (*xNumProp)(Pik*,PElem*,PToken*); /* Value change notification */
+  PPoint (*xChop)(PElem*,PPoint*);       /* Chopper */
+  PPoint (*xOffset)(Pik*,PElem*,int);    /* Offset from center to edge point */
+  void (*xRender)(Pik*,PElem*);          /* Render */
+};
+
+
 /* Forward declarations */
 static void pik_append(Pik*, const char*,int);
 static void pik_append_text(Pik*,const char*,int,int);
@@ -888,6 +903,8 @@ static void boxInit(Pik *p, PElem *pElem){
   pElem->h = pik_value(p, "boxht",5,0);
   pElem->rad = pik_value(p, "boxrad",6,0);
 }
+/* Return offset from the center of the box to the compass point 
+** given by parameter cp */
 static PPoint boxOffset(Pik *p, PElem *pElem, int cp){
   PPoint pt;
   PNum w2 = 0.5*pElem->w;
@@ -914,6 +931,44 @@ static PPoint boxOffset(Pik *p, PElem *pElem, int cp){
     case CP_NW:  pt.x = rx-w2;    pt.y = h2-rx;  break;
   }
   return pt;
+}
+static PPoint boxChop(PElem *pElem, PPoint *pPt){
+  PNum dx, dy;
+  int cp = CP_C;
+  PPoint chop = pElem->ptAt;
+  if( pElem->w<=0.0 ) return chop;
+  if( pElem->h<=0.0 ) return chop;
+  dx = (pPt->x - pElem->ptAt.x)*pElem->h/pElem->w;
+  dy = (pPt->y - pElem->ptAt.y);
+  if( dx>0.0 ){
+    if( dy>=2.414*dx ){
+      cp = CP_N;
+    }else if( dy>=0.414*dx ){
+      cp = CP_NE;
+    }else if( dy>=-0.414*dx ){
+      cp = CP_E;
+    }else if( dy>-2.414*dx ){
+      cp = CP_SE;
+    }else{
+      cp = CP_S;
+    }
+  }else{
+    if( dy>=-2.414*dx ){
+      cp = CP_N;
+    }else if( dy>=-0.414*dx ){
+      cp = CP_NW;
+    }else if( dy>=0.414*dx ){
+      cp = CP_W;
+    }else if( dy>2.414*dx ){
+      cp = CP_SW;
+    }else{
+      cp = CP_S;
+    }
+  }
+  chop = pElem->type->xOffset(0,pElem,cp);
+  chop.x += pElem->ptAt.x;
+  chop.y += pElem->ptAt.y;
+  return chop;
 }
 static void boxRender(Pik *p, PElem *pElem){
   PNum w2 = 0.5*pElem->w;
@@ -1269,15 +1324,6 @@ static void sublistInit(Pik *p, PElem *pElem){
 ** The following array holds all the different kinds of named
 ** elements.  The special STRING and [] elements are separate.
 */
-struct PClass {
-  const char *zName;                     /* Name of class */
-  char isLine;                           /* True if a line class */
-  void (*xInit)(Pik*,PElem*);            /* Initializer */
-  void (*xNumProp)(Pik*,PElem*,PToken*); /* Value change notification */
-  PPoint (*xChop)(PElem*,PPoint*);       /* Chopper */
-  PPoint (*xOffset)(Pik*,PElem*,int);    /* Offset from center to edge point */
-  void (*xRender)(Pik*,PElem*);          /* Render */
-};
 static const PClass aClass[] = {
    {  /* name */          "arc",
       /* isline */        1,
@@ -1299,8 +1345,8 @@ static const PClass aClass[] = {
       /* isline */        0,
       /* xInit */         boxInit,
       /* xNumProp */      0,
-      /* xChop */         0,
-      /* xOffset */       0,
+      /* xChop */         boxChop,
+      /* xOffset */       boxOffset,
       /* xRender */       boxRender 
    },
    {  /* name */          "circle",
@@ -1315,7 +1361,7 @@ static const PClass aClass[] = {
       /* isline */        0,
       /* xInit */         cylinderInit,
       /* xNumProp */      0,
-      /* xChop */         0,
+      /* xChop */         boxChop,
       /* xOffset */       cylinderOffset,
       /* xRender */       cylinderRender
    },
@@ -1355,8 +1401,8 @@ static const PClass aClass[] = {
       /* isline */        0,
       /* xInit */         ovalInit,
       /* xNumProp */      ovalNumProp,
-      /* xChop */         0,
-      /* xOffset */       0,
+      /* xChop */         boxChop,
+      /* xOffset */       boxOffset,
       /* xRender */       boxRender
    },
    {  /* name */          "spline",
@@ -1371,8 +1417,8 @@ static const PClass aClass[] = {
       /* isline */        0,
       /* xInit */         textInit,
       /* xNumProp */      0,
-      /* xChop */         0,
-      /* xOffset */       0,
+      /* xChop */         boxChop,
+      /* xOffset */       boxOffset,
       /* xRender */       boxRender 
    },
 };
