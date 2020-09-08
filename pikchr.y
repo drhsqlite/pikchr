@@ -514,7 +514,7 @@ attribute ::= direction(D) expr(X) PERCENT.
                                     { pik_add_direction(p,&D,&X,1);}
 attribute ::= direction(D) expr(X). { pik_add_direction(p,&D,&X,0);}
 attribute ::= direction(D).         { pik_add_direction(p,&D,0,0); }
-attribute ::= direction(D) even place(P). {pik_evenwith(p,&D,&P);}
+attribute ::= direction(D) even position(P). {pik_evenwith(p,&D,&P);}
 attribute ::= CLOSE(E).             { pik_close_path(p,&E); }
 attribute ::= CHOP.                 { p->cur->bChop = 1; }
 attribute ::= FROM(T) position(X).  { pik_set_from(p,p->cur,&T,&X); }
