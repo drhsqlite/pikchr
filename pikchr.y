@@ -234,7 +234,7 @@ static int pik_token_eq(PToken *pToken, const char *z){
 #define A_WIDTH         0x000001
 #define A_HEIGHT        0x000002
 #define A_RADIUS        0x000004
-#define A_THICKNESS     0x000004
+#define A_THICKNESS     0x000008
 #define A_DASHED        0x000010 /* Includes "dotted" */
 #define A_FILL          0x000020
 #define A_COLOR         0x000040
