@@ -806,6 +806,7 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
   { "arrowht",     0.1   },
   { "arrowwid",    0.05  },
   { "boxht",       0.5   },
+  { "boxrad",      0.0   },
   { "boxwid",      0.75  },
   { "circlerad",   0.25  },
   { "color",       0.0   },
@@ -820,6 +821,8 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
   { "lineht",      0.5   },
   { "linewid",     0.5   },
   { "movewid",     0.5   },
+  { "ovalht",      0.5   },
+  { "ovalwid",     1.0   },
   { "scale",       1.0   },
   { "textht",      0.5   },
   { "textwid",     0.75  },
@@ -885,22 +888,32 @@ static void arrowInit(Pik *p, PElem *pElem){
 static void boxInit(Pik *p, PElem *pElem){
   pElem->w = pik_value(p, "boxwid",6,0);
   pElem->h = pik_value(p, "boxht",5,0);
-  pElem->rad = 0.0;
+  pElem->rad = pik_value(p, "boxrad",6,0);
 }
 static PPoint boxOffset(Pik *p, PElem *pElem, int cp){
   PPoint pt;
-  pt.x = pElem->w*0.5;
-  pt.y = pElem->h*0.5;
+  PNum w2 = 0.5*pElem->w;
+  PNum h2 = 0.5*pElem->h;
+  PNum rad = pElem->rad;
+  PNum rx;
+  if( rad<=0.0 ){
+    rx = 0.0;
+  }else{
+    if( rad>w2 ) rad = w2;
+    if( rad>h2 ) rad = h2;
+    rx = 0.29289321881345252392*rad;
+  }
+  pt.x = pt.y = 0.0;
   switch( cp ){
-    case CP_C:   pt.x = 0.0;   pt.y = 0.0;    break;
-    case CP_N:   pt.x = 0.0;                  break;
-    case CP_NE:                               break;
-    case CP_E:                 pt.y = 0.0;    break;
-    case CP_SE:                pt.y = -pt.y;  break;
-    case CP_S:   pt.x = 0.0;   pt.y = -pt.y;  break;
-    case CP_SW:  pt.x = -pt.x; pt.y = -pt.y;  break;
-    case CP_W:   pt.x = -pt.x; pt.y = 0.0;    break;
-    case CP_NW:  pt.x = -pt.x;                break;
+    case CP_C:   pt.x = 0.0;      pt.y = 0.0;    break;
+    case CP_N:   pt.x = 0.0;      pt.y = h2;     break;
+    case CP_NE:  pt.x = w2-rx;    pt.y = h2-rx;  break;
+    case CP_E:   pt.x = w2;       pt.y = 0.0;    break;
+    case CP_SE:  pt.x = w2-rx;    pt.y = rx-h2;  break;
+    case CP_S:   pt.x = 0.0;      pt.y = -h2;    break;
+    case CP_SW:  pt.x = rx-w2;    pt.y = rx-h2;  break;
+    case CP_W:   pt.x = -w2;      pt.y = 0.0;    break;
+    case CP_NW:  pt.x = rx-w2;    pt.y = h2-rx;  break;
   }
   return pt;
 }
@@ -1149,7 +1162,7 @@ static void lineRender(Pik *p, PElem *pElem){
 /* Methods for the "move" class */
 static void moveInit(Pik *p, PElem *pElem){
   pElem->w = pik_value(p, "movewid",7,0);
-  pElem->h = pik_value(p, "moveht",6,0);
+  pElem->h = pElem->w;
   pElem->fill = -1.0;
   pElem->color = -1.0;
   pElem->sw = -1.0;
@@ -1157,6 +1170,19 @@ static void moveInit(Pik *p, PElem *pElem){
 static void moveRender(Pik *p, PElem *pElem){
   /* No-op */
 }
+
+/* Methods for the "oval" class */
+static void ovalInit(Pik *p, PElem *pElem){
+  pElem->h = pik_value(p, "ovalht",6,0);
+  pElem->w = pik_value(p, "ovalwid",7,0);
+  pElem->rad = 0.5*(pElem->h<pElem->w?pElem->h:pElem->w);
+}
+static void ovalNumProp(Pik *p, PElem *pElem, PToken *pId){
+  /* Always adjust the radius to be half of the smaller of
+  ** the width and height. */
+  pElem->rad = 0.5*(pElem->h<pElem->w?pElem->h:pElem->w);
+}
+
 
 /* Methods for the "spline" class */
 static void splineInit(Pik *p, PElem *pElem){
@@ -1303,6 +1329,13 @@ static const PClass aClass[] = {
       /* xNumProp */      0,
       /* xOffset */       0,
       /* xRender */       moveRender
+   },
+   {  /* name */          "oval",
+      /* isline */        0,
+      /* xInit */         ovalInit,
+      /* xNumProp */      ovalNumProp,
+      /* xOffset */       0,
+      /* xRender */       boxRender
    },
    {  /* name */          "spline",
       /* isline */        1,
