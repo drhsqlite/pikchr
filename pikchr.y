@@ -330,6 +330,9 @@ static PToken pik_next_semantic_token(Pik *p, PToken *pThis);
     pik_error(p, 0, "syntax error");
   }
 }
+%stack_overflow {
+  pik_error(p, 0, "parser stack overflow");
+}
 
 document ::= element_list(X).  {pik_render(p,X);}
 
@@ -1477,11 +1480,16 @@ static void pik_error(Pik *p, PToken *pErr, const char *zMsg){
   if( p==0 ) return;
   if( p->nErr ) return;
   p->nErr++;
-  i = (int)(pErr->z - p->zIn);
-  if( pErr==0 || zMsg==0 ){
-    pik_append_text(p, "\n<div><p>Out of memory</p></div>\n", -1, 0);
+  if( zMsg==0 ){
+    pik_append(p, "\n<div><p>Out of memory</p></div>\n", -1);
     return;
   }
+  if( pErr==0 ){
+    pik_append(p, "\n", 1);
+    pik_append_text(p, zMsg, -1, 0);
+    return;
+  }
+  i = (int)(pErr->z - p->zIn);
   for(j=i; j>0 && p->zIn[j-1]!='\n'; j--){}
   iCol = i - j;
   for(nExtra=0; (c = p->zIn[i+nExtra])!=0 && c!='\n'; nExtra++){}
@@ -1682,6 +1690,7 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
   PElem *pNew;
   int miss = 0;
 
+  if( p->nErr ) return 0;
   pNew = malloc( sizeof(*pNew) );
   if( pNew==0 ){
     pik_error(p,0,0);
@@ -2437,6 +2446,7 @@ static void pik_same(Pik *p, PElem *pOther, PToken *pErrTok){
     }
     if( i<0 ){
       pik_error(p, pErrTok, "no prior objects of the same type");
+      return;
     }
   }
   if( pOther->nPath && pElem->type->isLine ){
