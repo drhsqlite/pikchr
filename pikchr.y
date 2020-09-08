@@ -234,21 +234,19 @@ static int pik_token_eq(PToken *pToken, const char *z){
 #define A_WIDTH         0x000001
 #define A_HEIGHT        0x000002
 #define A_RADIUS        0x000004
-#define A_THICKNESS     0x000010
-#define A_DASHED        0x000020 /* Includes "dotted" */
-#define A_CHOP1         0x000040
-#define A_CHOP2         0x000080
-#define A_FILL          0x000100
-#define A_COLOR         0x000200
-#define A_ARROW         0x000400
-#define A_TOP           0x000800
-#define A_BOTTOM        0x001000
-#define A_LEFT          0x002000
-#define A_RIGHT         0x004000
-#define A_CORNER        0x008000
-#define A_FROM          0x010000
-#define A_CW            0x020000
-#define A_AT            0x040000
+#define A_THICKNESS     0x000004
+#define A_DASHED        0x000010 /* Includes "dotted" */
+#define A_FILL          0x000020
+#define A_COLOR         0x000040
+#define A_ARROW         0x000080
+#define A_TOP           0x000100
+#define A_BOTTOM        0x000200
+#define A_LEFT          0x000400
+#define A_RIGHT         0x000800
+#define A_CORNER        0x001000
+#define A_FROM          0x002000
+#define A_CW            0x004000
+#define A_AT            0x008000
 
 
 /* A single element */
@@ -265,7 +263,6 @@ struct PElem {
   PNum sw;                 /* stroke width ("thinkness") */
   PNum dotted;             /* dotted:  <=0.0 for off */
   PNum dashed;             /* dashed:  <=0.0 for off */
-  PNum chop1, chop2;       /* chop:    <=0.0 for off */
   PNum fill;               /* fill color.  Negative for off */
   PNum color;              /* Stroke color */
   PNum top;                /* Top edge */
@@ -278,6 +275,7 @@ struct PElem {
   char larrow;             /* Arrow at beginning */
   char rarrow;             /* Arrow at end */
   char bClose;             /* True if "close" is seen */
+  char bChop;              /* True if "chop" is seen */
   unsigned char nTxt;      /* Number of text values */
   unsigned mProp;          /* Masks of properties set so far */
   unsigned mCalc;          /* Values computed from other constraints */
@@ -499,6 +497,7 @@ attribute ::= direction(D) expr(X) PERCENT.
 attribute ::= direction(D) expr(X). { pik_add_direction(p,&D,&X,0);}
 attribute ::= direction(D).         { pik_add_direction(p,&D,0,0); }
 attribute ::= CLOSE(E).             { pik_close_path(p,&E); }
+attribute ::= CHOP.                 { p->cur->bChop = 1; }
 attribute ::= FROM(T) position(X).  { pik_set_from(p,p->cur,&T,&X); }
 attribute ::= TO(T) position(X).    { pik_add_to(p,p->cur,&T,&X); }
 attribute ::= THEN(T).              { pik_then(p, &T, p->cur); }
@@ -520,7 +519,6 @@ numproperty(A) ::= HEIGHT|WIDTH|RADIUS|DIAMETER|THICKNESS(P).  {A = P;}
 // Properties with optional arguments
 dashproperty(A) ::= DOTTED(A).
 dashproperty(A) ::= DASHED(A).
-dashproperty(A) ::= CHOP(A).
 
 // Color properties
 colorproperty(A) ::= FILL(A).
@@ -994,6 +992,16 @@ static void circleNumProp(Pik *p, PElem *pElem, PToken *pId){
       break;
   }
 }
+static PPoint circleChop(PElem *pElem, PPoint *pPt){
+  PPoint chop;
+  PNum dx = pPt->x - pElem->ptAt.x;
+  PNum dy = pPt->y - pElem->ptAt.y;
+  PNum dist = sqrt(dx*dx + dy*dy);
+  if( dist<pElem->rad ) return pElem->ptAt;
+  chop.x = pElem->ptAt.x + dx*pElem->rad/dist;
+  chop.y = pElem->ptAt.y + dy*pElem->rad/dist;
+  return chop;
+}
 static void circleRender(Pik *p, PElem *pElem){
   PNum r = pElem->rad;
   PPoint pt = pElem->ptAt;
@@ -1131,12 +1139,6 @@ static void lineRender(Pik *p, PElem *pElem){
   if( pElem->sw>0.0 ){
     const char *z = "<path d=\"M";
     int n = pElem->nPath;
-    if( pElem->chop1>0.0 ){
-      pik_chop(p,&pElem->aPath[1],&pElem->aPath[0],pElem->chop1);
-    }
-    if( pElem->chop2>0.0 ){
-      pik_chop(p,&pElem->aPath[n-2],&pElem->aPath[n-1],pElem->chop2);
-    }
     if( pElem->larrow ){
       pik_draw_arrowhead(p,&pElem->aPath[1],&pElem->aPath[0],pElem);
     }
@@ -1200,12 +1202,6 @@ static void splineRender(Pik *p, PElem *pElem){
       lineRender(p,pElem);
       return;
     }
-    if( pElem->chop1>0.0 ){
-      pik_chop(p,&pElem->aPath[1],&pElem->aPath[0],pElem->chop1);
-    }
-    if( pElem->chop2>0.0 ){
-      pik_chop(p,&pElem->aPath[n-2],&pElem->aPath[n-1],pElem->chop2);
-    }
     if( pElem->larrow ){
       pik_draw_arrowhead(p,&pElem->aPath[1],&pElem->aPath[0],pElem);
     }
@@ -1263,6 +1259,7 @@ struct PClass {
   char isLine;                           /* True if a line class */
   void (*xInit)(Pik*,PElem*);            /* Initializer */
   void (*xNumProp)(Pik*,PElem*,PToken*); /* Value change notification */
+  PPoint (*xChop)(PElem*,PPoint*);       /* Chopper */
   PPoint (*xOffset)(Pik*,PElem*,int);    /* Offset from center to edge point */
   void (*xRender)(Pik*,PElem*);          /* Render */
 };
@@ -1271,6 +1268,7 @@ static const PClass aClass[] = {
       /* isline */        1,
       /* xInit */         arcInit,
       /* xNumProp */      0,
+      /* xChop */         0,
       /* xOffset */       0,
       /* xRender */       arcRender
    },
@@ -1278,6 +1276,7 @@ static const PClass aClass[] = {
       /* isline */        1,
       /* xInit */         arrowInit,
       /* xNumProp */      0,
+      /* xChop */         0,
       /* xOffset */       0,
       /* xRender */       lineRender 
    },
@@ -1285,6 +1284,7 @@ static const PClass aClass[] = {
       /* isline */        0,
       /* xInit */         boxInit,
       /* xNumProp */      0,
+      /* xChop */         0,
       /* xOffset */       0,
       /* xRender */       boxRender 
    },
@@ -1292,6 +1292,7 @@ static const PClass aClass[] = {
       /* isline */        0,
       /* xInit */         circleInit,
       /* xNumProp */      circleNumProp,
+      /* xChop */         circleChop,
       /* xOffset */       ellipseOffset,
       /* xRender */       circleRender 
    },
@@ -1299,6 +1300,7 @@ static const PClass aClass[] = {
       /* isline */        0,
       /* xInit */         cylinderInit,
       /* xNumProp */      0,
+      /* xChop */         0,
       /* xOffset */       cylinderOffset,
       /* xRender */       cylinderRender
    },
@@ -1306,6 +1308,7 @@ static const PClass aClass[] = {
       /* isline */        0,
       /* xInit */         dotInit,
       /* xNumProp */      dotNumProp,
+      /* xChop */         circleChop,
       /* xOffset */       ellipseOffset,
       /* xRender */       dotRender 
    },
@@ -1313,6 +1316,7 @@ static const PClass aClass[] = {
       /* isline */        0,
       /* xInit */         ellipseInit,
       /* xNumProp */      0,
+      /* xChop */         0,
       /* xOffset */       ellipseOffset,
       /* xRender */       ellipseRender
    },
@@ -1320,6 +1324,7 @@ static const PClass aClass[] = {
       /* isline */        1,
       /* xInit */         lineInit,
       /* xNumProp */      0,
+      /* xChop */         0,
       /* xOffset */       0,
       /* xRender */       lineRender
    },
@@ -1327,6 +1332,7 @@ static const PClass aClass[] = {
       /* isline */        1,
       /* xInit */         moveInit,
       /* xNumProp */      0,
+      /* xChop */         0,
       /* xOffset */       0,
       /* xRender */       moveRender
    },
@@ -1334,6 +1340,7 @@ static const PClass aClass[] = {
       /* isline */        0,
       /* xInit */         ovalInit,
       /* xNumProp */      ovalNumProp,
+      /* xChop */         0,
       /* xOffset */       0,
       /* xRender */       boxRender
    },
@@ -1341,6 +1348,7 @@ static const PClass aClass[] = {
       /* isline */        1,
       /* xInit */         splineInit,
       /* xNumProp */      0,
+      /* xChop */         0,
       /* xOffset */       0,
       /* xRender */       splineRender
    },
@@ -1348,6 +1356,7 @@ static const PClass aClass[] = {
       /* isline */        0,
       /* xInit */         textInit,
       /* xNumProp */      0,
+      /* xChop */         0,
       /* xOffset */       0,
       /* xRender */       boxRender 
    },
@@ -1357,6 +1366,7 @@ static const PClass sublistClass =
       /* isline */        0,
       /* xInit */         sublistInit,
       /* xNumProp */      0,
+      /* xChop */         0,
       /* xOffset */       0,
       /* xRender */       0 
    };
@@ -1365,6 +1375,7 @@ static const PClass noopClass =
       /* isline */        0,
       /* xInit */         0,
       /* xNumProp */      0,
+      /* xChop */         0,
       /* xOffset */       0,
       /* xRender */       0
    };
@@ -1909,7 +1920,6 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
   p->aTPath[0] = pNew->ptAt;
   pNew->with = pNew->ptAt;
   pNew->outDir = pNew->inDir = p->eDir;
-  pNew->chop1 = pNew->chop2 = -1.0;
   pNew->iLayer = (int)pik_value(p, "layer", 5, &miss);
   if( miss ) pNew->iLayer = 1000;
   if( pNew->iLayer<0 ) pNew->iLayer = 0;
@@ -2123,17 +2133,6 @@ void pik_set_dashed(Pik *p, PToken *pId, PNum *pVal){
       v = pVal==0 ? pik_value(p,"dashwid",7,0) : *pVal;
       pElem->dashed = v;
       pElem->dotted = 0.0;
-      break;
-    }
-    case T_CHOP: {
-      v = pVal==0 ? pik_value(p,"circlerad",9,0) : *pVal;
-      if( pElem->chop1<0.0 ){
-        pElem->chop1 = v;
-      }else if( pElem->chop2<0.0 ){
-        pElem->chop2 = v;
-      }else{
-        pik_error(p, pId, "too many \"chop\" terms");
-      }
       break;
     }
   }
@@ -2655,14 +2654,13 @@ static void pik_same(Pik *p, PElem *pOther, PToken *pErrTok){
   pElem->sw = pOther->sw;
   pElem->dashed = pOther->dashed;
   pElem->dotted = pOther->dashed;
-  pElem->chop1 = pOther->chop1;
-  pElem->chop2 = pOther->chop2;
   pElem->fill = pOther->fill;
   pElem->color = pOther->color;
   pElem->cw = pOther->cw;
   pElem->larrow = pOther->larrow;
   pElem->rarrow = pOther->rarrow;
   pElem->bClose = pOther->bClose;
+  pElem->bChop = pOther->bChop;
   pElem->inDir = pOther->inDir;
   pElem->outDir = pOther->outDir;
 }
@@ -2768,8 +2766,6 @@ static PNum pik_property_of(Pik *p, PElem *pElem, PToken *pProp){
     case T_THICKNESS: v = pElem->sw;           break;
     case T_DASHED:    v = pElem->dashed;       break;
     case T_DOTTED:    v = pElem->dotted;       break;
-    case T_CHOP:      v = pElem->chop2;
-         if( v<0.0 )  v = 0.0;                 break;
     case T_FILL:      v = pElem->fill;         break;
     case T_COLOR:     v = pElem->color;        break;
     case T_X:         v = pElem->ptAt.x;       break;
@@ -2821,6 +2817,41 @@ static void pik_elem_setname(Pik *p, PElem *pElem, PToken *pName){
   return;
 }
 
+/*
+** Search for object located at *pCenter that has an xChop method.
+** Return a pointer to the object, or NULL if not found.
+*/
+static PElem *pik_find_chopper(PEList *pList, PPoint *pCenter){
+  int i;
+  for(i=pList->n-1; i>=0; i--){
+    PElem *pElem = pList->a[i];
+    if( pElem->type->xChop!=0
+     && pElem->ptAt.x==pCenter->x
+     && pElem->ptAt.y==pCenter->y
+    ){
+      return pElem;
+    }else if( pElem->pSublist ){
+      pElem = pik_find_chopper(pElem->pSublist,pCenter);
+      if( pElem ) return pElem;
+    }
+  }
+  return 0;
+}
+
+/*
+** There is a line traveling from pFrom to pTo.
+**
+** If point pTo is the exact enter of a choppable object,
+** then adjust pTo by the appropriate amount in the direction
+** of pFrom.
+*/
+static void pik_autochop(Pik *p, PPoint *pFrom, PPoint *pTo){
+  PElem *pElem = pik_find_chopper(p->list, pTo);
+  if( pElem ){
+    *pTo = pElem->type->xChop(pElem, pFrom);
+  }
+}
+
 /* This routine runs after all attributes have been received
 ** on an element.
 */
@@ -2860,11 +2891,6 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
     }
   }
 
-  /* Fix up the chop parameters */
-  if( pElem->chop1>=0.0 && pElem->chop2<0.0 ){
-    pElem->chop2 = pElem->chop1;
-  }
-
   /* Compute final bounding box, entry and exit points, center
   ** point (ptAt) and path for the element
   */
@@ -2881,6 +2907,17 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
         pik_bbox_addpt(&pElem->bbox, &pElem->aPath[i]);
       }
     }
+
+    /* "chop" processing:
+    ** If the line goes to the center of an object with an
+    ** xChop method, then use the xChop method to trim the line.
+    */
+    if( pElem->bChop && pElem->nPath>=2 ){
+      int n = pElem->nPath;
+      pik_autochop(p, &pElem->aPath[n-2], &pElem->aPath[n-1]);
+      pik_autochop(p, &pElem->aPath[1], &pElem->aPath[0]);
+    }
+
     pElem->ptEnter = p->aTPath[0];
     pElem->ptExit = p->aTPath[p->nTPath-1];
 
