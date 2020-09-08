@@ -345,6 +345,9 @@ element(A) ::= FILL(N) ASSIGN rvalue(X). {pik_set_var(p,&N,X); A = 0;}
 element(A) ::= COLOR(N) ASSIGN rvalue(X). {pik_set_var(p,&N,X); A = 0;}
 element(A) ::= PLACENAME(N) COLON unnamed_element(X).
                { A = X;  pik_elem_setname(p,X,&N); }
+element(A) ::= PLACENAME(N) COLON position(P).
+               { A = pik_elem_new(p,0,0,0);
+                 if(A){ A->ptAt = P; pik_elem_setname(p,A,&N); }}
 element(A) ::= unnamed_element(X).  {A = X;}
 element(A) ::= print prlist.  {pik_append(p,"<br>\n",5); A=0;}
 
@@ -364,7 +367,7 @@ prsep  ::= COMMA. {pik_append(p, " ", 1);}
 unnamed_element(A) ::= basetype(X) attribute_list.  
                           {A = X; pik_after_adding_attributes(p,A);}
 
-basetype(A) ::= ID(N).                   {A = pik_elem_new(p,&N,0,0); }
+basetype(A) ::= CLASSNAME(N).            {A = pik_elem_new(p,&N,0,0); }
 basetype(A) ::= STRING(N) textposition(P).
                             {N.eCode = P; A = pik_elem_new(p,0,&N,0); }
 basetype(A) ::= LB savelist(L) element_list(X) RB(E).
@@ -475,9 +478,9 @@ objectname(A) ::= PLACENAME(N).           {A = pik_find_byname(p,0,&N);}
 objectname(A) ::= objectname(B) DOT_U PLACENAME(N).
                                           {A = pik_find_byname(p,B,&N);}
 
-nth(A) ::= NTH(N) ID(ID).            {A=ID; A.eCode = pik_nth_value(p,&N); }
-nth(A) ::= NTH(N) LAST ID(ID).       {A=ID; A.eCode = -pik_nth_value(p,&N); }
-nth(A) ::= LAST ID(ID).              {A=ID; A.eCode = -1;}
+nth(A) ::= NTH(N) CLASSNAME(ID).     {A=ID; A.eCode = pik_nth_value(p,&N); }
+nth(A) ::= NTH(N) LAST CLASSNAME(ID). {A=ID; A.eCode = -pik_nth_value(p,&N); }
+nth(A) ::= LAST CLASSNAME(ID).       {A=ID; A.eCode = -1;}
 nth(A) ::= LAST(ID).                 {A=ID; A.eCode = -1;}
 nth(A) ::= NTH(N) LB(ID) RB.         {A=ID; A.eCode = pik_nth_value(p,&N);}
 nth(A) ::= NTH(N) LAST LB(ID) RB.    {A=ID; A.eCode = -pik_nth_value(p,&N);}
@@ -802,18 +805,21 @@ static void boxRender(Pik *p, PElem *pElem){
 /* Methods for the "circle" class */
 static void circleInit(Pik *p, PElem *pElem){
   pElem->w = pik_value(p, "circlerad",9,0)*2;
-  pElem->ry = pElem->h = pElem->w;
+  pElem->h = pElem->w;
+  pElem->ry = 0.5*pElem->w;
 }
 static void circleNumProp(Pik *p, PElem *pElem, PToken *pId){
   switch( pId->eType ){
     case T_RADIUS:
-      pElem->w = pElem->h = pElem->ry;
+      pElem->w = pElem->h = 2.0*pElem->ry;
       break;
     case T_WIDTH:
-      pElem->ry = pElem->h = pElem->w;
+      pElem->h = pElem->w;
+      pElem->ry = 0.5*pElem->w;
       break;
     case T_HEIGHT:
-      pElem->w = pElem->ry = pElem->h;
+      pElem->w = pElem->h;
+      pElem->ry = 0.5*pElem->w;
       break;
   }
 }
@@ -1153,6 +1159,13 @@ static const PClass aClass[] = {
       /* xOffset */       0,
       /* xRender */       splineRender
    },
+   {  /* name */          "text",
+      /* isline */        0,
+      /* xInit */         textInit,
+      /* xNumProp */      0,
+      /* xOffset */       0,
+      /* xRender */       boxRender 
+   },
 };
 static const PClass sublistClass = 
    {  /* name */          "[]",
@@ -1162,13 +1175,13 @@ static const PClass sublistClass =
       /* xOffset */       0,
       /* xRender */       0 
    };
-static const PClass textClass = 
-   {  /* name */          "text",
+static const PClass noopClass = 
+   {  /* name */          "noop",
       /* isline */        0,
-      /* xInit */         textInit,
+      /* xInit */         0,
       /* xNumProp */      0,
       /* xOffset */       0,
-      /* xRender */       boxRender 
+      /* xRender */       0
    };
 
 
@@ -1635,21 +1648,30 @@ static PEList *pik_elist_append(Pik *p, PEList *pEList, PElem *pElem){
 /* Convert an element class name into a PClass pointer
 */
 static const PClass *pik_find_class(PToken *pId){
-  int i;
-  for(i=0; i<count(aClass); i++){
-    if( strncmp(aClass[i].zName, pId->z, pId->n)==0 
-     && aClass[i].zName[pId->n]==0
-    ){
-      return &aClass[i];
+  int first = 0;
+  int last = count(aClass) - 1;
+  do{
+    int mid = (first+last)/2;
+    int c = strncmp(aClass[mid].zName, pId->z, pId->n);
+    if( c==0 ){
+      c = aClass[mid].zName[pId->n]!=0;
+      if( c==0 ) return &aClass[mid];
     }
-  }
-  if( pik_token_eq(pId,"text")==0 ){
-    return &textClass;
-  }
+    if( c<0 ){
+      first = mid + 1;
+    }else{
+      last = mid - 1;
+    }
+  }while( first<=last );
   return 0;
 }
 
 /* Allocate and return a new PElem object.
+**
+** If pId!=0 then pId is an identifier that defines the element class.
+** If pStr!=0 then it is a STRING literal that defines a text object.
+** If pSublist!=0 then this is a [...] object. If all three parameters
+** are NULL then this is a no-op object used to define a PLACENAME.
 */
 static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
   PElem *pNew;
@@ -1691,9 +1713,13 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
     return pNew;
   }
   if( pStr ){
-    pNew->type = &textClass;
+    PToken n;
+    n.z = "text";
+    n.n = 4;
+    pNew->type = pik_find_class(&n);
+    assert( pNew->type!=0 );
     pNew->errTok = *pStr;
-    textClass.xInit(p, pNew);
+    pNew->type->xInit(p, pNew);
     pik_add_txt(p, pStr, pStr->eCode);
     return pNew;
   }
@@ -1709,10 +1735,12 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
       return pNew;
     }
     pik_error(p, pId, "unknown element type");
+    pik_elem_free(p, pNew);
+    return 0;
   }
-  pik_elem_free(p, pNew);
-  p->cur = 0;
-  return 0;
+  pNew->type = &noopClass;
+  pNew->ptExit = pNew->ptEnter = pNew->ptAt;
+  return pNew;
 }
 
 /*
@@ -3144,6 +3172,11 @@ static int pik_token_length(PToken *pToken){
           pToken->eType = pFound->eType;
           pToken->eCode = pFound->eCode;
           pToken->eEdge = pFound->eEdge;
+          return i;
+        }
+        pToken->n = i;
+        if( pik_find_class(pToken)!=0 ){
+          pToken->eType = T_CLASSNAME;
         }else{
           pToken->eType = T_ID;
         }

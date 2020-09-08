@@ -1,15 +1,10 @@
-        margin = 5mm
-      # ^^^^^^^^^^^^-- extra margin required for text
+textwid = 1mm
         circle "DISK"
         arrow "character" "defns" right 150%
-                                # ^^^^^^^^^^---- added for spacing
 CPU:    box "CPU" "(16-bit mini)"
-        /*{*/ arrow <- from top of CPU up "input " rjust /*}*/
-      # ^^^^^--- removed                     remove -----^^^^^
-        arrow right from CPU.e
-           #  ^^^^^^^^^^^^^^^^--- added to compensate for missing {...} above
-CRT:    "   CRT" ljust wid 1px
-                     # ^^^^^^^--- added to avoid excess spacing
+        arrow <- from top of CPU up "input " rjust
+        arrow right from right of CPU
+CRT:    "   CRT" ljust
         line from CRT - 0,0.075 up 0.15 \
                 then right 0.5 \
                 then right 0.5 up 0.25 \
@@ -21,4 +16,4 @@ Paper:  CRT + 1.05,0.75
         " ...  paper" ljust at end of last arrow + 0, 0.25
         circle rad 0.05 at Paper + (-0.055, -0.25)
         circle rad 0.05 at Paper + (0.055, -0.25)
-        "   rollers" ljust at Paper + (0.1, -0.25)
+        box invis wid 120% "   rollers" ljust at Paper + (0.1, -0.25)
