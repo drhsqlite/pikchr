@@ -161,6 +161,7 @@ static int pik_token_eq(PToken *pToken, const char *z){
 /* A single element */
 struct PElem {
   const PClass *type;      /* Element type */
+  PToken errTok;           /* Reference token for error messages */
   PPoint ptAt;             /* Reference point for the object */
   PPoint ptEnter, ptExit;  /* Entry and exit points */
   PEList *pSublist;        /* Substructure for [] elements */
@@ -286,6 +287,7 @@ static PPoint pik_position_at_angle(Pik *p, PNum dist, PNum r, PPoint pt);
 static PPoint pik_position_at_hdg(Pik *p, PNum dist, PToken *pD, PPoint pt);
 static void pik_same(Pik *p, PElem*, PToken*);
 static PPoint pik_nth_vertex(Pik *p, PToken *pNth, PToken *pErr, PElem *pElem);
+static PToken pik_next_semantic_token(Pik *p, PToken *pThis);
 
 
 } // end %include
@@ -365,8 +367,8 @@ unnamed_element(A) ::= basetype(X) attribute_list.
 basetype(A) ::= ID(N).                   {A = pik_elem_new(p,&N,0,0); }
 basetype(A) ::= STRING(N) textposition(P).
                             {N.eCode = P; A = pik_elem_new(p,0,&N,0); }
-basetype(A) ::= LB savelist(L) element_list(X) RB.
-      { p->list = L; A = pik_elem_new(p,0,0,X); }
+basetype(A) ::= LB savelist(L) element_list(X) RB(E).
+      { p->list = L; A = pik_elem_new(p,0,0,X); if(A) A->errTok = E; }
 
 %type savelist {PEList*}
 %destructor savelist {pik_elist_free(p,$$);}
@@ -377,8 +379,11 @@ direction(A) ::= DOWN(A).
 direction(A) ::= LEFT(A).
 direction(A) ::= RIGHT(A).
 
-attribute_list ::=.
-attribute_list ::= attribute_list attribute.
+attribute_list ::= expr(X).           { pik_add_direction(p,0,&X,0);}
+attribute_list ::= expr(X) PERCENT.   { pik_add_direction(p,0,&X,1);}
+attribute_list ::= alist.
+alist ::=.
+alist ::= alist attribute.
 attribute ::= numproperty(P) expr(X) PERCENT.
                                       { pik_set_numprop(p,&P,0.0,X/100.0); }
 attribute ::= numproperty(P) expr(X). { pik_set_numprop(p,&P,X,0.0); }
@@ -1687,11 +1692,13 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
   }
   if( pStr ){
     pNew->type = &textClass;
+    pNew->errTok = *pStr;
     textClass.xInit(p, pNew);
     pik_add_txt(p, pStr, pStr->eCode);
     return pNew;
   }
   if( pId ){
+    pNew->errTok = *pId;
     const PClass *pClass = pik_find_class(pId);
     if( pClass ){
       pNew->type = pClass;
@@ -1955,9 +1962,15 @@ static int pik_next_rpath(Pik *p, PToken *pErr){
 static void pik_add_direction(Pik *p, PToken *pDir, PNum *pVal, int rel){
   PElem *pElem = p->cur;
   int n;
+  int dir;
   PNum scale = 1.0;
   if( !pElem->type->isLine ){
-    pik_error(p, pDir, "use with line-oriented elements only");
+    if( pDir ){
+      pik_error(p, pDir, "use with line-oriented elements only");
+    }else{
+      PToken x = pik_next_semantic_token(p, &pElem->errTok);
+      pik_error(p, &x, "syntax error");
+    }
     return;
   }
   if( pVal && rel==1 ){
@@ -1972,7 +1985,8 @@ static void pik_add_direction(Pik *p, PToken *pDir, PNum *pVal, int rel){
     n = pik_next_rpath(p, pDir);
     p->thenFlag = 0;
   }
-  switch( pDir->eCode ){
+  dir = pDir ? pDir->eCode : p->eDir;
+  switch( dir ){
     case DIR_UP:
        if( p->mTPath & 2 ) n = pik_next_rpath(p, pDir);
        if( rel==2 ) p->aTPath[n].y = 0;
@@ -1998,7 +2012,7 @@ static void pik_add_direction(Pik *p, PToken *pDir, PNum *pVal, int rel){
        p->mTPath |= 1;
        break;
   }
-  pElem->outDir = pDir->eCode;
+  pElem->outDir = dir;
 }
 
 /* Set the "from" of an element
@@ -3143,6 +3157,27 @@ static int pik_token_length(PToken *pToken){
         return 1;
       }
     }
+  }
+}
+
+/*
+** Return a pointer to the next non-whitespace token after pThis.
+** This is used to help form error messages.
+*/
+static PToken pik_next_semantic_token(Pik *p, PToken *pThis){
+  PToken x;
+  int sz;
+  int i = pThis->n;
+  memset(&x, 0, sizeof(x));
+  x.z = pThis->z;
+  while(1){
+    x.z = pThis->z + i;
+    sz = pik_token_length(&x);
+    if( x.eType!=T_WHITESPACE ){
+      x.n = sz;
+      return x;
+    }
+    i += sz;
   }
 }
 
