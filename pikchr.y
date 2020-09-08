@@ -1094,6 +1094,21 @@ static void ellipseInit(Pik *p, PElem *pElem){
   pElem->w = pik_value(p, "ellipsewid",10,0);
   pElem->h = pik_value(p, "ellipseht",9,0);
 }
+static PPoint ellipseChop(PElem *pElem, PPoint *pPt){
+  PPoint chop;
+  PNum s, dq, dist;
+  PNum dx = pPt->x - pElem->ptAt.x;
+  PNum dy = pPt->y - pElem->ptAt.y;
+  if( pElem->w<=0.0 ) return pElem->ptAt;
+  if( pElem->h<=0.0 ) return pElem->ptAt;
+  s = pElem->h/pElem->w;
+  dq = dx*s;
+  dist = sqrt(dq*dq + dy*dy);
+  if( dist<pElem->h ) return pElem->ptAt;
+  chop.x = pElem->ptAt.x + 0.5*dq*pElem->h/(dist*s);
+  chop.y = pElem->ptAt.y + 0.5*dy*pElem->h/dist;
+  return chop;
+}
 static PPoint ellipseOffset(Pik *p, PElem *pElem, int cp){
   PPoint pt;
   PNum w = pElem->w*0.5;
@@ -1316,7 +1331,7 @@ static const PClass aClass[] = {
       /* isline */        0,
       /* xInit */         ellipseInit,
       /* xNumProp */      0,
-      /* xChop */         0,
+      /* xChop */         ellipseChop,
       /* xOffset */       ellipseOffset,
       /* xRender */       ellipseRender
    },
