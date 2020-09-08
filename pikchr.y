@@ -3338,6 +3338,23 @@ char *pikchr(
   return s.zOut;
 }
 
+#if defined(PIKCHR_FUZZ)
+#include <stdint.h>
+int LLVMFuzzerTestOneInput(const uint8_t *aData, size_t nByte){
+  int w,h;
+  char *zIn, *zOut;
+  zIn = malloc( nByte + 1 );
+  if( zIn==0 ) return 0;
+  memcpy(zIn, aData, nByte);
+  zIn[nByte] = 0;
+  zOut = pikchr(zIn, "pikchr", 0, &w, &h);
+  free(zIn);
+  free(zOut);
+  return 0;
+}
+#endif /* PIKCHR_FUZZ */
+
+#if defined(PIKCHR_SHELL)
 /* Texting interface
 **
 ** Generate HTML on standard output that displays both the original
@@ -3414,5 +3431,6 @@ int main(int argc, char **argv){
   printf("</body></html>\n");
   return 0; 
 }
+#endif /* PIKCHR_SHELL */
 
 } // end %code

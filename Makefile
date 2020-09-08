@@ -5,7 +5,11 @@ LIBS = -lm
 all:	pikchr
 
 pikchr:	pikchr.c
-	$(CC) $(CFLAGS) pikchr.c -o pikchr $(LIBS)
+	$(CC) $(CFLAGS) -DPIKCHR_SHELL pikchr.c -o pikchr $(LIBS)
+
+pikchrfuzz:	pikchr.c
+	clang -g -O3 -fsanitize=fuzzer -o pikchrfuzz \
+	  -DPIKCHR_FUZZ pikchr.c $(LIBS)
 
 pikchr.c:	pikchr.y lempar.c lemon
 	./lemon pikchr.y
