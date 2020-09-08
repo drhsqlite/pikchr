@@ -333,6 +333,7 @@ static void pik_append_x(Pik*,const char*,PNum,const char*);
 static void pik_append_y(Pik*,const char*,PNum,const char*);
 static void pik_append_xy(Pik*,const char*,PNum,PNum);
 static void pik_append_dis(Pik*,const char*,PNum,const char*);
+static void pik_append_arc(Pik*,PNum,PNum,PNum,PNum);
 static void pik_append_clr(Pik*,const char*,PNum,const char*);
 static void pik_append_style(Pik*,PElem*);
 static void pik_append_txt(Pik*,PElem*);
@@ -906,13 +907,51 @@ static PPoint boxOffset(Pik *p, PElem *pElem, int cp){
 static void boxRender(Pik *p, PElem *pElem){
   PNum w2 = 0.5*pElem->w;
   PNum h2 = 0.5*pElem->h;
+  PNum rad = pElem->rad;
   PPoint pt = pElem->ptAt;
   if( pElem->sw>0.0 ){
-    pik_append_xy(p,"<path d=\"M", pt.x-w2,pt.y-h2);
-    pik_append_xy(p,"L", pt.x+w2,pt.y-h2);
-    pik_append_xy(p,"L", pt.x+w2,pt.y+h2);
-    pik_append_xy(p,"L", pt.x-w2,pt.y+h2);
-    pik_append(p,"Z\" ",-1);
+    if( rad<=0.0 ){
+      pik_append_xy(p,"<path d=\"M", pt.x-w2,pt.y-h2);
+      pik_append_xy(p,"L", pt.x+w2,pt.y-h2);
+      pik_append_xy(p,"L", pt.x+w2,pt.y+h2);
+      pik_append_xy(p,"L", pt.x-w2,pt.y+h2);
+      pik_append(p,"Z\" ",-1);
+    }else{
+      /*
+      **         ----       - y3
+      **        /    \
+      **       /      \     _ y2
+      **      |        |    
+      **      |        |    _ y1
+      **       \      /
+      **        \    /
+      **         ----       _ y0
+      **
+      **      '  '  '  '
+      **     x0 x1 x2 x3
+      */
+      PNum x0,x1,x2,x3,y0,y1,y2,y3;
+      if( rad>w2 ) rad = w2;
+      if( rad>h2 ) rad = h2;
+      x0 = pt.x - w2;
+      x1 = x0 + rad;
+      x3 = pt.x + w2;
+      x2 = x3 - rad;
+      y0 = pt.y - h2;
+      y1 = y0 + rad;
+      y3 = pt.y + h2;
+      y2 = y3 - rad;
+      pik_append_xy(p,"<path d=\"M", x1, y0);
+      if( x2>x1 ) pik_append_xy(p, "L", x2, y0);
+      pik_append_arc(p, rad, rad, x3, y1);
+      if( y2>y1 ) pik_append_xy(p, "L", x3, y2);
+      pik_append_arc(p, rad, rad, x2, y3);
+      if( x2>x1 ) pik_append_xy(p, "L", x1, y3);
+      pik_append_arc(p, rad, rad, x0, y2);
+      if( y2>y1 ) pik_append_xy(p, "L", x0, y1);
+      pik_append_arc(p, rad, rad, x1, y0);
+      pik_append(p,"Z\" ",-1);
+    }
     pik_append_style(p,pElem);
     pik_append(p,"\" />\n", -1);
   }
@@ -969,16 +1008,10 @@ static void cylinderRender(Pik *p, PElem *pElem){
   if( pElem->sw>0.0 ){
     pik_append_xy(p,"<path d=\"M", pt.x-w2,pt.y+h2-rad);
     pik_append_xy(p,"L", pt.x-w2,pt.y-h2+rad);
-    pik_append_dis(p,"A",w2," ");
-    pik_append_dis(p,"",rad," 0 0 0 ");
-    pik_append_xy(p,"",pt.x+w2,pt.y-h2+rad);
+    pik_append_arc(p,w2,rad,pt.x+w2,pt.y-h2+rad);
     pik_append_xy(p,"L", pt.x+w2,pt.y+h2-rad);
-    pik_append_dis(p,"A",w2," ");
-    pik_append_dis(p,"",rad," 0 0 0 ");
-    pik_append_xy(p,"",pt.x-w2,pt.y+h2-rad);
-    pik_append_dis(p,"A",w2," ");
-    pik_append_dis(p,"",rad," 0 0 0 ");
-    pik_append_xy(p,"",pt.x+w2,pt.y+h2-rad);
+    pik_append_arc(p,w2,rad,pt.x-w2,pt.y+h2-rad);
+    pik_append_arc(p,w2,rad,pt.x+w2,pt.y+h2-rad);
     pik_append(p,"\" ",-1);
     pik_append_style(p,pElem);
     pik_append(p,"\" />\n", -1);
@@ -1489,6 +1522,21 @@ static void pik_append_clr(Pik *p, const char *z1, PNum v, const char *z2){
   int g = (x>>8) & 0xff;
   int b = x & 0xff;
   snprintf(buf, sizeof(buf)-1, "%srgb(%d,%d,%d)%s", z1, r, g, b, z2);
+  buf[sizeof(buf)-1] = 0;
+  pik_append(p, buf, -1);
+}
+
+/* Append an SVG path A record:
+**
+**    A r1 r2 0 0 0 x y
+*/
+static void pik_append_arc(Pik *p, PNum r1, PNum r2, PNum x, PNum y){
+  char buf[200];
+  x = x - p->bbox.sw.x;
+  y = p->bbox.ne.y - y;
+  snprintf(buf, sizeof(buf)-1, "A%d %d 0 0 0 %d %d", 
+     (int)(p->rScale*r1), (int)(p->rScale*r2),
+     (int)(p->rScale*x), (int)(p->rScale*y));
   buf[sizeof(buf)-1] = 0;
   pik_append(p, buf, -1);
 }
