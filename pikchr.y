@@ -1,8 +1,15 @@
 %include {
 /*
-** 2020-09-01
+** Zero-Clause BSD license:
 **
-** A translator for the PIC-inspired diagram language into SVG.
+** Copyright (C) 2020-09-01 by D. Richard Hipp <drh@sqlite.org>
+**
+** Permission to use, copy, modify, and/or distribute this software for
+** any purpose with or without fee is hereby granted.
+**
+****************************************************************************
+**
+** This software translates a PIC-inspired diagram language into SVG.
 **
 ** PIKCHR (pronounced like "picture") is *mostly* backwards compatible
 ** with legacy PIC, though some features of legacy PIC are removed 
@@ -15,8 +22,7 @@
 **
 ** This code was originally written by D. Richard Hipp using documentation
 ** from prior PIC implementations but without reference to prior code.
-** All of the code in this project is original.  The author releases all
-** code into the public domain.
+** All of the code in this project is original.
 **
 ** This file implements a C-language subroutine that accepts a string
 ** of PIKCHR language text and generates a second string of SVG output that
@@ -30,6 +36,84 @@
 ** The subroutine implemented by this file is intended to be stand-alone.
 ** It uses no external routines other than routines commonly found in
 ** the standard C library.
+**
+****************************************************************************
+** COMPILING:
+**
+** The original source text is a mixture of C99 and "Lemon"
+** (See https://sqlite.org/src/file/doc/lemon.html).  Lemon is an LALR(1)
+** parser generator program, similar to Yacc.  The grammar of the
+** input language is specified in Lemon.  C-code is attached.  Lemon
+** runs to generate a single output file ("pikchr.c") which is then
+** compiled to generate the Pikchr library.  This header comment is
+** preserved in the Lemon output, so you might be reading this in either
+** the generated "pikchr.c" file that is output by Lemon, or in the
+** "pikchr.y" source file that is input into Lemon.  If you make changes,
+** you should change the input source file "pikchr.y", not the
+** Lemon-generated output file.
+**
+** Basic compilation steps:
+**
+**      lemon pikchr.y
+**      cc pikchr.c -o pikchr.o
+**
+** Add -DPIKCHR_SHELL to add a main() routine that reads input files
+** and sends them through Pikchr, for testing.  Add -DPIKCHR_FUZZ for
+** -fsanitizer=fuzzer testing.
+** 
+****************************************************************************
+** IMPLEMENTATION NOTES (for people who want to understand the internal
+** operation of this software, perhaps to extend the code or to fix bugs):
+**
+** Each call to pikchr() uses a single instance of the Pik structure to
+** track its internal state.  The Pik structure lives for the duration
+** of the pikchr() call.
+**
+** The input is a sequence of objects or "elements".  Each element is
+** parsed into a PElem object.  These are stored on an extensible array
+** called PEList.  All parameters to each PElem are computed as the
+** object is parsed.  (Hence, the parameters to a PElem may only refer
+** to prior elements.) Once the PElem is completely assemblied, it is
+** added to the end of a PEList and never changes thereafter - except,
+** PElem objects that are part of a "[...]" block might have their
+** absolute position shifted when the outer [...] block is positioned.
+** But apart from this repositioning, PElem objects are unchanged once
+** they are added to the list. The order of elements on a PEList does
+** not change.
+**
+** After all input has been parsed, the top-level PEList is walked to
+** generate output.  Sub-lists resulting from [...] blocks are scanned
+** as they are encountered.  All input must be collected and parsed ahead
+** of output generation because the size and position of elements must be
+** known in order to compute a bounding box on the output.
+**
+** Each PElem is on a "layer".  (The common case is that all PElem's are
+** on a single layer, but multiple layers are possible.)  A separate pass
+** is made through the list for each layer.
+**
+** After all output is generated, the Pik object, and the all the PEList
+** and PElem objects are deallocated and the generate output string is
+** returned.  Upon any error, the Pik.nErr flag is set, processing quickly
+** stops, and the stack unwinds.  No attempt is made to continue reading
+** input after an error.
+**
+** Most elements begin with a class name like "box" or "arrow" or "move".
+** There is a class named "text" which is used for elements that begin
+** with a string literal.  You can also specify the "text" class.
+** A Sublist ("[...]") is a single object that contains a pointer to
+** its subelements, all gathered onto a separate PEList object.
+**
+** Variables go into PVar objects that form a linked list.
+**
+** Each PElem has zero or one names.  Input constructs that attempt
+** to assign a new name from an older name, like:
+**
+**      Abc:  Abc + (0.5cm, 0)
+**
+** These generate a new "noop" object at the specified place and with
+** the specified name.  As place-names are searched by scanning the list
+** in reverse order, this has the effect of overriding the "Abc" name
+** when referenced by subsequent objects.
 */
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,7 +125,7 @@
 
 typedef struct Pik Pik;          /* Complete parsing context */
 typedef struct PToken PToken;    /* A single token */
-typedef struct PElem PElem;      /* A single element */
+typedef struct PElem PElem;      /* A single diagram object or "element" */
 typedef struct PEList PEList;    /* A list of elements */
 typedef struct PClass PClass;    /* Description of elements types */
 typedef double PNum;             /* Numeric value */
@@ -50,7 +134,7 @@ typedef struct PVar PVar;        /* script-defined variable */
 typedef struct PBox PBox;        /* A bounding box */
 
 /* Compass points */
-#define CP_C      0
+#define CP_C      0   /* Center of the object.  (Always PElem.ptAt) */
 #define CP_N      1
 #define CP_NE     2
 #define CP_E      3
@@ -60,6 +144,7 @@ typedef struct PBox PBox;        /* A bounding box */
 #define CP_W      7
 #define CP_NW     8
 
+/* Heading angles corresponding to compass points */
 static const PNum pik_hdg_angle[] = {
   /* C  */    0.0,
   /* N  */    0.0,
@@ -81,24 +166,28 @@ static const PNum pik_hdg_angle[] = {
 #define FN_SQRT   5
 
 /* Text position flags */
-#define TP_LJUST   0x01
-#define TP_RJUST   0x02
-#define TP_JMASK   0x03
-#define TP_ABOVE   0x04
-#define TP_BELOW   0x08
-#define TP_VMASK   0x0c
+#define TP_LJUST   0x01  /* left justify......          */
+#define TP_RJUST   0x02  /*            ...Right justify */
+#define TP_JMASK   0x03  /* Mask for justification bits */
+#define TP_ABOVE   0x04  /* Position text above PElem.ptAt */
+#define TP_BELOW   0x08  /* Position text below PElem.ptAt */
+#define TP_VMASK   0x0c  /* Mask for text positioning flags */
 
 /* An object to hold a position in 2-D space */
 struct PPoint {
-  PNum x, y;               /* X and Y coordinates */
+  PNum x, y;             /* X and Y coordinates */
 };
 
 /* A bounding box */
 struct PBox {
-  PPoint sw, ne;             /* Lower-left and top-right corners */
+  PPoint sw, ne;         /* Lower-left and top-right corners */
 };
 
-/* A variable created by the ID = EXPR construct of the PIKCHR script */
+/* A variable created by the ID = EXPR construct of the PIKCHR script 
+**
+** PIKCHR (and PIC) scripts do not use many varaibles, so it is reasonable
+** to store them all on a linked list.
+*/
 struct PVar {
   const char *zName;       /* Name of the variable */
   PNum val;                /* Value of the variable */
@@ -116,16 +205,19 @@ struct PToken {
 };
 
 /* Return negative, zero, or positive if pToken is less then, equal to
-** or greater than zero-terminated string z[] */
+** or greater than zero-terminated string z[]
+*/
 static int pik_token_eq(PToken *pToken, const char *z){
   int c = strncmp(pToken->z,z,pToken->n);
   if( c==0 && z[pToken->n]!=0 ) c = -1;
   return c;
 }
 
-/* Extra token types not generated by LEMON */
-#define T_WHITESPACE 254
-#define T_ERROR      255
+/* Extra token types not generated by LEMON but needed by the
+** tokenizer
+*/
+#define T_WHITESPACE 254     /* Whitespace of comments */
+#define T_ERROR      255     /* Any text that is not a valid token */
 
 /* Directions of movement */
 #define DIR_RIGHT     0
@@ -136,11 +228,12 @@ static int pik_token_eq(PToken *pToken, const char *z){
 #define IsUpDown(X)     (((X)&1)==1)
 #define IsLeftRight(X)  (((X)&1)==0)
 
-/* Bitmask for the various attributes that are */
+/* Bitmask for the various attributes for PElem.  These bits are
+** collected in PElem.mProp and PElem.mCalc to check for contraint
+** errors. */
 #define A_WIDTH         0x000001
 #define A_HEIGHT        0x000002
-#define A_RX            0x000004
-#define A_RY            0x000008 /* Radius for circles */
+#define A_RADIUS        0x000004
 #define A_THICKNESS     0x000010
 #define A_DASHED        0x000020 /* Includes "dotted" */
 #define A_CHOP1         0x000040
@@ -164,11 +257,11 @@ struct PElem {
   PToken errTok;           /* Reference token for error messages */
   PPoint ptAt;             /* Reference point for the object */
   PPoint ptEnter, ptExit;  /* Entry and exit points */
-  PEList *pSublist;        /* Substructure for [] elements */
+  PEList *pSublist;        /* Substructure for [...] elements */
   char *zName;             /* Name assigned to this element */
   PNum w;                  /* width */
   PNum h;                  /* height */
-  PNum rx, ry;             /* x- and y-radius */
+  PNum rad;                /* radius */
   PNum sw;                 /* stroke width ("thinkness") */
   PNum dotted;             /* dotted:  <=0.0 for off */
   PNum dashed;             /* dashed:  <=0.0 for off */
@@ -421,7 +514,7 @@ with ::=  DOT_E edge(E) AT(A) position(P).{ pik_set_at(p,&E,&P,&A); }
 with ::=  edge(E) AT(A) position(P).      { pik_set_at(p,&E,&P,&A); }
 
 // Properties that require an argument
-numproperty(A) ::= HEIGHT|WIDTH|RADIUS|RX|RY|DIAMETER|THICKNESS(P).  {A = P;}
+numproperty(A) ::= HEIGHT|WIDTH|RADIUS|DIAMETER|THICKNESS(P).  {A = P;}
 
 // Properties with optional arguments
 dashproperty(A) ::= DOTTED(A).
@@ -694,29 +787,42 @@ static const struct {
   { "YellowGreen",                 0x9acd32 },
 };
 
-/* Built-in variable names */
+/* Built-in variable names.
+**
+** This array is constant.  When a script changes the value of one of
+** these built-ins, a new PVar record is added at the head of
+** the Pik.pVar list, which is searched first.  Thus the new PVar entry
+** will override this default value.
+**
+** Units are in inches, except for "color" and "fill" which are 
+** interpreted as 24-bit RGB values.
+**
+** Binary search used.  Must be kept in sorted order.
+*/
 static const struct { const char *zName; PNum val; } aBuiltin[] = {
-  { "arcrad",      0.25 },
-  { "arrowhead",   2.0  },
-  { "arrowht",     0.1  },
-  { "arrowwid",    0.05 },
-  { "boxht",       0.5  },
-  { "boxwid",      0.75 },
-  { "circlerad",   0.25 },
-  { "color",       0.0  },
+  { "arcrad",      0.25  },
+  { "arrowhead",   2.0   },
+  { "arrowht",     0.1   },
+  { "arrowwid",    0.05  },
+  { "boxht",       0.5   },
+  { "boxwid",      0.75  },
+  { "circlerad",   0.25  },
+  { "color",       0.0   },
+  { "cylht",       0.5   },
   { "cylrad",      0.075 },
-  { "dashwid",     0.05 },
+  { "cylwid",      0.75  },
+  { "dashwid",     0.05  },
   { "dotrad",      0.015 },
-  { "ellipseht",   0.5  },
-  { "ellipsewid",  0.75 },
-  { "fill",        -1.0 },
-  { "lineht",      0.5  },
-  { "linewid",     0.5  },
-  { "movewid",     0.5  },
-  { "scale",       1.0  },
-  { "textht",      0.5  },
-  { "textwid",     0.75 },
-  { "thickness",   0.01 },
+  { "ellipseht",   0.5   },
+  { "ellipsewid",  0.75  },
+  { "fill",        -1.0  },
+  { "lineht",      0.5   },
+  { "linewid",     0.5   },
+  { "movewid",     0.5   },
+  { "scale",       1.0   },
+  { "textht",      0.5   },
+  { "textwid",     0.75  },
+  { "thickness",   0.01  },
 };
 
 
@@ -725,9 +831,12 @@ static void arcInit(Pik *p, PElem *pElem){
   pElem->w = pik_value(p, "arcrad",6,0);
   pElem->h = pElem->w;
 }
-/* Arcs are here rendered as quadratic Bezier curves, in as much
-** as I cannot figure out what the original PIC parameters are suppose
-** to mean... */
+/* Hck: Arcs are here rendered as quadratic Bezier curves rather
+** than true arcs.  Multiple reasons: (1) the legacy-PIC parameters
+** that control arcs are obscure and I could not figure out what they
+** mean based on available documentation.  (2) Arcs are rarely used,
+** and so do not seem that important.
+*/
 static void arcRender(Pik *p, PElem *pElem){
   PNum dx, dy;
   PPoint f, m, t;
@@ -775,6 +884,7 @@ static void arrowInit(Pik *p, PElem *pElem){
 static void boxInit(Pik *p, PElem *pElem){
   pElem->w = pik_value(p, "boxwid",6,0);
   pElem->h = pik_value(p, "boxht",5,0);
+  pElem->rad = 0.0;
 }
 static PPoint boxOffset(Pik *p, PElem *pElem, int cp){
   PPoint pt;
@@ -813,30 +923,32 @@ static void boxRender(Pik *p, PElem *pElem){
 static void circleInit(Pik *p, PElem *pElem){
   pElem->w = pik_value(p, "circlerad",9,0)*2;
   pElem->h = pElem->w;
-  pElem->ry = 0.5*pElem->w;
+  pElem->rad = 0.5*pElem->w;
 }
 static void circleNumProp(Pik *p, PElem *pElem, PToken *pId){
+  /* For a circle, the width must equal the height and both must
+  ** be twice the radius.  Enforce those constraints. */
   switch( pId->eType ){
     case T_RADIUS:
-      pElem->w = pElem->h = 2.0*pElem->ry;
+      pElem->w = pElem->h = 2.0*pElem->rad;
       break;
     case T_WIDTH:
       pElem->h = pElem->w;
-      pElem->ry = 0.5*pElem->w;
+      pElem->rad = 0.5*pElem->w;
       break;
     case T_HEIGHT:
       pElem->w = pElem->h;
-      pElem->ry = 0.5*pElem->w;
+      pElem->rad = 0.5*pElem->w;
       break;
   }
 }
 static void circleRender(Pik *p, PElem *pElem){
-  PNum w = pElem->w;
+  PNum r = pElem->rad;
   PPoint pt = pElem->ptAt;
   if( pElem->sw>0.0 ){
     pik_append_x(p,"<circle cx=\"", pt.x, "\"");
     pik_append_y(p," cy=\"", pt.y, "\"");
-    pik_append_dis(p," r=\"", w/2.0, "\"");
+    pik_append_dis(p," r=\"", r, "\"");
     pik_append_style(p,pElem);
     pik_append(p,"\" />\n", -1);
   }
@@ -845,28 +957,28 @@ static void circleRender(Pik *p, PElem *pElem){
 
 /* Methods for the "cylinder" class */
 static void cylinderInit(Pik *p, PElem *pElem){
-  pElem->w = pik_value(p, "boxwid",6,0);
-  pElem->h = pik_value(p, "boxht",5,0);
-  pElem->ry = pik_value(p, "cylrad",6,0);
+  pElem->w = pik_value(p, "cylwid",6,0);
+  pElem->h = pik_value(p, "cylht",5,0);
+  pElem->rad = pik_value(p, "cylrad",6,0); /* Minor radius of ellipses */
 }
 static void cylinderRender(Pik *p, PElem *pElem){
   PNum w2 = 0.5*pElem->w;
   PNum h2 = 0.5*pElem->h;
-  PNum ry = pElem->ry;
+  PNum rad = pElem->rad;
   PPoint pt = pElem->ptAt;
   if( pElem->sw>0.0 ){
-    pik_append_xy(p,"<path d=\"M", pt.x-w2,pt.y+h2-ry);
-    pik_append_xy(p,"L", pt.x-w2,pt.y-h2+ry);
+    pik_append_xy(p,"<path d=\"M", pt.x-w2,pt.y+h2-rad);
+    pik_append_xy(p,"L", pt.x-w2,pt.y-h2+rad);
     pik_append_dis(p,"A",w2," ");
-    pik_append_dis(p,"",ry," 0 0 0 ");
-    pik_append_xy(p,"",pt.x+w2,pt.y-h2+ry);
-    pik_append_xy(p,"L", pt.x+w2,pt.y+h2-ry);
+    pik_append_dis(p,"",rad," 0 0 0 ");
+    pik_append_xy(p,"",pt.x+w2,pt.y-h2+rad);
+    pik_append_xy(p,"L", pt.x+w2,pt.y+h2-rad);
     pik_append_dis(p,"A",w2," ");
-    pik_append_dis(p,"",ry," 0 0 0 ");
-    pik_append_xy(p,"",pt.x-w2,pt.y+h2-ry);
+    pik_append_dis(p,"",rad," 0 0 0 ");
+    pik_append_xy(p,"",pt.x-w2,pt.y+h2-rad);
     pik_append_dis(p,"A",w2," ");
-    pik_append_dis(p,"",ry," 0 0 0 ");
-    pik_append_xy(p,"",pt.x+w2,pt.y+h2-ry);
+    pik_append_dis(p,"",rad," 0 0 0 ");
+    pik_append_xy(p,"",pt.x+w2,pt.y+h2-rad);
     pik_append(p,"\" ",-1);
     pik_append_style(p,pElem);
     pik_append(p,"\" />\n", -1);
@@ -877,7 +989,7 @@ static PPoint cylinderOffset(Pik *p, PElem *pElem, int cp){
   PPoint pt;
   PNum w2 = pElem->w*0.5;
   PNum h1 = pElem->h*0.5;
-  PNum h2 = h1 - pElem->ry;
+  PNum h2 = h1 - pElem->rad;
   switch( cp ){
     case CP_C:   pt.x = 0.0;   pt.y = 0.0;    break;
     case CP_N:   pt.x = 0.0;   pt.y = h1;     break;
@@ -894,8 +1006,8 @@ static PPoint cylinderOffset(Pik *p, PElem *pElem, int cp){
 
 /* Methods for the "dot" class */
 static void dotInit(Pik *p, PElem *pElem){
-  pElem->ry = pik_value(p, "dotrad",6,0)*2;
-  pElem->h = pElem->w = pElem->ry*3;
+  pElem->rad = pik_value(p, "dotrad",6,0);
+  pElem->h = pElem->w = pElem->rad*6;
   pElem->fill = pElem->color;
 }
 static void dotNumProp(Pik *p, PElem *pElem, PToken *pId){
@@ -909,12 +1021,12 @@ static void dotNumProp(Pik *p, PElem *pElem, PToken *pId){
   }
 }
 static void dotRender(Pik *p, PElem *pElem){
-  PNum r = pElem->ry;
+  PNum r = pElem->rad;
   PPoint pt = pElem->ptAt;
   if( pElem->sw>0.0 ){
     pik_append_x(p,"<circle cx=\"", pt.x, "\"");
     pik_append_y(p," cy=\"", pt.y, "\"");
-    pik_append_dis(p," r=\"", 0.5*r, "\"");
+    pik_append_dis(p," r=\"", r, "\"");
     pik_append_style(p,pElem);
     pik_append(p,"\" />\n", -1);
   }
@@ -1194,7 +1306,7 @@ static const PClass noopClass =
 
 /*
 ** Reduce the length of the line segment by amt (if possible) by
-** modifying t.
+** modifying the location of *t.
 */
 static void pik_chop(Pik *p, PPoint *f, PPoint *t, PNum amt){
   PNum dx = t->x - f->x;
@@ -1211,9 +1323,9 @@ static void pik_chop(Pik *p, PPoint *f, PPoint *t, PNum amt){
 }
 
 /*
-** Draw an error head on the end of the line segment from pFrom to pTo.
+** Draw an arrowhead on the end of the line segment from pFrom to pTo.
 ** Also, shorten the line segment (by changing the value of pTo) so that
-** the arrow ends in a point.
+** the shaft of the arrow does not extend into the arrowhead.
 */
 static void pik_draw_arrowhead(Pik *p, PPoint *f, PPoint *t, PElem *pElem){
   PNum dx = t->x - f->x;
@@ -1245,7 +1357,7 @@ static void pik_draw_arrowhead(Pik *p, PPoint *f, PPoint *t, PElem *pElem){
 }
 
 /*
-** Compute the relative office of a edge from the reference for a
+** Compute the relative offset to an edge location from the reference for a
 ** an element.
 */
 static PPoint pik_elem_offset(Pik *p, PElem *pElem, int cp){
@@ -1282,10 +1394,10 @@ static void pik_append(Pik *p, const char *zText, int n){
 **
 **   *  The space character is changed into "&nbsp;" if mFlags as the
 **      0x01 bit set.  This is needed when outputting text to preserve
-**      leading and trailing whitespace for spacing.
+**      leading and trailing whitespace.
 **
 **   *  The "&" character is changed into "&amp;" if mFlags as the
-**      0x02 bit set.  This is needed when outputting error message text.
+**      0x02 bit set.  This is needed when generating error message text.
 **
 **   *  Except for the above, only "<" and ">" are escaped.
 */
@@ -1883,18 +1995,13 @@ void pik_set_numprop(Pik *p, PToken *pId, PNum rAbs, PNum rRel){
       if( pik_param_ok(p, pElem, pId, A_LEFT, A_WIDTH|A_RIGHT|A_AT) ) return;
       pElem->left = rAbs;
       break;
-    case T_RX:
-      if( pik_param_ok(p, pElem, pId, A_RX, 0) ) return;
-      pElem->rx = pElem->rx*rRel + rAbs;
-      break;
     case T_RADIUS:
-    case T_RY:
-      if( pik_param_ok(p, pElem, pId, A_RY, 0) ) return;
-      pElem->ry = pElem->ry*rRel + rAbs;
+      if( pik_param_ok(p, pElem, pId, A_RADIUS, 0) ) return;
+      pElem->rad = pElem->rad*rRel + rAbs;
       break;
     case T_DIAMETER:
-      if( pik_param_ok(p, pElem, pId, A_RY, 0) ) return;
-      pElem->ry = pElem->rx*rRel + 0.5*rAbs; /* diam it 2x radius */
+      if( pik_param_ok(p, pElem, pId, A_RADIUS, 0) ) return;
+      pElem->rad = pElem->rad*rRel + 0.5*rAbs; /* diam it 2x radius */
       break;
     case T_THICKNESS:
       if( pik_param_ok(p, pElem, pId, A_THICKNESS, 0) ) return;
@@ -2463,8 +2570,7 @@ static void pik_same(Pik *p, PElem *pOther, PToken *pErrTok){
   }
   pElem->w = pOther->w;
   pElem->h = pOther->h;
-  pElem->rx = pOther->rx;
-  pElem->ry = pOther->ry;
+  pElem->rad = pOther->rad;
   pElem->sw = pOther->sw;
   pElem->dashed = pOther->dashed;
   pElem->dotted = pOther->dashed;
@@ -2574,19 +2680,17 @@ static PPoint pik_nth_vertex(Pik *p, PToken *pNth, PToken *pErr, PElem *pObj){
 static PNum pik_property_of(Pik *p, PElem *pElem, PToken *pProp){
   PNum v = 0.0;
   switch( pProp->eType ){
-    case T_HEIGHT:    v = pElem->h;       break;
-    case T_WIDTH:     v = pElem->w;       break;
-    case T_RX:        v = pElem->rx;      break;
-    case T_RADIUS:    /* fall through */
-    case T_RY:        v = pElem->ry;      break;
-    case T_DIAMETER:  v = pElem->ry*2.0;  break;
-    case T_THICKNESS: v = pElem->sw;      break;
-    case T_DASHED:    v = pElem->dashed;  break;
-    case T_DOTTED:    v = pElem->dotted;  break;
+    case T_HEIGHT:    v = pElem->h;            break;
+    case T_WIDTH:     v = pElem->w;            break;
+    case T_RADIUS:    v = pElem->rad;          break;
+    case T_DIAMETER:  v = pElem->rad*2.0;      break;
+    case T_THICKNESS: v = pElem->sw;           break;
+    case T_DASHED:    v = pElem->dashed;       break;
+    case T_DOTTED:    v = pElem->dotted;       break;
     case T_CHOP:      v = pElem->chop2;
          if( v<0.0 )  v = 0.0;                 break;
-    case T_FILL:      v = pElem->fill;    break;
-    case T_COLOR:     v = pElem->color;   break;
+    case T_FILL:      v = pElem->fill;         break;
+    case T_COLOR:     v = pElem->color;        break;
     case T_X:         v = pElem->ptAt.x;       break;
     case T_Y:         v = pElem->ptAt.y;       break;
     case T_TOP:       v = pElem->bbox.ne.y;    break;
@@ -2946,8 +3050,6 @@ static const PikWord pik_keywords[] = {
   { "radius",     6,   T_RADIUS,    0,         0       },
   { "right",      5,   T_RIGHT,     DIR_RIGHT, CP_E    },
   { "rjust",      5,   T_RJUST,     0,         0       },
-  { "rx",         2,   T_RX,        0,         0       },
-  { "ry",         2,   T_RY,        0,         0       },
   { "s",          1,   T_EDGEPT,    0,         CP_S    },
   { "same",       4,   T_SAME,      0,         0       },
   { "se",         2,   T_EDGEPT,    0,         CP_SE   },
