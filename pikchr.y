@@ -158,12 +158,13 @@ static const PNum pik_hdg_angle[] = {
 };
 
 /* Built-in functions */
-#define FN_COS    0
-#define FN_INT    1
-#define FN_MAX    2
-#define FN_MIN    3
-#define FN_SIN    4
-#define FN_SQRT   5
+#define FN_ABS    0
+#define FN_COS    1
+#define FN_INT    2
+#define FN_MAX    3
+#define FN_MIN    4
+#define FN_SIN    5
+#define FN_SQRT   6
 
 /* Text position flags */
 #define TP_LJUST   0x01  /* left justify......          */
@@ -372,6 +373,7 @@ static void pik_set_numprop(Pik*,PToken*,PNum,PNum);
 static void pik_set_dashed(Pik*,PToken*,PNum*);
 static void pik_then(Pik*,PToken*,PElem*);
 static void pik_add_direction(Pik*,PToken*,PNum*,int);
+static void pik_evenwith(Pik*,PToken*,PPoint*);
 static void pik_set_from(Pik*,PElem*,PToken*,PPoint*);
 static void pik_add_to(Pik*,PElem*,PToken*,PPoint*);
 static void pik_close_path(Pik*,PToken*);
@@ -429,6 +431,7 @@ static PToken pik_next_semantic_token(Pik *p, PToken *pThis);
 %type textposition {int}
 %type rvalue {PNum}
 %type lvalue {PToken}
+%type even {PToken}
 
 %syntax_error {
   if( TOKEN.z && TOKEN.z[0] ){
@@ -511,6 +514,7 @@ attribute ::= direction(D) expr(X) PERCENT.
                                     { pik_add_direction(p,&D,&X,1);}
 attribute ::= direction(D) expr(X). { pik_add_direction(p,&D,&X,0);}
 attribute ::= direction(D).         { pik_add_direction(p,&D,0,0); }
+attribute ::= direction(D) even place(P). {pik_evenwith(p,&D,&P);}
 attribute ::= CLOSE(E).             { pik_close_path(p,&E); }
 attribute ::= CHOP.                 { p->cur->bChop = 1; }
 attribute ::= FROM(T) position(X).  { pik_set_from(p,p->cur,&T,&X); }
@@ -522,6 +526,9 @@ attribute ::= WITH withclause.
 attribute ::= SAME(E).                          {pik_same(p,0,&E);}
 attribute ::= SAME(E) AS object(X).             {pik_same(p,X,&E);}
 attribute ::= STRING(T) textposition(P).        {pik_add_txt(p,&T,P);}
+
+even ::= UNTIL EVEN WITH.
+even ::= EVEN WITH.
 
 withclause ::= with.
 withclause ::= withclause AND with.
@@ -562,10 +569,8 @@ position(A) ::= place(B) MINUS LP expr(X) COMMA expr(Y) RP.
                                                       {A.x=B.x-X; A.y=B.y-Y;}
 position(A) ::= LP position(X) COMMA position(Y) RP.  {A.x=X.x; A.y=Y.y;}
 position(A) ::= LP position(X) RP.                    {A=X;}
-position(A) ::= expr(X) OF THE WAY BETWEEN position(P1) AND position(P2).
-                         {A = pik_position_between(p,X,P1,P2);}
-position(A) ::= expr(X) BETWEEN position(P1) AND position(P2).
-                         {A = pik_position_between(p,X,P1,P2);}
+position(A) ::= expr(X) between position(P1) AND position(P2).
+                                       {A = pik_position_between(p,X,P1,P2);}
 position(A) ::= expr(X) ABOVE position(B).    {A=B; A.y += X;}
 position(A) ::= expr(X) BELOW position(B).    {A=B; A.y -= X;}
 position(A) ::= expr(X) LEFT OF position(B).  {A=B; A.x -= X;}
@@ -574,6 +579,10 @@ position(A) ::= expr(D) EDGEPT(E) OF position(P).
                                         {A = pik_position_at_hdg(p,D,&E,P);}
 position(A) ::= expr(D) HEADING expr(G) FROM position(P).
                                         {A = pik_position_at_angle(p,D,G,P);}
+
+between ::= WAY BETWEEN.
+between ::= BETWEEN.
+between ::= OF THE WAY BETWEEN.
 
 place(A) ::= object(O).                 {A = pik_place_of_elem(p,O,0);}
 place(A) ::= object(O) DOT_E edge(X).   {A = pik_place_of_elem(p,O,&X);}
@@ -2339,6 +2348,41 @@ static void pik_add_direction(Pik *p, PToken *pDir, PNum *pVal, int rel){
   pElem->outDir = dir;
 }
 
+/* Process a movement attribute of the form "right until even with ..."
+**
+** pDir is the first keyword, "right" or "left" or "up" or "down".
+** The movement is in that direction until its closest approach to
+** point specified by pPoint.
+*/
+static void pik_evenwith(Pik *p, PToken *pDir, PPoint *pPlace){
+  PElem *pElem = p->cur;
+  int n;
+  if( !pElem->type->isLine ){
+    pik_error(p, pDir, "use with line-oriented elements only");
+    return;
+  }
+  n = p->nTPath - 1;
+  if( p->thenFlag || p->mTPath==3 || n==0 ){
+    n = pik_next_rpath(p, pDir);
+    p->thenFlag = 0;
+  }
+  switch( pDir->eCode ){
+    case DIR_DOWN:
+    case DIR_UP:
+       if( p->mTPath & 2 ) n = pik_next_rpath(p, pDir);
+       p->aTPath[n].y = pPlace->y;
+       p->mTPath |= 2;
+       break;
+    case DIR_RIGHT:
+    case DIR_LEFT:
+       if( p->mTPath & 1 ) n = pik_next_rpath(p, pDir);
+       p->aTPath[n].x = pPlace->x;
+       p->mTPath |= 1;
+       break;
+  }
+  pElem->outDir = pDir->eCode;
+}
+
 /* Set the "from" of an element
 */
 static void pik_set_from(Pik *p, PElem *pElem, PToken *pTk, PPoint *pPt){
@@ -2879,9 +2923,10 @@ static PNum pik_property_of(Pik *p, PElem *pElem, PToken *pProp){
 static PNum pik_func(Pik *p, PToken *pFunc, PNum x, PNum y){
   PNum v = 0.0;
   switch( pFunc->eCode ){
-    case FN_COS:  v = cos(x);   break;
-    case FN_INT:  v = floor(x); break;
-    case FN_SIN:  v = sin(x);   break;
+    case FN_ABS:  v = v<0.0 ? -v : v;  break;
+    case FN_COS:  v = cos(x);          break;
+    case FN_INT:  v = rint(x);         break;
+    case FN_SIN:  v = sin(x);          break;
     case FN_SQRT:
       if( x<0.0 ){
         pik_error(p, pFunc, "sqrt of negative value");
@@ -3218,6 +3263,7 @@ typedef struct PikWord {
 */
 static const PikWord pik_keywords[] = {
   { "above",      5,   T_ABOVE,     0,         0       },
+  { "abs",        3,   T_FUNC1,     FN_ABS,    0       },
   { "and",        3,   T_AND,       0,         0       },
   { "as",         2,   T_AS,        0,         0       },
   { "at",         2,   T_AT,        0,         0       },
@@ -3240,6 +3286,7 @@ static const PikWord pik_keywords[] = {
   { "e",          1,   T_EDGEPT,    0,         CP_E    },
   { "east",       4,   T_EDGEPT,    0,         CP_E    },
   { "end",        3,   T_END,       0,         0       },
+  { "even",       4,   T_EVEN,      0,         0       },
   { "fill",       4,   T_FILL,      0,         0       },
   { "first",      5,   T_NTH,       0,         0       },
   { "from",       4,   T_FROM,      0,         0       },
@@ -3279,6 +3326,7 @@ static const PikWord pik_keywords[] = {
   { "thickness",  9,   T_THICKNESS, 0,         0       },
   { "to",         2,   T_TO,        0,         0       },
   { "top",        3,   T_TOP,       0,         CP_N    },
+  { "until",      5,   T_UNTIL,     0,         0       },
   { "up",         2,   T_UP,        DIR_UP,    0       },
   { "vertex",     6,   T_VERTEX,    0,         0       },
   { "w",          1,   T_EDGEPT,    0,         CP_W    },
