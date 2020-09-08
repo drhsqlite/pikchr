@@ -377,7 +377,8 @@ basetype(A) ::= LB savelist(L) element_list(X) RB(E).
       { p->list = L; A = pik_elem_new(p,0,0,X); if(A) A->errTok = E; }
 
 %type savelist {PEList*}
-%destructor savelist {pik_elist_free(p,$$);}
+// No distructor required as this same PEList is also held by
+// an "element" non-terminal deeper on the stack.
 savelist(A) ::= .   {A = p->list; p->list = 0;}
 
 direction(A) ::= UP(A).
@@ -1641,9 +1642,10 @@ static PEList *pik_elist_append(Pik *p, PEList *pEList, PElem *pElem){
       pik_elem_free(p, pElem);
       return pEList;
     }
+    pEList->nAlloc = nNew;
     pEList->a = pNew;
   }
-  pEList->a[pEList->n++] = pElem;   
+  pEList->a[pEList->n++] = pElem;
   p->list = pEList;
   return pEList;
 }
