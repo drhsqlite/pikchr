@@ -2610,6 +2610,7 @@ static short int pik_nth_value(Pik *p, PToken *pNth){
     pik_error(p, pNth, "value too big - max '1000th'");
     i = 1;
   }
+  if( i==0 && pik_token_eq(pNth,"first")==0 ) i = 1;
   return i;
 }
 
@@ -3238,6 +3239,7 @@ static const PikWord pik_keywords[] = {
   { "east",       4,   T_EDGEPT,    0,         CP_E    },
   { "end",        3,   T_END,       0,         0       },
   { "fill",       4,   T_FILL,      0,         0       },
+  { "first",      5,   T_NTH,       0,         0       },
   { "from",       4,   T_FROM,      0,         0       },
   { "heading",    7,   T_HEADING,   0,         0       },
   { "height",     6,   T_HEIGHT,    0,         0       },
