@@ -1,4 +1,5 @@
-C: circle "Center"
+   linerad = 5px
+C: circle "Center" rad 150%
    circle "N"  at 1.0 n  of C; arrow from C to last chop ->
    circle "NE" at 1.0 ne of C; arrow from C to last chop <-
    circle "E"  at 1.0 e  of C; arrow from C to last chop <->
@@ -10,7 +11,8 @@ C: circle "Center"
    arrow from 2nd circle to 3rd circle chop
    arrow from 4th circle to 3rd circle chop
    arrow from SW to S chop <->
-   circle "ESE" at 2.0 heading 112.5 from Center thickness 150% fill lightblue
+   circle "ESE" at 2.0 heading 112.5 from Center \
+      thickness 150% fill lightblue
    arrow from Center to ESE thickness 150% <-> chop
    arrow from ESE up 1.35 then to NE chop
    line dashed <- from E.e to (ESE.x,E.y)

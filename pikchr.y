@@ -893,6 +893,7 @@ static void arcRender(Pik *p, PElem *pElem){
 static void arrowInit(Pik *p, PElem *pElem){
   pElem->w = pik_value(p, "linewid",7,0);
   pElem->h = pik_value(p, "lineht",6,0);
+  pElem->rad = pik_value(p, "linerad",7,0);
   pElem->fill = -1.0;
   pElem->rarrow = 1;
 }
@@ -1202,6 +1203,7 @@ static void ellipseRender(Pik *p, PElem *pElem){
 static void lineInit(Pik *p, PElem *pElem){
   pElem->w = pik_value(p, "linewid",7,0);
   pElem->h = pik_value(p, "lineht",6,0);
+  pElem->rad = pik_value(p, "linerad",7,0);
   pElem->fill = -1.0;
 }
 static void lineRender(Pik *p, PElem *pElem){
@@ -1371,7 +1373,7 @@ static const PClass aClass[] = {
       /* xNumProp */      0,
       /* xChop */         0,
       /* xOffset */       0,
-      /* xRender */       lineRender 
+      /* xRender */       splineRender 
    },
    {  /* name */          "box",
       /* isline */        0,
