@@ -253,7 +253,7 @@ static PEList *pik_elist_append(Pik*,PEList*,PElem*);
 static PElem *pik_elem_new(Pik*,PToken*,PToken*,PEList*);
 static void pik_set_direction(Pik*,int);
 static void pik_elem_setname(Pik*,PElem*,PToken*);
-static void pik_set_var(Pik*,PToken*,PNum);
+static void pik_set_var(Pik*,PToken*,PNum,PToken*);
 static PNum pik_value(Pik*,const char*,int,int*);
 static PNum pik_lookup_color(Pik*,PToken*);
 static PNum pik_get_var(Pik*,PToken*);
@@ -321,6 +321,7 @@ static PToken pik_next_semantic_token(Pik *p, PToken *pThis);
 %type nth {PToken}
 %type textposition {int}
 %type rvalue {PNum}
+%type lvalue {PToken}
 
 %syntax_error {
   if( TOKEN.z && TOKEN.z[0] ){
@@ -340,9 +341,7 @@ element_list(A) ::= element_list(B) EOL element(X).
 
 element(A) ::= .   { A = 0; }
 element(A) ::= direction(D).  { pik_set_direction(p,D.eCode);  A=0; }
-element(A) ::= ID(N) ASSIGN rvalue(X). {pik_set_var(p,&N,X); A = 0;}
-element(A) ::= FILL(N) ASSIGN rvalue(X). {pik_set_var(p,&N,X); A = 0;}
-element(A) ::= COLOR(N) ASSIGN rvalue(X). {pik_set_var(p,&N,X); A = 0;}
+element(A) ::= lvalue(N) ASSIGN(OP) rvalue(X). {pik_set_var(p,&N,X,&OP); A=0;}
 element(A) ::= PLACENAME(N) COLON unnamed_element(X).
                { A = X;  pik_elem_setname(p,X,&N); }
 element(A) ::= PLACENAME(N) COLON position(P).
@@ -350,6 +349,10 @@ element(A) ::= PLACENAME(N) COLON position(P).
                  if(A){ A->ptAt = P; pik_elem_setname(p,A,&N); }}
 element(A) ::= unnamed_element(X).  {A = X;}
 element(A) ::= print prlist.  {pik_append(p,"<br>\n",5); A=0;}
+
+lvalue(A) ::= ID(A).
+lvalue(A) ::= FILL(A).
+lvalue(A) ::= COLOR(A).
 
 // PLACENAME might actually be a color name (ex: DarkBlue).  But we
 // cannot make it part of expr due to parsing ambiguities.  The
@@ -2174,7 +2177,7 @@ static int pik_text_position(Pik *p, int iPrev, PToken *pFlag){
 ** a new application-defined variable is set.  Since app-defined variables
 ** are searched first, this will override any built-in variables.
 */
-static void pik_set_var(Pik *p, PToken *pId, PNum val){
+static void pik_set_var(Pik *p, PToken *pId, PNum val, PToken *pOp){
   PVar *pVar = p->pVar;
   while( pVar ){
     if( pik_token_eq(pId,pVar->zName)==0 ) break;
@@ -2191,9 +2194,22 @@ static void pik_set_var(Pik *p, PToken *pId, PNum val){
     memcpy(z, pId->z, pId->n);
     z[pId->n] = 0;
     pVar->pNext = p->pVar;
+    pVar->val = 0;
     p->pVar = pVar;
   }
-  pVar->val = val;
+  switch( pOp->eCode ){
+    case T_PLUS:  pVar->val += val; break;
+    case T_STAR:  pVar->val *= val; break;
+    case T_MINUS: pVar->val -= val; break;
+    case T_SLASH:
+      if( val==0.0 ){
+        pik_error(p, pOp, "division by zero");
+      }else{
+        pVar->val /= val;
+      }
+      break;
+    default:      pVar->val = val; break;
+  }
 }
 
 /*
@@ -3037,13 +3053,33 @@ static int pik_token_length(PToken *pToken){
         if( z[i]!=0 ) i++;
         pToken->eType = T_WHITESPACE;
         return i;
+      }else if( z[1]=='=' ){
+        pToken->eType = T_ASSIGN;
+        pToken->eCode = T_SLASH;
+        return 2;
       }else{
         pToken->eType = T_SLASH;
         return 1;
       }
     }
-    case '+': {   pToken->eType = T_PLUS;    return 1; }
-    case '*': {   pToken->eType = T_STAR;    return 1; }
+    case '+': {
+      if( z[1]=='=' ){
+        pToken->eType = T_ASSIGN;
+        pToken->eCode = T_PLUS;
+        return 2;
+      }
+      pToken->eType = T_PLUS;
+      return 1;
+    }
+    case '*': {
+      if( z[1]=='=' ){
+        pToken->eType = T_ASSIGN;
+        pToken->eCode = T_STAR;
+        return 2;
+      }
+      pToken->eType = T_STAR;
+      return 1;
+    }
     case '%': {   pToken->eType = T_PERCENT; return 1; }
     case '(': {   pToken->eType = T_LP;      return 1; }
     case ')': {   pToken->eType = T_RP;      return 1; }
@@ -3051,10 +3087,15 @@ static int pik_token_length(PToken *pToken){
     case ']': {   pToken->eType = T_RB;      return 1; }
     case ',': {   pToken->eType = T_COMMA;   return 1; }
     case ':': {   pToken->eType = T_COLON;   return 1; }
-    case '=': {   pToken->eType = T_ASSIGN;  return 1; }
+    case '=': {   pToken->eType = T_ASSIGN;
+                  pToken->eCode = T_ASSIGN;  return 1; }
     case '-': {
       if( z[1]=='>' ){
         pToken->eType = T_RARROW;
+        return 2;
+      }else if( z[1]=='=' ){
+        pToken->eType = T_ASSIGN;
+        pToken->eCode = T_MINUS;
         return 2;
       }else{
         pToken->eType = T_MINUS;
