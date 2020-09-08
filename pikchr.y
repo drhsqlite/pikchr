@@ -1260,15 +1260,60 @@ static void ovalNumProp(Pik *p, PElem *pElem, PToken *pId){
 static void splineInit(Pik *p, PElem *pElem){
   pElem->w = pik_value(p, "linewid",7,0);
   pElem->h = pik_value(p, "lineht",6,0);
+  pElem->rad = 1000;
   pElem->fill = -1.0;  /* Disable fill by default */
 }
-static void splineRender(Pik *p, PElem *pElem){
+/* Return a point along the path from "f" to "t" that is r units
+** prior to reach "t", except if the path is less than 2*r total,
+** return the midpoint.
+*/
+static PPoint radiusMidpoint(PPoint f, PPoint t, PNum r, int *pbMid){
+  PNum dx = t.x - f.x;
+  PNum dy = t.y - f.y;
+  PNum dist = sqrt(dx*dx+dy*dy);
+  PPoint m;
+  if( dist<=0.0 ) return t;
+  dx /= dist;
+  dy /= dist;
+  if( r > 0.5*dist ){
+    r = 0.5*dist;
+    *pbMid = 1;
+  }else{
+    *pbMid = 0;
+  }
+  m.x = t.x - r*dx;
+  m.y = t.y - r*dy;
+  return m;
+}
+static void radiusPath(Pik *p, PElem *pElem, PNum r){
   int i;
+  int n = pElem->nPath;
+  const PPoint *a = pElem->aPath;
+  PPoint m;
+  int isMid = 0;
+
+  pik_append_xy(p,"<path d=\"M", a[0].x, a[0].y);
+  m = radiusMidpoint(a[0], a[1], r, &isMid);
+  pik_append_xy(p," L ",m.x,m.y);
+  for(i=1; i<n-1; i++){
+    m = radiusMidpoint(a[i+1],a[i],r, &isMid);
+    pik_append_xy(p," Q ",a[i].x,a[i].y);
+    pik_append_xy(p," ",m.x,m.y);
+    if( !isMid ){
+      m = radiusMidpoint(a[i],a[i+1],r, &isMid);
+      pik_append_xy(p," L ",m.x,m.y);
+    }
+  }
+  pik_append_xy(p," L ",a[i].x,a[i].y);
+  pik_append(p,"\" ",-1);
+  pik_append_style(p,pElem);
+  pik_append(p,"\" />\n", -1);
+}
+static void splineRender(Pik *p, PElem *pElem){
   if( pElem->sw>0.0 ){
     int n = pElem->nPath;
-    const PPoint *a = pElem->aPath;
-    PPoint m2;
-    if( n<3 ){
+    PNum r = pElem->rad;
+    if( n<3 || r<=0.0 ){
       lineRender(p,pElem);
       return;
     }
@@ -1278,20 +1323,7 @@ static void splineRender(Pik *p, PElem *pElem){
     if( pElem->rarrow ){
       pik_draw_arrowhead(p,&pElem->aPath[n-2],&pElem->aPath[n-1],pElem);
     }
-    pik_append_xy(p,"<path d=\"M", a[0].x, a[0].y);
-    m2.x = 0.5*(a[0].x+a[1].x);
-    m2.y = 0.5*(a[0].y+a[1].y);
-    pik_append_xy(p," L ",m2.x,m2.y);
-    for(i=1; i<pElem->nPath-1; i++){
-      m2.x = 0.5*(a[i].x+a[i+1].x);
-      m2.y = 0.5*(a[i].y+a[i+1].y);
-      pik_append_xy(p," Q ",a[i].x,a[i].y);
-      pik_append_xy(p," ",m2.x,m2.y);
-    }
-    pik_append_xy(p," L ",a[i].x,a[i].y);
-    pik_append(p,"\" ",-1);
-    pik_append_style(p,pElem);
-    pik_append(p,"\" />\n", -1);
+    radiusPath(p,pElem,pElem->rad);
   }
   pik_append_txt(p, pElem);
 }
@@ -1387,7 +1419,7 @@ static const PClass aClass[] = {
       /* xNumProp */      0,
       /* xChop */         0,
       /* xOffset */       0,
-      /* xRender */       lineRender
+      /* xRender */       splineRender
    },
    {  /* name */          "move",
       /* isline */        1,
