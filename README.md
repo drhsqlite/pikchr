@@ -9,14 +9,14 @@ to provide a convenient means of showing diagrams.
 
 For example, the diagram:
 
-~~~~ pikchr
+~~~~ pikchr indent
 arrow; box "Hello, World!"; arrow
 ~~~~
 
-Is generated using the following markup:
+Is generated using the following Markdown:
 
 ~~~~~~
-   ~~~~ pikchr
+   ~~~~ pikchr indent
    arrow; box "Hello, World!"; arrow
    ~~~~
 ~~~~~~
@@ -26,24 +26,24 @@ Is generated using the following markup:
 As of this writing (2020-09-09), Pikchr is a work-in-progress.
 More documentation is forthcoming.  We want to use Pikchr to write
 the Pikchr documentation, but it order to do that, we first have
-to deploy Pikchr into a working system ([Fossil][3]) and that means
-the initial deployment has to be undocumented.  Volunteers are
-welcomed, of course.
+to deploy Pikchr into a working system ([Fossil][3] in this case)
+and that means the initial deployment must be undocumented.
+Volunteers are welcomed, of course.
 
 [3]: https://fossil-scm.org/fossil
 
 ## Derivation From PIC
 
 The inspiration for Pikchr is the venerable PIC language from
-Bell Labs (circa late 1970s, early 1980s).  Pikchr is *mostly*
+Bell Labs (circa early 1980s).  Pikchr is *mostly*
 compatible with PIC, though Pikchr has many extensions, and
 it omits some legacy-PIC features (such as the "sh" command)
-that would be a security issue in modern software.  Most of the
+that would be a security issue in internet-facing software.  Most of the
 example PIC scripts contained in the [PIC User Manual][4] work
 fine with Pikchr, perhaps with a few minor tweaks.  For example:
 
-~~~~ pikchr
-        margin = 5mm; leftmargin = 2cm
+~~~~ pikchr center
+        margin = 5mm;
 
         circle "DISK"
         arrow "character" "defns" right 150%
@@ -68,7 +68,7 @@ Paper:  CRT + 1.05,0.75
 PIC and Pikchr are sufficiently similar that you can get started using
 Pikchr by reading the PIC user manual.
 
-See the [raw Markdown source text for this page][5] to see more
+See the [raw Markdown source text to this page][5] to see more
 examples.
 
 
