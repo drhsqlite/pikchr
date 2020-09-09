@@ -122,6 +122,9 @@
 #include <math.h>
 #include <assert.h>
 #define count(X) (sizeof(X)/sizeof(X[0]))
+#ifndef M_PI
+# define M_PI 3.1415926535897932385
+#endif
 
 typedef struct Pik Pik;          /* Complete parsing context */
 typedef struct PToken PToken;    /* A single token */
