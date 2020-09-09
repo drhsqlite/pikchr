@@ -1,4 +1,3 @@
-charht = 0.166
 scale = 0.75
 box "One"
 arrow right 200% "Bold" bold above "Italic" italic below
