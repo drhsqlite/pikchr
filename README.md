@@ -73,4 +73,4 @@ examples.
 
 
 [4]: http://doc.cat-v.org/unix/v8/picmemo.pdf
-[5]: ./README.md?mimetype=text/plain
+[5]: /doc/trunk/README.md?mimetype=text/plain
