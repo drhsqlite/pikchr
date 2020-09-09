@@ -2997,8 +2997,8 @@ static PPoint pik_position_between(Pik *p, PNum x, PPoint p1, PPoint p2){
   PPoint out;
   if( x<0.0 ) x = 0.0;
   if( x>1.0 ) x = 1.0;
-  out.x = p1.x*x + p2.x*(1.0 - x);
-  out.y = p1.y*x + p2.y*(1.0 - x);
+  out.x = p2.x*x + p1.x*(1.0 - x);
+  out.y = p2.y*x + p1.y*(1.0 - x);
   return out;
 }
 
