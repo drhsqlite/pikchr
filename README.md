@@ -68,5 +68,9 @@ Paper:  CRT + 1.05,0.75
 PIC and Pikchr are sufficiently similar that you can get started using
 Pikchr by reading the PIC user manual.
 
+See the [raw Markdown source text for this page][5] to see more
+examples.
+
 
 [4]: http://doc.cat-v.org/unix/v8/picmemo.pdf
+[5]: ./README.md?mimetype=text/plain
