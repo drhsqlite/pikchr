@@ -166,13 +166,17 @@ static const PNum pik_hdg_angle[] = {
 #define FN_SIN    5
 #define FN_SQRT   6
 
-/* Text position flags */
+/* Text position and style flags */
 #define TP_LJUST   0x01  /* left justify......          */
 #define TP_RJUST   0x02  /*            ...Right justify */
 #define TP_JMASK   0x03  /* Mask for justification bits */
 #define TP_ABOVE   0x04  /* Position text above PElem.ptAt */
 #define TP_BELOW   0x08  /* Position text below PElem.ptAt */
 #define TP_VMASK   0x0c  /* Mask for text positioning flags */
+#define TP_ITALIC  0x10  /* Italic font */
+#define TP_BOLD    0x20  /* Bold font */
+#define TP_FMASK   0x30  /* Mask for font style */
+#define TP_ALIGN   0x40  /* Rotate to align with the line */
 
 /* An object to hold a position in 2-D space */
 struct PPoint {
@@ -559,7 +563,8 @@ boolproperty ::= LRARROW.     {p->cur->larrow=1; p->cur->rarrow=1; }
 boolproperty ::= INVIS.       {p->cur->sw = 0.0;}
 
 textposition(A) ::= .   {A = 0;}
-textposition(A) ::= textposition(B) CENTER|LJUST|RJUST|ABOVE|BELOW(F).
+textposition(A) ::= textposition(B) 
+   CENTER|LJUST|RJUST|ABOVE|BELOW|ITALIC|BOLD|ALIGNED(F).
                         {A = pik_text_position(p,B,&F);}
 
 
@@ -1812,12 +1817,27 @@ static void pik_append_txt(Pik *p, PElem *pElem){
     }else{
       pik_append(p, " text-anchor=\"middle\"", -1);
     }
+    if( t->eCode & TP_ITALIC ){
+      pik_append(p, " font-style=\"italic\"", -1);
+    }
+    if( t->eCode & TP_BOLD ){
+      pik_append(p, " font-weight=\"bold\"", -1);
+    }
     if( pElem->color>=0.0 ){
       pik_append_clr(p, " fill=\"", pElem->color, "\"");
     }
     if( p->fontScale<=99.0 || p->fontScale>=101.0 ){
       pik_append_num(p, " font-size=\"", p->fontScale);
       pik_append(p, "%\"", 2);
+    }
+    if( (t->eCode & TP_ALIGN)!=0 && pElem->nPath>=2 ){
+      int n = pElem->nPath;
+      PNum dx = pElem->aPath[n-1].x - pElem->aPath[0].x;
+      PNum dy = pElem->aPath[n-1].y - pElem->aPath[0].y;
+      PNum ang = atan2(dy,dx)*-180/M_PI;
+      pik_append_num(p, " transform=\"rotate(", ang);
+      pik_append_xy(p, " ", x, y);
+      pik_append(p,")\"",2);
     }
     pik_append(p," dominant-baseline=\"central\">",-1);
     z = t->z+1;
@@ -2562,6 +2582,9 @@ static int pik_text_position(Pik *p, int iPrev, PToken *pFlag){
     case T_RJUST:    iRes = (iRes&~TP_JMASK) | TP_RJUST;  break;
     case T_ABOVE:    iRes = (iRes&~TP_VMASK) | TP_ABOVE;  break;
     case T_BELOW:    iRes = (iRes&~TP_VMASK) | TP_BELOW;  break;
+    case T_ITALIC:   iRes |= TP_ITALIC;                   break; 
+    case T_BOLD:     iRes |= TP_BOLD;                     break; 
+    case T_ALIGNED:  iRes |= TP_ALIGN;                    break; 
   }
   return iRes;
 }
@@ -3370,11 +3393,13 @@ typedef struct PikWord {
 static const PikWord pik_keywords[] = {
   { "above",      5,   T_ABOVE,     0,         0       },
   { "abs",        3,   T_FUNC1,     FN_ABS,    0       },
+  { "aligned",    7,   T_ALIGNED,   0,         0       },
   { "and",        3,   T_AND,       0,         0       },
   { "as",         2,   T_AS,        0,         0       },
   { "at",         2,   T_AT,        0,         0       },
   { "below",      5,   T_BELOW,     0,         0       },
   { "between",    7,   T_BETWEEN,   0,         0       },
+  { "bold",       4,   T_BOLD,      0,         0       },
   { "bot",        3,   T_EDGEPT,    0,         CP_S    },
   { "bottom",     6,   T_BOTTOM,    0,         CP_S    },
   { "c",          1,   T_EDGEPT,    0,         CP_C    },
@@ -3404,6 +3429,7 @@ static const PikWord pik_keywords[] = {
   { "int",        3,   T_FUNC1,     FN_INT,    0       },
   { "invis",      5,   T_INVIS,     0,         0       },
   { "invisible",  9,   T_INVIS,     0,         0       },
+  { "italic",     6,   T_ITALIC,    0,         0       },
   { "last",       4,   T_LAST,      0,         0       },
   { "left",       4,   T_LEFT,      DIR_LEFT,  CP_W    },
   { "ljust",      5,   T_LJUST,     0,         0       },
