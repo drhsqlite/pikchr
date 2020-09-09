@@ -2627,9 +2627,24 @@ static void pik_size_to_fit(Pik *p, PToken *pFit){
   }
   if( (pElem->mProp & A_WIDTH)==0 ){
     for(i=0; i<pElem->nTxt; i++){
-      int n = pElem->aTxt[i].n-2;
-      if( (pElem->aTxt[i].eCode & TP_JMASK)!=0 ) n *= 2;
-      if( n>w ) w = n;
+      int j, cnt;
+      const char *z = pElem->aTxt[i].z;
+      int n = pElem->aTxt[i].n;
+      /* cnt will be an estimate of the text width.  Do not count
+      ** "\" uses as an escape.  Count entities like &lt; as a single
+      ** character. */
+      for(j=1, cnt=0; j<n-1; j++){
+         cnt++;
+         if( z[j]=='\\' && z[j+1]!='&' ){
+           j++;
+         }else if( z[j]=='&' ){
+           int k;
+           for(k=j+1; k<j+7 && z[k]!=';'; k++){}
+           if( z[k]==';' ) j = k;
+         }
+      }
+      if( (pElem->aTxt[i].eCode & TP_JMASK)!=0 ) cnt *= 2;
+      if( cnt>w ) w = cnt;
     }
   }
   if( h>0 || w>0 ){
