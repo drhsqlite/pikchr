@@ -835,7 +835,7 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
   { "boxrad",      0.0   },
   { "boxwid",      0.75  },
   { "charht",      0.188 },
-  { "charwid",     0.104 },
+  { "charwid",     0.083 },
   { "circlerad",   0.25  },
   { "color",       0.0   },
   { "cylht",       0.5   },
