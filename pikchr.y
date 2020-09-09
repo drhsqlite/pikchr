@@ -334,6 +334,7 @@ struct PClass {
   void (*xNumProp)(Pik*,PElem*,PToken*); /* Value change notification */
   PPoint (*xChop)(PElem*,PPoint*);       /* Chopper */
   PPoint (*xOffset)(Pik*,PElem*,int);    /* Offset from center to edge point */
+  void (*xFit)(Pik*,PElem*,int w,int h); /* Size to fit text */
   void (*xRender)(Pik*,PElem*);          /* Render */
 };
 
@@ -388,6 +389,7 @@ static void pik_bbox_addbox(PBox*,PBox*);
 static void pik_bbox_addpt(PBox*,PPoint*);
 static void pik_bbox_addellipse(PBox*,PNum x,PNum y,PNum rx,PNum ry);
 static void pik_add_txt(Pik*,PToken*,int);
+static void pik_size_to_fit(Pik*,PToken*);
 static int pik_text_position(Pik*,int,PToken*);
 static PNum pik_property_of(Pik*,PElem*,PToken*);
 static PNum pik_func(Pik*,PToken*,PNum,PNum);
@@ -526,6 +528,7 @@ attribute ::= WITH withclause.
 attribute ::= SAME(E).                          {pik_same(p,0,&E);}
 attribute ::= SAME(E) AS object(X).             {pik_same(p,X,&E);}
 attribute ::= STRING(T) textposition(P).        {pik_add_txt(p,&T,P);}
+attribute ::= FIT(E).                           {pik_size_to_fit(p,&E); }
 
 even ::= UNTIL EVEN WITH.
 even ::= EVEN WITH.
@@ -830,6 +833,8 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
   { "boxht",       0.5   },
   { "boxrad",      0.0   },
   { "boxwid",      0.75  },
+  { "charht",      0.188 },
+  { "charwid",     0.104 },
   { "circlerad",   0.25  },
   { "color",       0.0   },
   { "cylht",       0.5   },
@@ -980,6 +985,16 @@ static PPoint boxChop(PElem *pElem, PPoint *pPt){
   chop.y += pElem->ptAt.y;
   return chop;
 }
+static void boxFit(Pik *p, PElem *pElem, int w, int h){
+  if( w>0 ){
+    PNum ww = pik_value(p, "charwid", 7, 0);
+    if( ww>0.0 ) pElem->w = w * ww;
+  }
+  if( h>0 ){
+    PNum hh = pik_value(p, "charht", 6, 0);
+    if( hh>0.0 ) pElem->h = h * hh;
+  }
+}
 static void boxRender(Pik *p, PElem *pElem){
   PNum w2 = 0.5*pElem->w;
   PNum h2 = 0.5*pElem->h;
@@ -1067,6 +1082,21 @@ static PPoint circleChop(PElem *pElem, PPoint *pPt){
   chop.y = pElem->ptAt.y + dy*pElem->rad/dist;
   return chop;
 }
+static void circleFit(Pik *p, PElem *pElem, int w, int h){
+  PNum mx = 0.0;
+  PNum ww = pik_value(p, "charwid", 7, 0)*w;
+  PNum hh = pik_value(p, "charht", 6, 0)*h;
+  if( ww>0 ) mx = ww;
+  if( hh>mx ) mx = hh;
+  if( (ww*ww + hh*hh) > mx*mx ){
+    mx = sqrt(ww*ww + hh*hh);
+  }
+  if( mx>0.0 ){
+    pElem->rad = 0.5*mx;
+    pElem->w = pElem->h = mx;
+  }
+}
+
 static void circleRender(Pik *p, PElem *pElem){
   PNum r = pElem->rad;
   PPoint pt = pElem->ptAt;
@@ -1265,6 +1295,18 @@ static void ovalNumProp(Pik *p, PElem *pElem, PToken *pId){
   ** the width and height. */
   pElem->rad = 0.5*(pElem->h<pElem->w?pElem->h:pElem->w);
 }
+static void ovalFit(Pik *p, PElem *pElem, int w, int h){
+  if( w>0 ){
+    PNum ww = pik_value(p, "charwid", 7, 0);
+    if( ww>0.0 ) pElem->w = w * ww;
+  }
+  if( h>0 ){
+    PNum hh = pik_value(p, "charht", 6, 0);
+    if( hh>0.0 ) pElem->h = h * hh;
+  }
+  if( pElem->w<pElem->h ) pElem->w = pElem->h;
+}
+
 
 
 /* Methods for the "spline" class */
@@ -1374,6 +1416,7 @@ static const PClass aClass[] = {
       /* xNumProp */      0,
       /* xChop */         0,
       /* xOffset */       0,
+      /* xFit */          0,
       /* xRender */       arcRender
    },
    {  /* name */          "arrow",
@@ -1382,6 +1425,7 @@ static const PClass aClass[] = {
       /* xNumProp */      0,
       /* xChop */         0,
       /* xOffset */       0,
+      /* xFit */          0,
       /* xRender */       splineRender 
    },
    {  /* name */          "box",
@@ -1390,6 +1434,7 @@ static const PClass aClass[] = {
       /* xNumProp */      0,
       /* xChop */         boxChop,
       /* xOffset */       boxOffset,
+      /* xFit */          boxFit,
       /* xRender */       boxRender 
    },
    {  /* name */          "circle",
@@ -1398,6 +1443,7 @@ static const PClass aClass[] = {
       /* xNumProp */      circleNumProp,
       /* xChop */         circleChop,
       /* xOffset */       ellipseOffset,
+      /* xFit */          circleFit,
       /* xRender */       circleRender 
    },
    {  /* name */          "cylinder",
@@ -1406,6 +1452,7 @@ static const PClass aClass[] = {
       /* xNumProp */      0,
       /* xChop */         boxChop,
       /* xOffset */       cylinderOffset,
+      /* xFit */          0,
       /* xRender */       cylinderRender
    },
    {  /* name */          "dot",
@@ -1414,6 +1461,7 @@ static const PClass aClass[] = {
       /* xNumProp */      dotNumProp,
       /* xChop */         circleChop,
       /* xOffset */       ellipseOffset,
+      /* xFit */          0,
       /* xRender */       dotRender 
    },
    {  /* name */          "ellipse",
@@ -1422,6 +1470,7 @@ static const PClass aClass[] = {
       /* xNumProp */      0,
       /* xChop */         ellipseChop,
       /* xOffset */       ellipseOffset,
+      /* xFit */          0,
       /* xRender */       ellipseRender
    },
    {  /* name */          "line",
@@ -1430,6 +1479,7 @@ static const PClass aClass[] = {
       /* xNumProp */      0,
       /* xChop */         0,
       /* xOffset */       0,
+      /* xFit */          0,
       /* xRender */       splineRender
    },
    {  /* name */          "move",
@@ -1438,6 +1488,7 @@ static const PClass aClass[] = {
       /* xNumProp */      0,
       /* xChop */         0,
       /* xOffset */       0,
+      /* xFit */          0,
       /* xRender */       moveRender
    },
    {  /* name */          "oval",
@@ -1446,6 +1497,7 @@ static const PClass aClass[] = {
       /* xNumProp */      ovalNumProp,
       /* xChop */         boxChop,
       /* xOffset */       boxOffset,
+      /* xFit */          ovalFit,
       /* xRender */       boxRender
    },
    {  /* name */          "spline",
@@ -1454,6 +1506,7 @@ static const PClass aClass[] = {
       /* xNumProp */      0,
       /* xChop */         0,
       /* xOffset */       0,
+      /* xFit */          0,
       /* xRender */       splineRender
    },
    {  /* name */          "text",
@@ -1462,6 +1515,7 @@ static const PClass aClass[] = {
       /* xNumProp */      0,
       /* xChop */         boxChop,
       /* xOffset */       boxOffset,
+      /* xFit */          0,
       /* xRender */       boxRender 
    },
 };
@@ -1472,6 +1526,7 @@ static const PClass sublistClass =
       /* xNumProp */      0,
       /* xChop */         0,
       /* xOffset */       0,
+      /* xFit */          0,
       /* xRender */       0 
    };
 static const PClass noopClass = 
@@ -1481,6 +1536,7 @@ static const PClass noopClass =
       /* xNumProp */      0,
       /* xChop */         0,
       /* xOffset */       0,
+      /* xFit */          0,
       /* xRender */       0
    };
 
@@ -2505,8 +2561,52 @@ static int pik_text_position(Pik *p, int iPrev, PToken *pFlag){
   return iRes;
 }
 
+/* Adjust the width, height, and or radius of the object so that
+** it fits around the text that has been added so far.
+**
+**    (1) Only text specified prior to this attribute is considered.
+**    (2) The text size is estimated based on the charht and charwid
+**        variable settings.
+**    (3) The fitted attributes can be changed again after this
+**        attribute, for example using "width 110%" if this auto-fit
+**        underestimates the text size.
+**    (4) Previously set attributes will not be altered.  In other words,
+**        "width 1in fit" might cause the height to change, but the
+**        width is now set.
+**    (5) This only works for attributes that have an xFit method.
+*/
+static void pik_size_to_fit(Pik *p, PToken *pFit){
+  PElem *pElem;
+  int w = 0, h = 0;
+  int i;
+  if( p->nErr ) return;
+  pElem = p->cur;
 
-
+  if( pElem->nTxt==0 ){
+    pik_error(0, pFit, "no text to fit to");
+    return;
+  }
+  if( pElem->type->xFit==0 ) return;
+  if( (pElem->mProp & A_HEIGHT)==0 ){
+    if( pElem->nTxt==1 && (pElem->aTxt[0].eCode & TP_VMASK)==0 ){
+      h = 1;
+    }else if( pElem->nTxt==3 ){
+      h = 3;
+    }else{
+      h = 2;
+    }
+  }
+  if( (pElem->mProp & A_WIDTH)==0 ){
+    for(i=0; i<pElem->nTxt; i++){
+      int n = pElem->aTxt[i].n-2;
+      if( (pElem->aTxt[i].eCode & TP_JMASK)!=0 ) n *= 2;
+      if( n>w ) w = n;
+    }
+  }
+  if( h>0 || w>0 ){
+    pElem->type->xFit(p, pElem, w, h);
+  }
+}
 
 /* Set a local variable name to "val".
 **
@@ -3289,6 +3389,7 @@ static const PikWord pik_keywords[] = {
   { "even",       4,   T_EVEN,      0,         0       },
   { "fill",       4,   T_FILL,      0,         0       },
   { "first",      5,   T_NTH,       0,         0       },
+  { "fit",        3,   T_FIT,       0,         0       },
   { "from",       4,   T_FROM,      0,         0       },
   { "heading",    7,   T_HEADING,   0,         0       },
   { "height",     6,   T_HEIGHT,    0,         0       },
