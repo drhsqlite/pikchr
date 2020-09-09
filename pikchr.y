@@ -839,7 +839,7 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
   { "boxht",       0.5   },
   { "boxrad",      0.0   },
   { "boxwid",      0.75  },
-  { "charht",      0.188 },
+  { "charht",      0.166 },
   { "charwid",     0.083 },
   { "circlerad",   0.25  },
   { "color",       0.0   },
@@ -1782,12 +1782,13 @@ static void pik_append_style(Pik *p, PElem *pElem){
 /* Append multiple <text> SGV element for the text fields of the PElem
 */
 static void pik_append_txt(Pik *p, PElem *pElem){
-  PNum dy = 0.08;
+  PNum dy;
   int n, i, nz;
-  PNum x, y;
+  PNum x, y, orig_y;
   const char *z;
   if( p->nErr ) return;
   if( pElem->nTxt==0 ) return;
+  dy = 0.5*pik_value(p,"charht",6,0);
   n = pElem->nTxt;
   if( n>1 ){
     if( (pElem->aTxt[0].eCode & TP_VMASK)==0 ){
@@ -1798,14 +1799,14 @@ static void pik_append_txt(Pik *p, PElem *pElem){
     }
     for(i=0; i<n; i++){
       if( (pElem->aTxt[i].eCode & TP_VMASK)==0 ){
-        dy = 0.12;
+        dy *= 1.5;
       }
     }
   }
   x = pElem->ptAt.x;
   for(i=0; i<n; i++){
     PToken *t = &pElem->aTxt[i];
-    y = pElem->ptAt.y;
+    orig_y = y = pElem->ptAt.y;
     if( t->eCode & TP_ABOVE ) y += dy;
     if( t->eCode & TP_BELOW ) y -= dy;
     pik_append_x(p, "<text x=\"", x, "\"");
@@ -1836,7 +1837,7 @@ static void pik_append_txt(Pik *p, PElem *pElem){
       PNum dy = pElem->aPath[n-1].y - pElem->aPath[0].y;
       PNum ang = atan2(dy,dx)*-180/M_PI;
       pik_append_num(p, " transform=\"rotate(", ang);
-      pik_append_xy(p, " ", x, y);
+      pik_append_xy(p, " ", x, orig_y);
       pik_append(p,")\"",2);
     }
     pik_append(p," dominant-baseline=\"central\">",-1);
