@@ -2746,7 +2746,7 @@ static PNum pik_value(Pik *p, const char *z, int n, int *pMiss){
 ** an error.
 */
 static PNum pik_lookup_color(Pik *p, PToken *pId){
-  int first, last, mid, c;
+  int first, last, mid, c = 0;
   first = 0;
   last = count(aColor)-1;
   while( first<=last ){
