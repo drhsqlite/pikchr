@@ -3482,8 +3482,8 @@ static int pik_token_length(PToken *pToken){
   switch( z[0] ){
     case '\\': {
       pToken->eType = T_WHITESPACE;
-      if( z[1]=='\n'  ) return 2;
-      if( z[1]=='\r' && z[2]=='\n' ) return 3;
+      for(i=1; z[i]=='\r' || z[i]==' ' || z[i]=='\t'; i++){}
+      if( z[i]=='\n'  ) return i+1;
       pToken->eType = T_ERROR;
       return 1;
     }
