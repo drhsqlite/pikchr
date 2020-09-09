@@ -312,7 +312,8 @@ struct Pik {
   PEList *list;            /* Element list under construction */
   PVar *pVar;              /* Application-defined variables */
   PBox bbox;               /* Bounding box around all elements */
-  PNum rScale;             /* Multiple to convert inches to pixels */
+  PNum rScale;             /* Multiply to convert inches to pixels */
+  PNum fontScale;          /* Scale fonts by this percent */
   char thenFlag;           /* True if "then" seen */
   const char *zClass;      /* Class name for the <svg> */
   int wSVG, hSVG;          /* Width and height of the <svg> */
@@ -1814,7 +1815,11 @@ static void pik_append_txt(Pik *p, PElem *pElem){
     if( pElem->color>=0.0 ){
       pik_append_clr(p, " fill=\"", pElem->color, "\"");
     }
-    pik_append(p, " dominant-baseline=\"central\">", -1);
+    if( p->fontScale<=99.0 || p->fontScale>=101.0 ){
+      pik_append_num(p, " font-size=\"", p->fontScale);
+      pik_append(p, "%\"", 2);
+    }
+    pik_append(p," dominant-baseline=\"central\">",-1);
     z = t->z+1;
     nz = t->n-2;
     while( nz>0 ){
@@ -3294,6 +3299,7 @@ static void pik_render(Pik *p, PEList *pEList){
     p->hArrow = pik_value(p,"arrowht",7,0)/thickness;
     p->rScale = 144.0*pik_value(p,"scale",5,0);
     if( p->rScale<5.0 ) p->rScale = 5.0;
+    p->fontScale = p->rScale/1.44;
 
     /* Compute a bounding box over all objects so that we can know
     ** how big to declare the SVG canvas */
