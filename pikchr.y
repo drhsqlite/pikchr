@@ -862,7 +862,7 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
   { "scale",       1.0   },
   { "textht",      0.5   },
   { "textwid",     0.75  },
-  { "thickness",   0.01  },
+  { "thickness",   0.015 },
 };
 
 
