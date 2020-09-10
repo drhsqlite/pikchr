@@ -2678,7 +2678,7 @@ static void pik_set_var(Pik *p, PToken *pId, PNum val, PToken *pOp){
     memcpy(z, pId->z, pId->n);
     z[pId->n] = 0;
     pVar->pNext = p->pVar;
-    pVar->val = 0;
+    pVar->val = pik_value(p, pId->z, pId->n, 0);
     p->pVar = pVar;
   }
   switch( pOp->eCode ){
