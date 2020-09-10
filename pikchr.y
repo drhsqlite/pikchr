@@ -405,6 +405,7 @@ static void pik_bbox_addbox(PBox*,PBox*);
 static void pik_bbox_addpt(PBox*,PPoint*);
 static void pik_bbox_addellipse(PBox*,PNum x,PNum y,PNum rx,PNum ry);
 static void pik_add_txt(Pik*,PToken*,int);
+static int pik_text_length(const PToken *pToken);
 static void pik_size_to_fit(Pik*,PToken*);
 static int pik_text_position(Pik*,int,PToken*);
 static PNum pik_property_of(Pik*,PElem*,PToken*);
@@ -2660,6 +2661,29 @@ static int pik_text_position(Pik *p, int iPrev, PToken *pFlag){
   return iRes;
 }
 
+/* Return an estimate of the actually number of displayed characters
+** in a character string.
+**
+** Omit "\" used to escape characters.  And count entities like
+** "&lt;" as a single character.
+*/
+static int pik_text_length(const PToken *pToken){
+  int n = pToken->n;
+  const char *z = pToken->z;
+  int cnt, j;
+  for(j=1, cnt=0; j<n-1; j++){
+    cnt++;
+    if( z[j]=='\\' && z[j+1]!='&' ){
+      j++;
+    }else if( z[j]=='&' ){
+      int k;
+      for(k=j+1; k<j+7 && z[k]!=';'; k++){}
+      if( z[k]==';' ) j = k;
+    }
+  }
+  return cnt;
+}
+
 /* Adjust the width, height, and or radius of the object so that
 ** it fits around the text that has been added so far.
 **
@@ -2704,22 +2728,7 @@ static void pik_size_to_fit(Pik *p, PToken *pFit){
   }
   if( (pElem->mProp & A_WIDTH)==0 ){
     for(i=0; i<pElem->nTxt; i++){
-      int j, cnt;
-      const char *z = pElem->aTxt[i].z;
-      int n = pElem->aTxt[i].n;
-      /* cnt will be an estimate of the text width.  Do not count
-      ** "\" uses as an escape.  Count entities like &lt; as a single
-      ** character. */
-      for(j=1, cnt=0; j<n-1; j++){
-         cnt++;
-         if( z[j]=='\\' && z[j+1]!='&' ){
-           j++;
-         }else if( z[j]=='&' ){
-           int k;
-           for(k=j+1; k<j+7 && z[k]!=';'; k++){}
-           if( z[k]==';' ) j = k;
-         }
-      }
+      int cnt = pik_text_length(&pElem->aTxt[i]);
       if( (pElem->aTxt[i].eCode & TP_JMASK)!=0 ) cnt *= 2;
       if( cnt>w ) w = cnt;
     }
