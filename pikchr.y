@@ -316,15 +316,19 @@ struct Pik {
   char *zOut;              /* Result accumulates here */
   unsigned int nOut;       /* Bytes written to zOut[] so far */
   unsigned int nOutAlloc;  /* Space allocated to zOut[] */
-  PNum wArrow;             /* Width of arrowhead at the fat end */
-  PNum hArrow;             /* Height of arrowhead - dist from tip to fat end */
   unsigned char eDir;      /* Current direction */
   PElem *cur;              /* Element under construction */
   PEList *list;            /* Element list under construction */
   PVar *pVar;              /* Application-defined variables */
   PBox bbox;               /* Bounding box around all elements */
-  PNum rScale;             /* Multiply to convert inches to pixels */
-  PNum fontScale;          /* Scale fonts by this percent */
+                           /* Cache of layout values.  <=0.0 for unknown... */
+  PNum rScale;                 /* Multiply to convert inches to pixels */
+  PNum fontScale;              /* Scale fonts by this percent */
+  PNum charWidth;              /* Character width */
+  PNum charHeight;             /* Character height */
+  PNum wArrow;                 /* Width of arrowhead at the fat end */
+  PNum hArrow;                 /* Ht of arrowhead - dist from tip to fat end */
+  int bLayoutVars;             /* True if cache is valid */
   char thenFlag;           /* True if "then" seen */
   const char *zClass;      /* Class name for the <svg> */
   int wSVG, hSVG;          /* Width and height of the <svg> */
@@ -346,8 +350,8 @@ struct PClass {
   void (*xNumProp)(Pik*,PElem*,PToken*); /* Value change notification */
   PPoint (*xChop)(PElem*,PPoint*);       /* Chopper */
   PPoint (*xOffset)(Pik*,PElem*,int);    /* Offset from center to edge point */
-  void (*xFit)(Pik*,PElem*,int w,int h); /* Size to fit text */
-  void (*xRender)(Pik*,PElem*);          /* Render */
+  void (*xFit)(Pik*,PElem*,PNum w,PNum h); /* Size to fit text */
+  void (*xRender)(Pik*,PElem*);            /* Render */
 };
 
 
@@ -411,6 +415,7 @@ static PPoint pik_position_at_hdg(Pik *p, PNum dist, PToken *pD, PPoint pt);
 static void pik_same(Pik *p, PElem*, PToken*);
 static PPoint pik_nth_vertex(Pik *p, PToken *pNth, PToken *pErr, PElem *pElem);
 static PToken pik_next_semantic_token(Pik *p, PToken *pThis);
+static void pik_compute_layout_settings(Pik*);
 
 
 } // end %include
@@ -880,7 +885,7 @@ static void arcInit(Pik *p, PElem *pElem){
   pElem->w = pik_value(p, "arcrad",6,0);
   pElem->h = pElem->w;
 }
-/* Hck: Arcs are here rendered as quadratic Bezier curves rather
+/* Hack: Arcs are here rendered as quadratic Bezier curves rather
 ** than true arcs.  Multiple reasons: (1) the legacy-PIC parameters
 ** that control arcs are obscure and I could not figure out what they
 ** mean based on available documentation.  (2) Arcs are rarely used,
@@ -1003,15 +1008,9 @@ static PPoint boxChop(PElem *pElem, PPoint *pPt){
   chop.y += pElem->ptAt.y;
   return chop;
 }
-static void boxFit(Pik *p, PElem *pElem, int w, int h){
-  if( w>0 ){
-    PNum ww = pik_value(p, "charwid", 7, 0);
-    if( ww>0.0 ) pElem->w = w * ww;
-  }
-  if( h>0 ){
-    PNum hh = pik_value(p, "charht", 6, 0);
-    if( hh>0.0 ) pElem->h = h * hh;
-  }
+static void boxFit(Pik *p, PElem *pElem, PNum w, PNum h){
+  if( w>0 ) pElem->w = w;
+  if( h>0 ) pElem->h = h;
 }
 static void boxRender(Pik *p, PElem *pElem){
   PNum w2 = 0.5*pElem->w;
@@ -1100,14 +1099,12 @@ static PPoint circleChop(PElem *pElem, PPoint *pPt){
   chop.y = pElem->ptAt.y + dy*pElem->rad/dist;
   return chop;
 }
-static void circleFit(Pik *p, PElem *pElem, int w, int h){
+static void circleFit(Pik *p, PElem *pElem, PNum w, PNum h){
   PNum mx = 0.0;
-  PNum ww = pik_value(p, "charwid", 7, 0)*w;
-  PNum hh = pik_value(p, "charht", 6, 0)*h;
-  if( ww>0 ) mx = ww;
-  if( hh>mx ) mx = hh;
-  if( (ww*ww + hh*hh) > mx*mx ){
-    mx = sqrt(ww*ww + hh*hh);
+  if( w>0 ) mx = w;
+  if( h>mx ) mx = h;
+  if( (w*w + h*h) > mx*mx ){
+    mx = sqrt(w*w + h*h);
   }
   if( mx>0.0 ){
     pElem->rad = 0.5*mx;
@@ -1313,15 +1310,9 @@ static void ovalNumProp(Pik *p, PElem *pElem, PToken *pId){
   ** the width and height. */
   pElem->rad = 0.5*(pElem->h<pElem->w?pElem->h:pElem->w);
 }
-static void ovalFit(Pik *p, PElem *pElem, int w, int h){
-  if( w>0 ){
-    PNum ww = pik_value(p, "charwid", 7, 0);
-    if( ww>0.0 ) pElem->w = w * ww;
-  }
-  if( h>0 ){
-    PNum hh = pik_value(p, "charht", 6, 0);
-    if( hh>0.0 ) pElem->h = h * hh;
-  }
+static void ovalFit(Pik *p, PElem *pElem, PNum w, PNum h){
+  if( w>0 ) pElem->w = w;
+  if( h>0 ) pElem->h = h;
   if( pElem->w<pElem->h ) pElem->w = pElem->h;
 }
 
@@ -1866,7 +1857,7 @@ static void pik_append_txt(Pik *p, PElem *pElem){
   if( p->nErr ) return;
   if( pElem->nTxt==0 ) return;
   aTxt = pElem->aTxt;
-  dy = 0.5*pik_value(p,"charht",6,0);
+  dy = 0.5*p->charHeight;
   n = pElem->nTxt;
   pik_txt_vertical_layout(p, pElem);
   x = pElem->ptAt.x;
@@ -1906,8 +1897,8 @@ static void pik_append_txt(Pik *p, PElem *pElem){
     if( pElem->color>=0.0 ){
       pik_append_clr(p, " fill=\"", pElem->color, "\"");
     }
-    if( p->fontScale<=99.0 || p->fontScale>=101.0 ){
-      pik_append_num(p, " font-size=\"", p->fontScale);
+    if( p->fontScale<=0.99 || p->fontScale>=1.01 ){
+      pik_append_num(p, " font-size=\"", p->fontScale*100.0);
       pik_append(p, "%\"", 2);
     }
     if( (t->eCode & TP_ALIGN)!=0 && pElem->nPath>=2 ){
@@ -2734,7 +2725,8 @@ static void pik_size_to_fit(Pik *p, PToken *pFit){
     }
   }
   if( h>0 || w>0 ){
-    pElem->type->xFit(p, pElem, w, h);
+    pik_compute_layout_settings(p);
+    pElem->type->xFit(p, pElem, w*p->charWidth, h*p->charHeight);
   }
 }
 
@@ -2777,6 +2769,7 @@ static void pik_set_var(Pik *p, PToken *pId, PNum val, PToken *pOp){
       break;
     default:      pVar->val = val; break;
   }
+  p->bLayoutVars = 0;  /* Clear the layout setting cache */
 }
 
 /*
@@ -3401,6 +3394,28 @@ void pik_elist_render(Pik *p, PEList *pEList){
   }while( bMoreToDo );
 }
 
+/* Recompute key layout parameters from variables. */
+static void pik_compute_layout_settings(Pik *p){
+  PNum thickness;  /* Line thickness */
+  PNum wArrow;     /* Width of arrowheads */
+
+  /* Set up rendering parameters */
+  if( p->bLayoutVars ) return;
+  thickness = pik_value(p,"thickness",9,0);
+  if( thickness<=0.01 ) thickness = 0.01;
+  wArrow = 0.5*pik_value(p,"arrowwid",8,0);
+  p->wArrow = wArrow/thickness;
+  p->hArrow = pik_value(p,"arrowht",7,0)/thickness;
+  p->rScale = 144.0*pik_value(p,"scale",5,0);
+  if( p->rScale<5.0 ) p->rScale = 5.0;
+  p->fontScale = pik_value(p,"fontscale",9,0);
+  if( p->fontScale<=0.0 ) p->fontScale = 1.0;
+  p->fontScale *= p->rScale/144.0;
+  p->charWidth = pik_value(p,"charwid",7,0)*p->fontScale;
+  p->charHeight = pik_value(p,"charht",6,0)*p->fontScale;
+  p->bLayoutVars = 1;
+}
+
 /* Render a list of elements.  Write the SVG into p->zOut.
 ** Delete the input element_list before returnning.
 */
@@ -3408,24 +3423,20 @@ static void pik_render(Pik *p, PEList *pEList){
   int i, j;
   if( pEList==0 ) return;
   if( p->nErr==0 ){
-    PNum thickness;  /* Line thickness */
-    PNum wArrow;     /* Width of arrowheads */
+    PNum thickness;  /* Stroke width */
     PNum margin;     /* Extra bounding box margin */
     PNum leftmargin; /* Extra bounding box area on the left */
     PNum w, h;       /* Drawing width and height */
+    PNum wArrow;
 
     /* Set up rendering parameters */
+    pik_compute_layout_settings(p);
     thickness = pik_value(p,"thickness",9,0);
     if( thickness<=0.01 ) thickness = 0.01;
     margin = pik_value(p,"margin",6,0);
     margin += thickness;
     leftmargin = pik_value(p,"leftmargin",10,0);
-    wArrow = 0.5*pik_value(p,"arrowwid",8,0);
-    p->wArrow = wArrow/thickness;
-    p->hArrow = pik_value(p,"arrowht",7,0)/thickness;
-    p->rScale = 144.0*pik_value(p,"scale",5,0);
-    if( p->rScale<5.0 ) p->rScale = 5.0;
-    p->fontScale = p->rScale/1.44;
+    wArrow = p->wArrow*thickness;
 
     /* Compute a bounding box over all objects so that we can know
     ** how big to declare the SVG canvas */
