@@ -3111,6 +3111,7 @@ static void pik_elem_setname(Pik *p, PElem *pElem, PToken *pName){
 */
 static PElem *pik_find_chopper(PEList *pList, PPoint *pCenter){
   int i;
+  if( pList==0 ) return 0;
   for(i=pList->n-1; i>=0; i--){
     PElem *pElem = pList->a[i];
     if( pElem->type->xChop!=0
