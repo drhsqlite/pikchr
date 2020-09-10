@@ -169,17 +169,21 @@ static const PNum pik_hdg_angle[] = {
 #define FN_SIN    5
 #define FN_SQRT   6
 
-/* Text position and style flags */
-#define TP_LJUST   0x01  /* left justify......          */
-#define TP_RJUST   0x02  /*            ...Right justify */
-#define TP_JMASK   0x03  /* Mask for justification bits */
-#define TP_ABOVE   0x04  /* Position text above PElem.ptAt */
-#define TP_BELOW   0x08  /* Position text below PElem.ptAt */
-#define TP_VMASK   0x0c  /* Mask for text positioning flags */
-#define TP_ITALIC  0x10  /* Italic font */
-#define TP_BOLD    0x20  /* Bold font */
-#define TP_FMASK   0x30  /* Mask for font style */
-#define TP_ALIGN   0x40  /* Rotate to align with the line */
+/* Text position and style flags.  Stored in PToken.eCode so limited
+** to 15 bits. */
+#define TP_LJUST   0x0001  /* left justify......          */
+#define TP_RJUST   0x0002  /*            ...Right justify */
+#define TP_JMASK   0x0003  /* Mask for justification bits */
+#define TP_ABOVE2  0x0004  /* Position text way above PElem.ptAt */
+#define TP_ABOVE   0x0008  /* Position text above PElem.ptAt */
+#define TP_CENTER  0x0010  /* On the line */
+#define TP_BELOW   0x0020  /* Position text below PElem.ptAt */
+#define TP_BELOW2  0x0040  /* Position text way below PElem.ptAt */
+#define TP_VMASK   0x007c  /* Mask for text positioning flags */
+#define TP_ITALIC  0x1000  /* Italic font */
+#define TP_BOLD    0x2000  /* Bold font */
+#define TP_FMASK   0x3000  /* Mask for font style */
+#define TP_ALIGN   0x4000  /* Rotate to align with the line */
 
 /* An object to hold a position in 2-D space */
 struct PPoint {
@@ -287,7 +291,7 @@ struct PElem {
   unsigned char nTxt;      /* Number of text values */
   unsigned mProp;          /* Masks of properties set so far */
   unsigned mCalc;          /* Values computed from other constraints */
-  PToken aTxt[3];          /* Text with .eCode holding TP flags */
+  PToken aTxt[5];          /* Text with .eCode holding TP flags */
   int iLayer;              /* Rendering order */
   int inDir, outDir;       /* Entry and exit directions */
   int nPath;               /* Number of path points */
@@ -418,6 +422,12 @@ static PToken pik_next_semantic_token(Pik *p, PToken *pThis);
 
 %fallback ID EDGEPT.
 
+// precedence rules.
+%left OF.
+%left PLUS MINUS.
+%left STAR SLASH PERCENT.
+%right UMINUS.
+
 %type element_list {PEList*}
 %destructor element_list {pik_elist_free(p,$$);}
 %type element {PElem*}
@@ -476,6 +486,7 @@ element(A) ::= print prlist.  {pik_append(p,"<br>\n",5); A=0;}
 lvalue(A) ::= ID(A).
 lvalue(A) ::= FILL(A).
 lvalue(A) ::= COLOR(A).
+lvalue(A) ::= THICKNESS(A).
 
 // PLACENAME might actually be a color name (ex: DarkBlue).  But we
 // cannot make it part of expr due to parsing ambiguities.  The
@@ -486,7 +497,10 @@ rvalue(A) ::= PLACENAME(C).  {A = pik_lookup_color(p,&C);}
 print ::= PRINT.
 prlist ::= pritem.
 prlist ::= prlist prsep pritem.
-pritem ::= rvalue(X). {pik_append_num(p,"",X);}
+pritem ::= FILL(X).        {pik_append_num(p,"",pik_value(p,X.z,X.n,0));}
+pritem ::= COLOR(X).       {pik_append_num(p,"",pik_value(p,X.z,X.n,0));}
+pritem ::= THICKNESS(X).   {pik_append_num(p,"",pik_value(p,X.z,X.n,0));}
+pritem ::= rvalue(X).      {pik_append_num(p,"",X);}
 pritem ::= STRING(S). {pik_append_text(p,S.z+1,S.n-2,0);}
 prsep  ::= COMMA. {pik_append(p, " ", 1);}
 
@@ -620,11 +634,6 @@ nth(A) ::= LAST(ID).                 {A=ID; A.eCode = -1;}
 nth(A) ::= NTH(N) LB(ID) RB.         {A=ID; A.eCode = pik_nth_value(p,&N);}
 nth(A) ::= NTH(N) LAST LB(ID) RB.    {A=ID; A.eCode = -pik_nth_value(p,&N);}
 nth(A) ::= LAST LB(ID) RB.           {A=ID; A.eCode = -1; }
-
-%left OF.
-%left PLUS MINUS.
-%left STAR SLASH PERCENT.
-%right UMINUS.
 
 expr(A) ::= expr(X) PLUS expr(Y).     {A=X+Y;}
 expr(A) ::= expr(X) MINUS expr(Y).    {A=X-Y;}
@@ -842,8 +851,8 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
   { "boxht",       0.5   },
   { "boxrad",      0.0   },
   { "boxwid",      0.75  },
-  { "charht",      0.166 },
-  { "charwid",     0.083 },
+  { "charht",      0.14  },
+  { "charwid",     0.08  },
   { "circlerad",   0.25  },
   { "color",       0.0   },
   { "cylht",       0.5   },
@@ -1782,36 +1791,103 @@ static void pik_append_style(Pik *p, PElem *pElem){
   }
 }
 
-/* Append multiple <text> SGV element for the text fields of the PElem
+/*
+** Compute the vertical locations for all text items in the
+** element pElem.  In other words, set every pElem->aTxt[*].eCode
+** value to contain exactly one of: TP_ABOVE2, TP_ABOVE, TP_CENTER,
+** TP_BELOW, or TP_BELOW2 is set.
 */
-static void pik_append_txt(Pik *p, PElem *pElem){
-  PNum dy;
-  int n, i, nz;
-  PNum x, y, orig_y;
-  const char *z;
-  if( p->nErr ) return;
-  if( pElem->nTxt==0 ) return;
-  dy = 0.5*pik_value(p,"charht",6,0);
+static void pik_txt_vertical_layout(Pik *p, PElem *pElem){
+  int n, i;
+  PToken *aTxt;
   n = pElem->nTxt;
-  if( n>1 ){
-    if( (pElem->aTxt[0].eCode & TP_VMASK)==0 ){
-      pElem->aTxt[0].eCode |= TP_ABOVE;
+  if( n==0 ) return;
+  aTxt = pElem->aTxt;
+  if( n==1 ){
+    if( (aTxt[0].eCode & TP_VMASK)==0 ){
+      aTxt[0].eCode |= TP_CENTER;
     }
-    if( (pElem->aTxt[n-1].eCode & TP_VMASK)==0 ){
-      pElem->aTxt[n-1].eCode |= TP_BELOW;
+  }else{
+    int allSlots = 0;
+    int aFree[5];
+    int iSlot;
+    int j;
+    /* If there is more than one TP_ABOVE, change the first to TP_ABOVE2. */
+    for(j=0, i=n-1; i>=0; i--){
+      if( aTxt[i].eCode & TP_ABOVE ){
+        if( j==0 ){
+          j++;
+        }else{
+          aTxt[i].eCode = (aTxt[i].eCode & ~TP_VMASK) | TP_ABOVE2;
+          break;
+        }
+      }
     }
-    for(i=0; i<n; i++){
-      if( (pElem->aTxt[i].eCode & TP_VMASK)==0 ){
-        dy *= 1.5;
+    /* If more than one TP_BELOW, change the last to TP_BELOW2 */
+    for(j=0, i=0; i<n; i++){
+      if( aTxt[i].eCode & TP_BELOW ){
+        if( j==0 ){
+          j++;
+        }else{
+          aTxt[i].eCode = (aTxt[i].eCode & ~TP_VMASK) | TP_BELOW2;
+          break;
+        }
+      }
+    }
+    /* Compute a mask of all slots used */
+    for(i=0; i<n; i++) allSlots |= aTxt[i].eCode & TP_VMASK;
+    /* Set of an array of available slots */
+    iSlot = 0;
+    if( n>=4 && (allSlots & TP_ABOVE2)==0 ) aFree[iSlot++] = TP_ABOVE2;
+    if( (allSlots & TP_ABOVE)==0 ) aFree[iSlot++] = TP_ABOVE;
+    if( (n&1)!=0 ) aFree[iSlot++] = TP_CENTER;
+    if( (allSlots & TP_BELOW)==0 ) aFree[iSlot++] = TP_BELOW;
+    if( n>=4 && (allSlots & TP_BELOW2)==0 ) aFree[iSlot++] = TP_BELOW2;
+    /* Set the VMASK for all unassigned texts */
+    for(i=iSlot=0; i<n; i++){
+      if( (aTxt[i].eCode & TP_VMASK)==0 ){
+        aTxt[i].eCode = aFree[iSlot++];
       }
     }
   }
+}
+
+/* Append multiple <text> SGV element for the text fields of the PElem
+*/
+static void pik_append_txt(Pik *p, PElem *pElem){
+  PNum dy;      /* Half the height of a single line of text */
+  PNum dy2;     /* Extra vertical space around the center */
+  int n, i, nz;
+  PNum x, y, orig_y;
+  const char *z;
+  PToken *aTxt;
+  int hasCenter = 0;
+
+  if( p->nErr ) return;
+  if( pElem->nTxt==0 ) return;
+  aTxt = pElem->aTxt;
+  dy = 0.5*pik_value(p,"charht",6,0);
+  n = pElem->nTxt;
+  pik_txt_vertical_layout(p, pElem);
   x = pElem->ptAt.x;
   for(i=0; i<n; i++){
-    PToken *t = &pElem->aTxt[i];
+    if( (pElem->aTxt[i].eCode & TP_CENTER)!=0 ) hasCenter = 1;
+  }
+  if( hasCenter ){
+    dy2 = dy;
+  }else if( pElem->type->isLine ){
+    dy2 = pElem->sw;
+  }else{
+    dy2 = 0.0;
+  }
+  for(i=0; i<n; i++){
+    PToken *t = &aTxt[i];
     orig_y = y = pElem->ptAt.y;
-    if( t->eCode & TP_ABOVE ) y += dy;
-    if( t->eCode & TP_BELOW ) y -= dy;
+    if( t->eCode & TP_ABOVE2 ) y += dy2 + 3*dy;
+    if( t->eCode & TP_ABOVE  ) y += dy2 + dy;
+    if( t->eCode & TP_BELOW  ) y -= dy2 + dy;
+    if( t->eCode & TP_BELOW2 ) y -= dy2 + 3*dy;
+
     pik_append_x(p, "<text x=\"", x, "\"");
     pik_append_y(p, " y=\"", y, "\"");
     if( t->eCode & TP_RJUST ){
@@ -2620,13 +2696,20 @@ static void pik_size_to_fit(Pik *p, PToken *pFit){
   }
   if( pElem->type->xFit==0 ) return;
   if( (pElem->mProp & A_HEIGHT)==0 ){
-    if( pElem->nTxt==1 && (pElem->aTxt[0].eCode & TP_VMASK)==0 ){
-      h = 1;
-    }else if( pElem->nTxt==3 ){
-      h = 3;
-    }else{
-      h = 2;
+    int hasCenter = 0;
+    int hasSingleStack = 0;
+    int hasDoubleStack = 0;
+    pik_txt_vertical_layout(p, pElem);
+    for(i=0; i<pElem->nTxt; i++){
+      if( pElem->aTxt[i].eCode & TP_CENTER ){
+        hasCenter = 1;
+      }else if( pElem->aTxt[i].eCode & (TP_ABOVE2|TP_BELOW2) ){
+        hasDoubleStack = 1;
+      }else if( pElem->aTxt[i].eCode & (TP_ABOVE|TP_BELOW) ){
+        hasSingleStack = 1;
+      }
     }
+    h = hasCenter + hasSingleStack*2 + hasDoubleStack*2;
   }
   if( (pElem->mProp & A_WIDTH)==0 ){
     for(i=0; i<pElem->nTxt; i++){
