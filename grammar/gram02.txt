@@ -17,7 +17,7 @@ arrow from X9 to last box.w
 
 # The main rule that goes straight through from start to finish
 #
-box "object-definition" italic fit width 70% at 6/8 way between X0 and X9
+box "object-definition" italic fit width 70% at 11/16 way between X0 and X9
 arrow to X9
 arrow from X0 to last box.w
 
@@ -32,7 +32,8 @@ box "position" italic fit
 arrow
 line right until even with X9 - ($r,0) \
   then up until even with X9 then to X9
-line from last oval.e right $r then up until even with X9 then right
+arrow from last oval.e right $r*0.5 then up $r*0.8 right $r*0.8
+line up $r*0.45 right $r*0.45 then right
 
 # The VARIABLE = rule
 #
