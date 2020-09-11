@@ -1,2 +1,1 @@
-margin = 1cm
 line "this is" "a line"
