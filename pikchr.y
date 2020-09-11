@@ -874,6 +874,9 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
   { "dotrad",      0.015 },
   { "ellipseht",   0.5   },
   { "ellipsewid",  0.75  },
+  { "fileht",      0.75  },
+  { "filerad",     0.15  },
+  { "filewid",     0.5   },
   { "fill",        -1.0  },
   { "lineht",      0.5   },
   { "linewid",     0.5   },
@@ -1260,6 +1263,69 @@ static void ellipseRender(Pik *p, PElem *pElem){
   pik_append_txt(p, pElem, 0);
 }
 
+/* Methods for the "file" object */
+static void fileInit(Pik *p, PElem *pElem){
+  pElem->w = pik_value(p, "filewid",7,0);
+  pElem->h = pik_value(p, "fileht",6,0);
+  pElem->rad = pik_value(p, "filerad",7,0);
+}
+/* Return offset from the center of the box to the compass point 
+** given by parameter cp */
+static PPoint fileOffset(Pik *p, PElem *pElem, int cp){
+  PPoint pt;
+  PNum w2 = 0.5*pElem->w;
+  PNum h2 = 0.5*pElem->h;
+  PNum rx = pElem->rad;
+  PNum mn = w2<h2 ? w2 : h2;
+  if( rx>mn ) rx = mn;
+  if( rx<mn*0.25 ) rx = mn*0.25;
+  pt.x = pt.y = 0.0;
+  rx *= 0.5;
+  switch( cp ){
+    case CP_C:   pt.x = 0.0;      pt.y = 0.0;    break;
+    case CP_N:   pt.x = 0.0;      pt.y = h2;     break;
+    case CP_NE:  pt.x = w2-rx;    pt.y = h2-rx;  break;
+    case CP_E:   pt.x = w2;       pt.y = 0.0;    break;
+    case CP_SE:  pt.x = w2;       pt.y = -h2;    break;
+    case CP_S:   pt.x = 0.0;      pt.y = -h2;    break;
+    case CP_SW:  pt.x = -w2;      pt.y = -h2;    break;
+    case CP_W:   pt.x = -w2;      pt.y = 0.0;    break;
+    case CP_NW:  pt.x = -w2;      pt.y = h2;     break;
+  }
+  return pt;
+}
+static void fileFit(Pik *p, PElem *pElem, PNum w, PNum h){
+  if( w>0 ) pElem->w = w;
+  if( h>0 ) pElem->h = h + 2*pElem->rad;
+}
+static void fileRender(Pik *p, PElem *pElem){
+  PNum w2 = 0.5*pElem->w;
+  PNum h2 = 0.5*pElem->h;
+  PNum rad = pElem->rad;
+  PPoint pt = pElem->ptAt;
+  PNum mn = w2<h2 ? w2 : h2;
+  if( rad>mn ) rad = mn;
+  if( rad<mn*0.25 ) rad = mn*0.25;
+  if( pElem->sw>0.0 ){
+    pik_append_xy(p,"<path d=\"M", pt.x-w2,pt.y-h2);
+    pik_append_xy(p,"L", pt.x+w2,pt.y-h2);
+    pik_append_xy(p,"L", pt.x+w2,pt.y+(h2-rad));
+    pik_append_xy(p,"L", pt.x+(w2-rad),pt.y+h2);
+    pik_append_xy(p,"L", pt.x-w2,pt.y+h2);
+    pik_append(p,"Z\" ",-1);
+    pik_append_style(p,pElem);
+    pik_append(p,"\" />\n",-1);
+    pik_append_xy(p,"<path d=\"M", pt.x+(w2-rad), pt.y+h2);
+    pik_append_xy(p,"L", pt.x+(w2-rad),pt.y+(h2-rad));
+    pik_append_xy(p,"L", pt.x+w2, pt.y+(h2-rad));
+    pik_append(p,"\" ",-1);
+    pik_append_style(p,pElem);
+    pik_append(p,"\" />\n",-1);
+  }
+  pik_append_txt(p, pElem, 0);
+}
+
+
 /* Methods for the "line" class */
 static void lineInit(Pik *p, PElem *pElem){
   pElem->w = pik_value(p, "linewid",7,0);
@@ -1488,6 +1554,15 @@ static const PClass aClass[] = {
       /* xOffset */       ellipseOffset,
       /* xFit */          0,
       /* xRender */       ellipseRender
+   },
+   {  /* name */          "file",
+      /* isline */        0,
+      /* xInit */         fileInit,
+      /* xNumProp */      0,
+      /* xChop */         boxChop,
+      /* xOffset */       fileOffset,
+      /* xFit */          fileFit,
+      /* xRender */       fileRender 
    },
    {  /* name */          "line",
       /* isline */        1,
