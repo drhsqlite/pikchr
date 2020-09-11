@@ -3519,8 +3519,8 @@ static void pik_render(Pik *p, PEList *pEList){
     h = p->bbox.ne.y - p->bbox.sw.y;
     p->wSVG = (int)(p->rScale*w);
     p->hSVG = (int)(p->rScale*h);
-    pik_append_dis(p, " width=\"", w, "\"");
-    pik_append_dis(p, " height=\"",h,"\">\n");
+    pik_append_dis(p, " viewBox=\"0 0 ",w,"");
+    pik_append_dis(p, " ",h,"\">\n");
     pik_elist_render(p, pEList);
     pik_append(p,"</svg>\n", -1);
   }else{
@@ -4090,7 +4090,8 @@ int main(int argc, char **argv){
       }else{
         printf("<p>Output size: %d by %d</p>\n", w, h);
       }
-      printf("<div style='border:2px solid gray;'>\n%s</div>\n", zOut);
+      printf("<div style='border:2px solid gray;max-width:%dpx'>\n%s</div>\n",
+             w, zOut);
       free(zOut);
     }
   }
