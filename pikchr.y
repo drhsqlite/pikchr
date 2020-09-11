@@ -350,6 +350,7 @@ struct Pik {
 struct PClass {
   const char *zName;                     /* Name of class */
   char isLine;                           /* True if a line class */
+  char eJust;                            /* Use box-style text justification */
   void (*xInit)(Pik*,PElem*);            /* Initializer */
   void (*xNumProp)(Pik*,PElem*,PToken*); /* Value change notification */
   PPoint (*xChop)(PElem*,PPoint*);       /* Chopper */
@@ -1494,6 +1495,7 @@ static void sublistInit(Pik *p, PElem *pElem){
 static const PClass aClass[] = {
    {  /* name */          "arc",
       /* isline */        1,
+      /* eJust */         0,
       /* xInit */         arcInit,
       /* xNumProp */      0,
       /* xChop */         0,
@@ -1503,6 +1505,7 @@ static const PClass aClass[] = {
    },
    {  /* name */          "arrow",
       /* isline */        1,
+      /* eJust */         0,
       /* xInit */         arrowInit,
       /* xNumProp */      0,
       /* xChop */         0,
@@ -1512,6 +1515,7 @@ static const PClass aClass[] = {
    },
    {  /* name */          "box",
       /* isline */        0,
+      /* eJust */         1,
       /* xInit */         boxInit,
       /* xNumProp */      0,
       /* xChop */         boxChop,
@@ -1521,6 +1525,7 @@ static const PClass aClass[] = {
    },
    {  /* name */          "circle",
       /* isline */        0,
+      /* eJust */         0,
       /* xInit */         circleInit,
       /* xNumProp */      circleNumProp,
       /* xChop */         circleChop,
@@ -1530,6 +1535,7 @@ static const PClass aClass[] = {
    },
    {  /* name */          "cylinder",
       /* isline */        0,
+      /* eJust */         1,
       /* xInit */         cylinderInit,
       /* xNumProp */      0,
       /* xChop */         boxChop,
@@ -1539,6 +1545,7 @@ static const PClass aClass[] = {
    },
    {  /* name */          "dot",
       /* isline */        0,
+      /* eJust */         0,
       /* xInit */         dotInit,
       /* xNumProp */      dotNumProp,
       /* xChop */         circleChop,
@@ -1548,6 +1555,7 @@ static const PClass aClass[] = {
    },
    {  /* name */          "ellipse",
       /* isline */        0,
+      /* eJust */         0,
       /* xInit */         ellipseInit,
       /* xNumProp */      0,
       /* xChop */         ellipseChop,
@@ -1557,6 +1565,7 @@ static const PClass aClass[] = {
    },
    {  /* name */          "file",
       /* isline */        0,
+      /* eJust */         1,
       /* xInit */         fileInit,
       /* xNumProp */      0,
       /* xChop */         boxChop,
@@ -1566,6 +1575,7 @@ static const PClass aClass[] = {
    },
    {  /* name */          "line",
       /* isline */        1,
+      /* eJust */         0,
       /* xInit */         lineInit,
       /* xNumProp */      0,
       /* xChop */         0,
@@ -1575,6 +1585,7 @@ static const PClass aClass[] = {
    },
    {  /* name */          "move",
       /* isline */        1,
+      /* eJust */         0,
       /* xInit */         moveInit,
       /* xNumProp */      0,
       /* xChop */         0,
@@ -1584,6 +1595,7 @@ static const PClass aClass[] = {
    },
    {  /* name */          "oval",
       /* isline */        0,
+      /* eJust */         1,
       /* xInit */         ovalInit,
       /* xNumProp */      ovalNumProp,
       /* xChop */         boxChop,
@@ -1593,6 +1605,7 @@ static const PClass aClass[] = {
    },
    {  /* name */          "spline",
       /* isline */        1,
+      /* eJust */         0,
       /* xInit */         splineInit,
       /* xNumProp */      0,
       /* xChop */         0,
@@ -1602,6 +1615,7 @@ static const PClass aClass[] = {
    },
    {  /* name */          "text",
       /* isline */        0,
+      /* eJust */         0,
       /* xInit */         textInit,
       /* xNumProp */      0,
       /* xChop */         boxChop,
@@ -1613,6 +1627,7 @@ static const PClass aClass[] = {
 static const PClass sublistClass = 
    {  /* name */          "[]",
       /* isline */        0,
+      /* eJust */         0,
       /* xInit */         sublistInit,
       /* xNumProp */      0,
       /* xChop */         0,
@@ -1623,6 +1638,7 @@ static const PClass sublistClass =
 static const PClass noopClass = 
    {  /* name */          "noop",
       /* isline */        0,
+      /* eJust */         0,
       /* xInit */         0,
       /* xNumProp */      0,
       /* xChop */         0,
@@ -1883,11 +1899,14 @@ static void pik_txt_vertical_layout(Pik *p, PElem *pElem){
     int allSlots = 0;
     int aFree[5];
     int iSlot;
-    int j;
+    int j, mJust;
     /* If there is more than one TP_ABOVE, change the first to TP_ABOVE2. */
-    for(j=0, i=n-1; i>=0; i--){
+    for(j=mJust=0, i=n-1; i>=0; i--){
       if( aTxt[i].eCode & TP_ABOVE ){
         if( j==0 ){
+          j++;
+          mJust = aTxt[i].eCode & TP_JMASK;
+        }else if( j==1 && mJust!=0 && (aTxt[i].eCode & mJust)==0 ){
           j++;
         }else{
           aTxt[i].eCode = (aTxt[i].eCode & ~TP_VMASK) | TP_ABOVE2;
@@ -1896,9 +1915,12 @@ static void pik_txt_vertical_layout(Pik *p, PElem *pElem){
       }
     }
     /* If more than one TP_BELOW, change the last to TP_BELOW2 */
-    for(j=0, i=0; i<n; i++){
+    for(j=mJust=0, i=0; i<n; i++){
       if( aTxt[i].eCode & TP_BELOW ){
         if( j==0 ){
+          j++;
+          mJust = aTxt[i].eCode & TP_JMASK;
+        }else if( j==1 && mJust!=0 && (aTxt[i].eCode & mJust)==0 ){
           j++;
         }else{
           aTxt[i].eCode = (aTxt[i].eCode & ~TP_VMASK) | TP_BELOW2;
@@ -1909,12 +1931,23 @@ static void pik_txt_vertical_layout(Pik *p, PElem *pElem){
     /* Compute a mask of all slots used */
     for(i=0; i<n; i++) allSlots |= aTxt[i].eCode & TP_VMASK;
     /* Set of an array of available slots */
-    iSlot = 0;
-    if( n>=4 && (allSlots & TP_ABOVE2)==0 ) aFree[iSlot++] = TP_ABOVE2;
-    if( (allSlots & TP_ABOVE)==0 ) aFree[iSlot++] = TP_ABOVE;
-    if( (n&1)!=0 ) aFree[iSlot++] = TP_CENTER;
-    if( (allSlots & TP_BELOW)==0 ) aFree[iSlot++] = TP_BELOW;
-    if( n>=4 && (allSlots & TP_BELOW2)==0 ) aFree[iSlot++] = TP_BELOW2;
+    if( n==2
+     && ((aTxt[0].eCode|aTxt[1].eCode)&TP_JMASK)==(TP_LJUST|TP_RJUST)
+    ){
+      /* Special case of two texts that have opposite justification:
+      ** Allow them both to float to center. */
+      iSlot = 2;
+      aFree[0] = aFree[1] = TP_CENTER;
+    }else{
+      /* Set up the arrow so that available slots are filled from top to
+      ** bottom */
+      iSlot = 0;
+      if( n>=4 && (allSlots & TP_ABOVE2)==0 ) aFree[iSlot++] = TP_ABOVE2;
+      if( (allSlots & TP_ABOVE)==0 ) aFree[iSlot++] = TP_ABOVE;
+      if( (n&1)!=0 ) aFree[iSlot++] = TP_CENTER;
+      if( (allSlots & TP_BELOW)==0 ) aFree[iSlot++] = TP_BELOW;
+      if( n>=4 && (allSlots & TP_BELOW2)==0 ) aFree[iSlot++] = TP_BELOW2;
+    }
     /* Set the VMASK for all unassigned texts */
     for(i=iSlot=0; i<n; i++){
       if( (aTxt[i].eCode & TP_VMASK)==0 ){
@@ -1925,14 +1958,23 @@ static void pik_txt_vertical_layout(Pik *p, PElem *pElem){
 }
 
 /* Append multiple <text> SGV element for the text fields of the PElem.
+** Parameters:
 **
-** Or, if pBox!=NULL, then do not actually do any output.  Instead
-** guess at how large the various <text> elements would be and where
-** the will be located and expand the pBox to include them.
+**    p          The Pik object into which we are rendering
+**
+**    pElem      Object containing the text to be rendered
+**
+**    jw         LJUST text is shifted to the left by this amount.
+**               RJUST text is shifted to the right.
+**
+**    pBox       If not NULL, do no rendering at all.  Instead
+**               expand the box object so that it will include all
+**               of the text.
 */
 static void pik_append_txt(Pik *p, PElem *pElem, PBox *pBox){
-  PNum dy;      /* Half the height of a single line of text */
-  PNum dy2;     /* Extra vertical space around the center */
+  PNum dy;          /* Half the height of a single line of text */
+  PNum dy2;         /* Extra vertical space around the center */
+  PNum jw;          /* Justification margin relative to center */
   int n, i, nz;
   PNum x, y, orig_y;
   const char *z;
@@ -1956,10 +1998,16 @@ static void pik_append_txt(Pik *p, PElem *pElem, PBox *pBox){
   }else{
     dy2 = 0.0;
   }
+  if( pElem->type->eJust==1 ){
+    jw = 0.5*(pElem->w - 0.5*(p->charWidth + pElem->sw));
+  }else{
+    jw = 0.0;
+  }
   for(i=0; i<n; i++){
     PToken *t = &aTxt[i];
     PNum xtraFontScale = 1.0;
     orig_y = y = pElem->ptAt.y;
+    PNum nx = x;
     if( t->eCode & TP_ABOVE2 ) y += dy2 + 3*dy;
     if( t->eCode & TP_ABOVE  ) y += dy2 + dy;
     if( t->eCode & TP_BELOW  ) y -= dy2 + dy;
@@ -1967,6 +2015,8 @@ static void pik_append_txt(Pik *p, PElem *pElem, PBox *pBox){
     if( t->eCode & TP_BIG    ) xtraFontScale *= 1.25;
     if( t->eCode & TP_SMALL  ) xtraFontScale *= 0.8;
     if( t->eCode & TP_XTRA   ) xtraFontScale *= xtraFontScale;
+    if( t->eCode & TP_LJUST  ) nx -= jw;
+    if( t->eCode & TP_RJUST  ) nx += jw;
 
     if( pBox!=0 ){
       /* If pBox is not NULL, do not draw any <text>.  Instead, just expand
@@ -1974,19 +2024,19 @@ static void pik_append_txt(Pik *p, PElem *pElem, PBox *pBox){
       PNum cw = pik_text_length(t)*p->charWidth*xtraFontScale;
       PNum ch = p->charHeight*0.5*xtraFontScale;
       if( t->eCode & TP_RJUST ){
-        pik_bbox_add_xy(pBox, x, y-ch);
-        pik_bbox_add_xy(pBox, x-cw, y+ch);
+        pik_bbox_add_xy(pBox, nx, y-ch);
+        pik_bbox_add_xy(pBox, nx-cw, y+ch);
       }else if( t->eCode & TP_LJUST ){
-        pik_bbox_add_xy(pBox, x, y-ch);
-        pik_bbox_add_xy(pBox, x+cw, y+ch);
+        pik_bbox_add_xy(pBox, nx, y-ch);
+        pik_bbox_add_xy(pBox, nx+cw, y+ch);
       }else{
-        pik_bbox_add_xy(pBox, x+cw/2, y+ch);
-        pik_bbox_add_xy(pBox, x-cw/2, y-ch);
+        pik_bbox_add_xy(pBox, nx+cw/2, y+ch);
+        pik_bbox_add_xy(pBox, nx-cw/2, y-ch);
       }
       continue;
     }
 
-    pik_append_x(p, "<text x=\"", x, "\"");
+    pik_append_x(p, "<text x=\"", nx, "\"");
     pik_append_y(p, " y=\"", y, "\"");
     if( t->eCode & TP_RJUST ){
       pik_append(p, " text-anchor=\"end\"", -1);
@@ -2758,10 +2808,10 @@ static void pik_add_txt(Pik *p, PToken *pTxt, int iPos){
 static int pik_text_position(Pik *p, int iPrev, PToken *pFlag){
   int iRes = iPrev;
   switch( pFlag->eType ){
-    case T_CENTER:   /* no-op */                          break;
     case T_LJUST:    iRes = (iRes&~TP_JMASK) | TP_LJUST;  break;
     case T_RJUST:    iRes = (iRes&~TP_JMASK) | TP_RJUST;  break;
     case T_ABOVE:    iRes = (iRes&~TP_VMASK) | TP_ABOVE;  break;
+    case T_CENTER:   iRes = (iRes&~TP_VMASK) | TP_CENTER; break;
     case T_BELOW:    iRes = (iRes&~TP_VMASK) | TP_BELOW;  break;
     case T_ITALIC:   iRes |= TP_ITALIC;                   break; 
     case T_BOLD:     iRes |= TP_BOLD;                     break; 
@@ -2842,7 +2892,11 @@ static void pik_size_to_fit(Pik *p, PToken *pFit){
   if( (pElem->mProp & A_WIDTH)==0 ){
     for(i=0; i<pElem->nTxt; i++){
       int cnt = pik_text_length(&pElem->aTxt[i]);
-      if( (pElem->aTxt[i].eCode & TP_JMASK)!=0 ) cnt *= 2;
+      if( pElem->type->eJust==0 
+       && (pElem->aTxt[i].eCode & TP_JMASK)!=0
+      ){
+         cnt *= 2;
+      }
       if( cnt>w ) w = cnt;
     }
   }
