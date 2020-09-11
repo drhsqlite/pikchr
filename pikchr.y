@@ -180,6 +180,10 @@ static const PNum pik_hdg_angle[] = {
 #define TP_BELOW   0x0020  /* Position text below PElem.ptAt */
 #define TP_BELOW2  0x0040  /* Position text way below PElem.ptAt */
 #define TP_VMASK   0x007c  /* Mask for text positioning flags */
+#define TP_BIG     0x0100  /* Larger font */
+#define TP_SMALL   0x0200  /* Smaller font */
+#define TP_XTRA    0x0400  /* Amplify TP_BIG or TP_SMALL */
+#define TP_SZMASK  0x0700  /* Font size mask */
 #define TP_ITALIC  0x1000  /* Italic font */
 #define TP_BOLD    0x2000  /* Bold font */
 #define TP_FMASK   0x3000  /* Mask for font style */
@@ -584,10 +588,12 @@ boolproperty ::= LARROW.      {p->cur->larrow=1; p->cur->rarrow=0; }
 boolproperty ::= RARROW.      {p->cur->larrow=0; p->cur->rarrow=1; }
 boolproperty ::= LRARROW.     {p->cur->larrow=1; p->cur->rarrow=1; }
 boolproperty ::= INVIS.       {p->cur->sw = 0.0;}
+boolproperty ::= THICK.       {p->cur->sw *= 1.5;}
+boolproperty ::= THIN.        {p->cur->sw *= 0.67;}
 
 textposition(A) ::= .   {A = 0;}
 textposition(A) ::= textposition(B) 
-   CENTER|LJUST|RJUST|ABOVE|BELOW|ITALIC|BOLD|ALIGNED(F).
+   CENTER|LJUST|RJUST|ABOVE|BELOW|ITALIC|BOLD|ALIGNED|BIG|SMALL(F).
                         {A = pik_text_position(p,B,&F);}
 
 
@@ -1725,7 +1731,7 @@ static void pik_append_xy(Pik *p, const char *z1, PNum x, PNum y){
 }
 static void pik_append_dis(Pik *p, const char *z1, PNum v, const char *z2){
   char buf[200];
-  snprintf(buf, sizeof(buf)-1, "%s%d%s", z1, (int)(p->rScale*v), z2);
+  snprintf(buf, sizeof(buf)-1, "%s%g%s", z1, p->rScale*v, z2);
   buf[sizeof(buf)-1] = 0;
   pik_append(p, buf, -1);
 }
@@ -1767,7 +1773,6 @@ static void pik_append_style(Pik *p, PElem *pElem){
   }
   if( pElem->sw>0.0 && pElem->color>=0.0 ){
     PNum sw = pElem->sw;
-    if( sw*p->rScale<1.0 ) sw = 1.1/p->rScale;
     pik_append_dis(p, "stroke-width:", sw, ";");
     pik_append_clr(p, "stroke:",pElem->color,";");
     if( pElem->dotted>0.0 ){
@@ -1878,17 +1883,21 @@ static void pik_append_txt(Pik *p, PElem *pElem, PBox *pBox){
   }
   for(i=0; i<n; i++){
     PToken *t = &aTxt[i];
+    PNum xtraFontScale = 1.0;
     orig_y = y = pElem->ptAt.y;
     if( t->eCode & TP_ABOVE2 ) y += dy2 + 3*dy;
     if( t->eCode & TP_ABOVE  ) y += dy2 + dy;
     if( t->eCode & TP_BELOW  ) y -= dy2 + dy;
     if( t->eCode & TP_BELOW2 ) y -= dy2 + 3*dy;
+    if( t->eCode & TP_BIG    ) xtraFontScale *= 1.25;
+    if( t->eCode & TP_SMALL  ) xtraFontScale *= 0.8;
+    if( t->eCode & TP_XTRA   ) xtraFontScale *= xtraFontScale;
 
     if( pBox!=0 ){
       /* If pBox is not NULL, do not draw any <text>.  Instead, just expand
       ** pBox to include the text */
-      PNum cw = pik_text_length(t)*p->charWidth;
-      PNum ch = p->charHeight*0.5;
+      PNum cw = pik_text_length(t)*p->charWidth*xtraFontScale;
+      PNum ch = p->charHeight*0.5*xtraFontScale;
       if( t->eCode & TP_RJUST ){
         pik_bbox_add_xy(pBox, x, y-ch);
         pik_bbox_add_xy(pBox, x-cw, y+ch);
@@ -1920,8 +1929,9 @@ static void pik_append_txt(Pik *p, PElem *pElem, PBox *pBox){
     if( pElem->color>=0.0 ){
       pik_append_clr(p, " fill=\"", pElem->color, "\"");
     }
-    if( p->fontScale<=0.99 || p->fontScale>=1.01 ){
-      pik_append_num(p, " font-size=\"", p->fontScale*100.0);
+    xtraFontScale *= p->fontScale;
+    if( xtraFontScale<=0.99 || xtraFontScale>=1.01 ){
+      pik_append_num(p, " font-size=\"", xtraFontScale*100.0);
       pik_append(p, "%\"", 2);
     }
     if( (t->eCode & TP_ALIGN)!=0 && pElem->nPath>=2 ){
@@ -2680,7 +2690,11 @@ static int pik_text_position(Pik *p, int iPrev, PToken *pFlag){
     case T_BELOW:    iRes = (iRes&~TP_VMASK) | TP_BELOW;  break;
     case T_ITALIC:   iRes |= TP_ITALIC;                   break; 
     case T_BOLD:     iRes |= TP_BOLD;                     break; 
-    case T_ALIGNED:  iRes |= TP_ALIGN;                    break; 
+    case T_ALIGNED:  iRes |= TP_ALIGN;                    break;
+    case T_BIG:      if( iRes & TP_BIG ) iRes |= TP_XTRA;
+                     else iRes = (iRes &~TP_SZMASK)|TP_BIG;   break;
+    case T_SMALL:    if( iRes & TP_SMALL ) iRes |= TP_XTRA;
+                     else iRes = (iRes &~TP_SZMASK)|TP_SMALL; break;
   }
   return iRes;
 }
@@ -3555,6 +3569,7 @@ static const PikWord pik_keywords[] = {
   { "at",         2,   T_AT,        0,         0       },
   { "below",      5,   T_BELOW,     0,         0       },
   { "between",    7,   T_BETWEEN,   0,         0       },
+  { "big",        3,   T_BIG,       0,         0       },
   { "bold",       4,   T_BOLD,      0,         0       },
   { "bot",        3,   T_EDGEPT,    0,         CP_S    },
   { "bottom",     6,   T_BOTTOM,    0,         CP_S    },
@@ -3605,6 +3620,7 @@ static const PikWord pik_keywords[] = {
   { "same",       4,   T_SAME,      0,         0       },
   { "se",         2,   T_EDGEPT,    0,         CP_SE   },
   { "sin",        3,   T_FUNC1,     FN_SIN,    0       },
+  { "small",      5,   T_SMALL,     0,         0       },
   { "south",      5,   T_EDGEPT,    0,         CP_S    },
   { "sqrt",       4,   T_FUNC1,     FN_SQRT,   0       },
   { "start",      5,   T_START,     0,         0       },
@@ -3612,7 +3628,9 @@ static const PikWord pik_keywords[] = {
   { "t",          1,   T_TOP,       0,         CP_N    },
   { "the",        3,   T_THE,       0,         0       },
   { "then",       4,   T_THEN,      0,         0       },
+  { "thick",      5,   T_THICK,     0,         0       },
   { "thickness",  9,   T_THICKNESS, 0,         0       },
+  { "thin",       4,   T_THIN,      0,         0       },
   { "to",         2,   T_TO,        0,         0       },
   { "top",        3,   T_TOP,       0,         CP_N    },
   { "until",      5,   T_UNTIL,     0,         0       },
