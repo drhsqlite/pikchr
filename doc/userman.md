@@ -175,7 +175,7 @@ Yields:
 ~~~~~
 
 But more often, you want to put space in between the block objects.
-For that purpose, there the special "move" object.  Consider:
+The special "move" object exists for that purpose.  Consider:
 
 ~~~~~
     box; move; circle; move; cylinder
@@ -231,7 +231,7 @@ that "arrow" statement!  Don't panic, though.  It's actually pretty
 simple.  We'll take it apart and explain it piece by piece.
 
 First note that the "arrow" statement is broken up into four separate
-lines of text, with a "`\\`" at the end of the first three lines to
+lines of text, with a "`\`" at the end of the first three lines to
 prevent the subsequent new-line from prematurely closing the statement.
 When you split a statement across multiple lines, don't forget the
 backslashes!
@@ -292,7 +292,7 @@ previous position (its starting point) by 1 centimeter.  This phrase
 highlights a key enhancement of Pikchr over legacy-PIC.  Legacy-PIC
 did everything in inches only.  No units were allowed.  Pikchr allows
 you to attach units to measurements, as in this case where it is
-"1cm".  Internally, Pikchr still keep track of everything in inches
+"1cm".  Internally, Pikchr still keeps track of everything in inches
 (for compatibility with PIC).  The "1cm" token is really just an
 alternative spelling for the numeric constant "0.39370078740157480316"
 which is the inch-equivalent of 1 centimeter.  Surely you agree that
@@ -309,7 +309,7 @@ to the right until it is lined up below the first cylinder.  You,
 the diagram designer, don't know (and don't really want to know)
 how far apart the box and the cylinder are, so you can't tell it
 exactly how far to go.  This phrase is a convenient way of telling
-Pikchr "make the line long enough".
+Pikchr to "make the line long enough".
 
 Note that the "`first cylinder`" part of the "until even with"
 phrase is actually an abbreviation for "`first cylinder.c`" - the
@@ -367,7 +367,7 @@ and distances when laying out your diagram.  But you are encouraged
 to avoid that approach.  Instead, pick an "anchor object" (usually the first
 object you create) and lay out all other objects relative to the
 anchor.  Pikchr provides many mechanisms for specifying the location
-of each no object in terms of the locations of its predecessors.  With
+of each object in terms of the locations of its predecessors.  With
 a little study of the syntax options available to you (and discussed
 further below) you will be generating complex diagrams using Pikchr
 in no time.
@@ -380,10 +380,10 @@ to objects that occur later in the script.  Any computations that go
 into placing an object occur as the object definition is parsed.  As soon
 as the newline or semicolon that terminates the object definition is
 reached, the size, location, and characteristics of the object are
-fixed and cannot subsequently be altered.  (One except:  sub-objects that
+fixed and cannot subsequently be altered.  (One exception:  sub-objects that
 are part of a container (discussed later) are placed relative to the
 origin of the container.  Their shape and locations relative to each
-other are fixed, but there final absolute position is not fixed until
+other are fixed, but their final absolute position is not fixed until
 their container itself is fixed.)
 
 The single-pass design contributes to the conceptual simplicity of
@@ -404,7 +404,7 @@ scheme:
   *  "`17th ellipse`" &larr; the seventeenth ellipse object
   *  ... and so forth
 
-This works, but it can be fragile.  If you go back later an insert a new
+This works, but it can be fragile.  If you go back later and insert a new
 object in the stream, it can mess up your counts.  Or, for that matter,
 you might just miscount.
 
