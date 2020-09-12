@@ -395,6 +395,7 @@ static void pik_set_numprop(Pik*,PToken*,PNum,PNum);
 static void pik_set_dashed(Pik*,PToken*,PNum*);
 static void pik_then(Pik*,PToken*,PElem*);
 static void pik_add_direction(Pik*,PToken*,PNum*,int);
+static void pik_move_hdg(Pik*,PNum*,PToken*,PNum,PToken*,PToken*);
 static void pik_evenwith(Pik*,PToken*,PPoint*);
 static void pik_set_from(Pik*,PElem*,PToken*,PPoint*);
 static void pik_add_to(Pik*,PElem*,PToken*,PPoint*);
@@ -545,16 +546,25 @@ attribute ::= numproperty(P) expr(X). { pik_set_numprop(p,&P,X,0.0); }
 attribute ::= dashproperty(P) expr(X).  { pik_set_dashed(p,&P,&X); }
 attribute ::= dashproperty(P).          { pik_set_dashed(p,&P,0);  }
 attribute ::= colorproperty(P) rvalue(X). { pik_set_numprop(p,&P,X,0.0); }
-attribute ::= direction(D) expr(X) PERCENT.
-                                    { pik_add_direction(p,&D,&X,1);}
-attribute ::= direction(D) expr(X). { pik_add_direction(p,&D,&X,0);}
-attribute ::= direction(D).         { pik_add_direction(p,&D,0,0); }
-attribute ::= direction(D) even position(P). {pik_evenwith(p,&D,&P);}
+attribute ::= go direction(D) expr(X) PERCENT.
+                                       { pik_add_direction(p,&D,&X,1);}
+attribute ::= go direction(D) expr(X). { pik_add_direction(p,&D,&X,0);}
+attribute ::= go direction(D).         { pik_add_direction(p,&D,0,0); }
+attribute ::= go direction(D) even position(P). {pik_evenwith(p,&D,&P);}
 attribute ::= CLOSE(E).             { pik_close_path(p,&E); }
 attribute ::= CHOP.                 { p->cur->bChop = 1; }
 attribute ::= FROM(T) position(X).  { pik_set_from(p,p->cur,&T,&X); }
 attribute ::= TO(T) position(X).    { pik_add_to(p,p->cur,&T,&X); }
 attribute ::= THEN(T).              { pik_then(p, &T, p->cur); }
+attribute ::= THEN(E) expr(D) HEADING(H) expr(A).
+                                                {pik_move_hdg(p,&D,&H,A,0,&E);}
+attribute ::= THEN(E) HEADING(H) expr(A).       {pik_move_hdg(p,0,&H,A,0,&E);}
+attribute ::= THEN(E) expr(D) EDGEPT(C).        {pik_move_hdg(p,&D,0,0,&C,&E);}
+attribute ::= THEN(E) EDGEPT(C).                {pik_move_hdg(p,0,0,0,&C,&E);}
+attribute ::= GO(E) expr(D) HEADING(H) expr(A). {pik_move_hdg(p,&D,&H,A,0,&E);}
+attribute ::= GO(E) HEADING(H) expr(A).         {pik_move_hdg(p,0,&H,A,0,&E);}
+attribute ::= GO(E) expr(D) EDGEPT(C).          {pik_move_hdg(p,&D,0,0,&C,&E);}
+attribute ::= GO(E) EDGEPT(C).                  {pik_move_hdg(p,0,0,0,&C,&E);}
 attribute ::= boolproperty.
 attribute ::= AT(A) position(P).                    { pik_set_at(p,0,&P,&A); }
 attribute ::= WITH withclause.
@@ -562,6 +572,9 @@ attribute ::= SAME(E).                          {pik_same(p,0,&E);}
 attribute ::= SAME(E) AS object(X).             {pik_same(p,X,&E);}
 attribute ::= STRING(T) textposition(P).        {pik_add_txt(p,&T,P);}
 attribute ::= FIT(E).                           {pik_size_to_fit(p,&E); }
+
+go ::= GO.
+go ::= .
 
 even ::= UNTIL EVEN WITH.
 even ::= EVEN WITH.
@@ -2562,7 +2575,7 @@ void pik_set_dashed(Pik *p, PToken *pId, PNum *pVal){
 static void pik_then(Pik *p, PToken *pToken, PElem *pElem){
   int n;
   if( !pElem->type->isLine ){
-    pik_error(p, pToken, "use with line-oriented elements only");
+    pik_error(p, pToken, "use with line-oriented objects only");
     return;
   }
   n = p->nTPath - 1;
@@ -2611,7 +2624,7 @@ static void pik_add_direction(Pik *p, PToken *pDir, PNum *pVal, int rel){
   PNum scale = 1.0;
   if( !pElem->type->isLine ){
     if( pDir ){
-      pik_error(p, pDir, "use with line-oriented elements only");
+      pik_error(p, pDir, "use with line-oriented objects only");
     }else{
       PToken x = pik_next_semantic_token(p, &pElem->errTok);
       pik_error(p, &x, "syntax error");
@@ -2660,6 +2673,66 @@ static void pik_add_direction(Pik *p, PToken *pDir, PNum *pVal, int rel){
   pElem->outDir = dir;
 }
 
+/* Process a movement attribute of one of these forms:
+**
+**         pDist   pHdgKW  rHdg    pEdgept
+**     GO distance HEADING angle
+**     GO          HEADING angle
+**     GO distance               compasspoint
+**     GO                        compasspoint
+*/
+static void pik_move_hdg(
+  Pik *p,              /* The Pikchr context */
+  PNum *pDist,         /* Distance to move.  NULL means standard distance */
+  PToken *pHeading,    /* "heading" keyword if present */
+  PNum rHdg,           /* Angle argument to "heading" keyword */
+  PToken *pEdgept,     /* EDGEPT keyword "ne", "sw", etc... */
+  PToken *pErr         /* Token to use for error messages */
+){
+  PElem *pElem = p->cur;
+  int n;
+  PNum rDist;
+  if( !pElem->type->isLine ){
+    pik_error(p, pErr, "use with line-oriented objects only");
+    return;
+  }
+  if( pDist ){
+    rDist = *pDist;
+  }else{
+    rDist = pik_value(p, "linewid", 7, 0);
+  }
+  do{
+    n = pik_next_rpath(p, pErr);
+  }while( n<1 );
+  if( pHeading ){
+    if( rHdg<0.0 || rHdg>360.0 ){
+      pik_error(p, pHeading, "headings should be between 0 and 360");
+      return;
+    }
+  }else if( pEdgept->eEdge==CP_C ){
+    pik_error(p, pEdgept, "syntax error");
+    return;
+  }else{
+    rHdg = pik_hdg_angle[pEdgept->eEdge];
+  }
+  if( rHdg<=45.0 ){
+    pElem->outDir = DIR_UP;
+  }else if( rHdg<=135.0 ){
+    pElem->outDir = DIR_RIGHT;
+  }else if( rHdg<=225.0 ){
+    pElem->outDir = DIR_DOWN;
+  }else if( rHdg<=315.0 ){
+    pElem->outDir = DIR_LEFT;
+  }else{
+    pElem->outDir = DIR_UP;
+  }
+  rHdg *= 0.017453292519943295769;  /* degrees to radians */
+  p->aTPath[n].x += rDist*sin(rHdg);
+  p->aTPath[n].y += rDist*cos(rHdg);
+  p->mTPath = 2;
+}
+
+
 /* Process a movement attribute of the form "right until even with ..."
 **
 ** pDir is the first keyword, "right" or "left" or "up" or "down".
@@ -2670,7 +2743,7 @@ static void pik_evenwith(Pik *p, PToken *pDir, PPoint *pPlace){
   PElem *pElem = p->cur;
   int n;
   if( !pElem->type->isLine ){
-    pik_error(p, pDir, "use with line-oriented elements only");
+    pik_error(p, pDir, "use with line-oriented objects only");
     return;
   }
   n = p->nTPath - 1;
@@ -3727,6 +3800,7 @@ static const PikWord pik_keywords[] = {
   { "first",      5,   T_NTH,       0,         0       },
   { "fit",        3,   T_FIT,       0,         0       },
   { "from",       4,   T_FROM,      0,         0       },
+  { "go",         2,   T_GO,        0,         0       },
   { "heading",    7,   T_HEADING,   0,         0       },
   { "height",     6,   T_HEIGHT,    0,         0       },
   { "ht",         2,   T_HEIGHT,    0,         0       },
