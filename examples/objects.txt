@@ -8,7 +8,7 @@ ellipse "ellipse" at 1in right of previous
 
 # second row of objects
 OVAL1: oval "oval" at 1in below first box
-oval "(tall &amp;" "thin)" "oval" width OVAL1.height height OVAL1.width\
+oval "(tall &amp;" "thin)" "oval" width OVAL1.height height OVAL1.width \
     at 1in right of previous
 cylinder "cylinder" at 1in right of previous
 file "file" at 1in right of previous
