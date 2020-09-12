@@ -3307,15 +3307,10 @@ static PPoint pik_place_of_elem(Pik *p, PElem *pElem, PToken *pEdge){
     pt.y += pElem->ptAt.y;
     return pt;
   }
-  if( !pClass->isLine ){
-    pik_error(0, pEdge,
-          "only line objects have \"start\" and \"end\" points");
-    return pt;
-  }
   if( pEdge->eType==T_START ){
-    return pElem->aPath[0];
+    return pElem->ptEnter;
   }else{
-    return pElem->aPath[pElem->nPath-1];
+    return pElem->ptExit;
   }
 }
 
