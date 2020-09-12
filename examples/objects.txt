@@ -44,6 +44,4 @@ spline <-> from .4cm below start of previous spline \
 ] # end of All Objects
 
 # Label the whole diagram
-X: text "Object Class Examples" big bold fit at .4cm above north of AllObjects
-
-line thin color red from X.sw to X.se to X.ne to X.nw close
+text "Examples Of Pikchr Objects" big bold  at .8cm above north of AllObjects
