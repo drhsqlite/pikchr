@@ -1117,7 +1117,7 @@ static PPoint circleChop(PElem *pElem, PPoint *pPt){
   PPoint chop;
   PNum dx = pPt->x - pElem->ptAt.x;
   PNum dy = pPt->y - pElem->ptAt.y;
-  PNum dist = sqrt(dx*dx + dy*dy);
+  PNum dist = hypot(dx,dy);
   if( dist<pElem->rad ) return pElem->ptAt;
   chop.x = pElem->ptAt.x + dx*pElem->rad/dist;
   chop.y = pElem->ptAt.y + dy*pElem->rad/dist;
@@ -1128,7 +1128,7 @@ static void circleFit(Pik *p, PElem *pElem, PNum w, PNum h){
   if( w>0 ) mx = w;
   if( h>mx ) mx = h;
   if( (w*w + h*h) > mx*mx ){
-    mx = sqrt(w*w + h*h);
+    mx = hypot(w,h);
   }
   if( mx>0.0 ){
     pElem->rad = 0.5*mx;
@@ -1237,7 +1237,7 @@ static PPoint ellipseChop(PElem *pElem, PPoint *pPt){
   if( pElem->h<=0.0 ) return pElem->ptAt;
   s = pElem->h/pElem->w;
   dq = dx*s;
-  dist = sqrt(dq*dq + dy*dy);
+  dist = hypot(dq,dy);
   if( dist<pElem->h ) return pElem->ptAt;
   chop.x = pElem->ptAt.x + 0.5*dq*pElem->h/(dist*s);
   chop.y = pElem->ptAt.y + 0.5*dy*pElem->h/dist;
@@ -1419,7 +1419,7 @@ static void splineInit(Pik *p, PElem *pElem){
 static PPoint radiusMidpoint(PPoint f, PPoint t, PNum r, int *pbMid){
   PNum dx = t.x - f.x;
   PNum dy = t.y - f.y;
-  PNum dist = sqrt(dx*dx+dy*dy);
+  PNum dist = hypot(dx,dy);
   PPoint m;
   if( dist<=0.0 ) return t;
   dx /= dist;
@@ -1668,7 +1668,7 @@ static const PClass noopClass =
 static void pik_chop(Pik *p, PPoint *f, PPoint *t, PNum amt){
   PNum dx = t->x - f->x;
   PNum dy = t->y - f->y;
-  PNum dist = sqrt(dx*dx + dy*dy);
+  PNum dist = hypot(dx,dy);
   PNum r;
   if( dist<=amt ){
     *t = *f;
@@ -1687,7 +1687,7 @@ static void pik_chop(Pik *p, PPoint *f, PPoint *t, PNum amt){
 static void pik_draw_arrowhead(Pik *p, PPoint *f, PPoint *t, PElem *pElem){
   PNum dx = t->x - f->x;
   PNum dy = t->y - f->y;
-  PNum dist = sqrt(dx*dx + dy*dy);
+  PNum dist = hypot(dx,dy);
   PNum h = p->hArrow * pElem->sw;
   PNum w = p->wArrow * pElem->sw;
   PNum e1, ddx, ddy;
