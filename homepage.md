@@ -32,45 +32,17 @@ Volunteers are welcomed, of course.
 
 [3]: https://fossil-scm.org/fossil
 
-## Derivation From PIC
+## Try It Out
 
-The inspiration for Pikchr is the venerable PIC language from
-Bell Labs (circa early 1980s).  Pikchr is *mostly*
-compatible with PIC, though Pikchr has many extensions, and
-it omits some legacy-PIC features (such as the "sh" command)
-that would be a security issue in internet-facing software.  Most of the
-example PIC scripts contained in the [PIC User Manual][4] work
-fine with Pikchr, perhaps with a few minor tweaks.  For example:
+  *  [](/pikchrshow)
+  *  [Wiki Sandbox](/wikiedit?name=Sandbox)
 
-~~~~ pikchr center
-        margin = 5mm;
+## Internal Links
 
-        circle "DISK"
-        arrow "character" "defns" right 150%
-CPU:    box "CPU" "(16-bit mini)"
-        /*{*/ arrow <- from top of CPU up "input " rjust /*}*/
-        arrow right from CPU.e
-CRT:    "   CRT" ljust wid 1px
-        line from CRT - 0,0.075 up 0.15 \
-                then right 0.5 \
-                then right 0.5 up 0.25 \
-                then down 0.5+0.15 \
-                then left 0.5 up 0.25 \
-                then left 0.5
-Paper:  CRT + 1.05,0.75
-        arrow <- from Paper down 1.5
-        " ...  paper" ljust at end of last arrow + 0, 0.25
-        circle rad 0.05 at Paper + (-0.055, -0.25)
-        circle rad 0.05 at Paper + (0.055, -0.25)
-        "   rollers" ljust at Paper + (0.1, -0.25)
-~~~~
+  *  [Pikchr User Manual](./doc/userman.md) (still very incomplete)
 
-PIC and Pikchr are sufficiently similar that you can get started using
-Pikchr by reading the PIC user manual.
+## External Links
 
-See the [raw Markdown source text to this page][5] to see more
-examples.
-
-
-[4]: http://doc.cat-v.org/unix/v8/picmemo.pdf
-[5]: /doc/trunk/homepage.md?mimetype=text/plain
+  *  [BWK paper on the original PIC](/uv/pic.pdf)
+  *  [DPIC Documentation](/uv/dpic-doc.pdf)
+  *  [ESR GnuPIC Docs](/uv/gpic.pdf)
