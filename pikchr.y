@@ -3068,7 +3068,7 @@ static short int pik_nth_value(Pik *p, PToken *pNth){
 ** The pNth token describes the N-th search.  The pNth->eCode value
 ** is one more than the number of items to skip.  It is negative
 ** to search backwards.  If pNth->eType==T_ID, then it is the name
-** of a primative time to search for.  If pNth->eType==T_LB, then
+** of a class to search for.  If pNth->eType==T_LB, then
 ** search for a [] object.  If pNth->eType==T_LAST, then search for
 ** any type.
 **
@@ -3740,6 +3740,7 @@ static const PikWord pik_keywords[] = {
   { "north",      5,   T_EDGEPT,    0,         CP_N    },
   { "nw",         2,   T_EDGEPT,    0,         CP_NW   },
   { "of",         2,   T_OF,        0,         0       },
+  { "previous",   8,   T_LAST,      0,         0,      },
   { "print",      5,   T_PRINT,     0,         0       },
   { "rad",        3,   T_RADIUS,    0,         0       },
   { "radius",     6,   T_RADIUS,    0,         0       },
