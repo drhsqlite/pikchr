@@ -1751,9 +1751,10 @@ static void pik_append(Pik *p, const char *zText, int n){
 /*
 ** Append text to zOut with HTML characters escaped.
 **
-**   *  The space character is changed into "&nbsp;" if mFlags as the
-**      0x01 bit set.  This is needed when outputting text to preserve
-**      leading and trailing whitespace.
+**   *  The space character is changed into non-breaking space (U+0080)
+**      if mFlags has the 0x01 bit set. This is needed when outputting
+**      text to preserve leading and trailing whitespace.  Turns out we
+**      cannot use &nbsp; as that is an HTML-ism and is not valid in XML.
 **
 **   *  The "&" character is changed into "&amp;" if mFlags as the
 **      0x02 bit set.  This is needed when generating error message text.
@@ -1779,7 +1780,7 @@ static void pik_append_text(Pik *p, const char *zText, int n, int mFlags){
       case '<': {  pik_append(p, "&lt;", 4);  break;  }
       case '>': {  pik_append(p, "&gt;", 4);  break;  }
       case '&': {  pik_append(p, "&amp;", 5);  break;  }
-      case ' ': {  pik_append(p, "&nbsp;", 6);  break;  }
+      case ' ': {  pik_append(p, "\302\240;", 2);  break;  }
     }
     i++;
     n -= i;
@@ -2920,6 +2921,7 @@ static int pik_text_length(const PToken *pToken){
   const char *z = pToken->z;
   int cnt, j;
   for(j=1, cnt=0; j<n-1; j++){
+    if( (z[j] & 0xc0)==0xc0 ) continue;
     cnt++;
     if( z[j]=='\\' && z[j+1]!='&' ){
       j++;
