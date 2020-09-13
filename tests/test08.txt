@@ -1,8 +1,8 @@
      debug = 1;
 
      box "one" width 80% height 80%
-     box "two" width 150% color DarkRed
-     arrow "xyz" above
+     box "two" width 150% color DarkRed   # Comment does not mask newline
+     arrow "xyz" above                   // Comment does not mask newline
      box "three" height 150% color DarkBlue
      down
      arrow

@@ -3989,7 +3989,6 @@ static int pik_token_length(PToken *pToken){
         }
       }else if( z[1]=='/' ){
         for(i=2; z[i]!=0 && z[i]!='\n'; i++){}
-        if( z[i]!=0 ) i++;
         pToken->eType = T_WHITESPACE;
         return i;
       }else if( z[1]=='=' ){
