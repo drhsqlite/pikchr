@@ -40,6 +40,7 @@ Volunteers are welcomed, of course.
 ## Internal Links
 
   *  [Pikchr User Manual](./doc/userman.md) (still very incomplete)
+  *  [Pikchr Language Grammar](./doc/grammar.md)
 
 ## External Links
 

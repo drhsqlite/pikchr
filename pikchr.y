@@ -545,8 +545,8 @@ direction(A) ::= DOWN(A).
 direction(A) ::= LEFT(A).
 direction(A) ::= RIGHT(A).
 
-attribute_list ::= expr(X).           { pik_add_direction(p,0,&X,0);}
-attribute_list ::= expr(X) PERCENT.   { pik_add_direction(p,0,&X,1);}
+attribute_list ::= expr(X) alist.           { pik_add_direction(p,0,&X,0);}
+attribute_list ::= expr(X) PERCENT alist.   { pik_add_direction(p,0,&X,1);}
 attribute_list ::= alist.
 alist ::=.
 alist ::= alist attribute.
@@ -647,16 +647,24 @@ between ::= WAY BETWEEN.
 between ::= BETWEEN.
 between ::= OF THE WAY BETWEEN.
 
-place(A) ::= object(O).                 {A = pik_place_of_elem(p,O,0);}
-place(A) ::= object(O) DOT_E edge(X).   {A = pik_place_of_elem(p,O,&X);}
-place(A) ::= edge(X) OF object(O).      {A = pik_place_of_elem(p,O,&X);}
-place(A) ::= NTH(N) VERTEX(E) OF object(X). {A = pik_nth_vertex(p,&N,&E,X);}
+// place2 is the same as place, but excludes the forms like
+// "RIGHT of object" to avoid a parsing ambiguity with "place .x"
+// and "place .y" expressions
+%type place2 {PPoint}
+
+place(A) ::= place2(A).
+place(A) ::= edge(X) OF object(O).           {A = pik_place_of_elem(p,O,&X);}
+place2(A) ::= object(O).                     {A = pik_place_of_elem(p,O,0);}
+place2(A) ::= object(O) DOT_E edge(X).       {A = pik_place_of_elem(p,O,&X);}
+place2(A) ::= NTH(N) VERTEX(E) OF object(X). {A = pik_nth_vertex(p,&N,&E,X);}
 
 edge(A) ::= EDGEPT(A).
 edge(A) ::= TOP(A).
 edge(A) ::= BOTTOM(A).
 edge(A) ::= START(A).
 edge(A) ::= END(A).
+edge(A) ::= RIGHT(A).
+edge(A) ::= LEFT(A).
 
 object(A) ::= objectname(A).
 object(A) ::= nth(N).                     {A = pik_find_nth(p,0,&N);}
@@ -688,8 +696,8 @@ expr(A) ::= NUMBER(N).                            {A=pik_atof(p,&N);}
 expr(A) ::= ID(N).                                {A=pik_get_var(p,&N);}
 expr(A) ::= FUNC1(F) LP expr(X) RP.               {A = pik_func(p,&F,X,0.0);}
 expr(A) ::= FUNC2(F) LP expr(X) COMMA expr(Y) RP. {A = pik_func(p,&F,X,Y);}
-expr(A) ::= place(B) DOT_XY X.                    {A = B.x;}
-expr(A) ::= place(B) DOT_XY Y.                    {A = B.y;}
+expr(A) ::= place2(B) DOT_XY X.                   {A = B.x;}
+expr(A) ::= place2(B) DOT_XY Y.                   {A = B.y;}
 expr(A) ::= object(O) DOT_L numproperty(P).       {A=pik_property_of(p,O,&P);}
 expr(A) ::= object(O) DOT_L dashproperty(P).      {A=pik_property_of(p,O,&P);}
 expr(A) ::= object(O) DOT_L colorproperty(P).     {A=pik_property_of(p,O,&P);}
