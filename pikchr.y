@@ -4316,6 +4316,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *aData, size_t nByte){
 */
 int main(int argc, char **argv){
   int i;
+  int bNoEcho = 0;    /* Do not the text of the script */
   printf(
     "<!DOCTYPE html>\n"
     "<html lang=\"en-US\">\n"
@@ -4333,6 +4334,19 @@ int main(int argc, char **argv){
     int j;
     int w, h;
 
+    if( argv[i][0]=='-' ){
+      char *z = argv[i];
+      z++;
+      if( z[0]=='-' ) z++;
+      if( strcmp(z,"no-echo")==0 ){
+        bNoEcho = 1;
+      }else
+      {
+        fprintf(stderr,"unknown option: \"%s\"\n", argv[i]);
+        exit(1);
+      }
+      continue;
+    }
     printf("<h1>File %s</h1>\n", argv[i]);
     in = fopen(argv[i], "rb");
     if( in==0 ){
@@ -4351,24 +4365,26 @@ int main(int argc, char **argv){
     sz = fread(zIn, 1, sz, in);
     fclose(in);
     zIn[sz] = 0;
-    printf("<p>Source text:</p>\n<blockquote><pre>\n");
-    z = zIn;
-    while( z[0]!=0 ){
-      for(j=0; (c = z[j])!=0 && c!='<' && c!='>' && c!='&'; j++){}
-      if( j ) printf("%.*s", j, z);
-      z += j+1;
-      j = -1;
-      if( c=='<' ){
-        printf("&lt;");
-      }else if( c=='>' ){
-        printf("&gt;");
-      }else if( c=='&' ){
-        printf("&amp;");
-      }else if( c==0 ){
-        break;
+    if( !bNoEcho ){
+      printf("<p>Source text:</p>\n<blockquote><pre>\n");
+      z = zIn;
+      while( z[0]!=0 ){
+        for(j=0; (c = z[j])!=0 && c!='<' && c!='>' && c!='&'; j++){}
+        if( j ) printf("%.*s", j, z);
+        z += j+1;
+        j = -1;
+        if( c=='<' ){
+          printf("&lt;");
+        }else if( c=='>' ){
+          printf("&gt;");
+        }else if( c=='&' ){
+          printf("&amp;");
+        }else if( c==0 ){
+          break;
+        }
       }
+      printf("</pre></blockquote>\n");
     }
-    printf("</pre></blockquote>\n");
     zOut = pikchr(zIn, "pikchr", 0, &w, &h);
     free(zIn);
     if( zOut ){
@@ -4377,7 +4393,8 @@ int main(int argc, char **argv){
       }else{
         printf("<p>Output size: %d by %d</p>\n", w, h);
       }
-      printf("<div style='border:2px solid gray;max-width:%dpx'>\n%s</div>\n",
+      printf("<div style='border:3px solid lightgray;max-width:%dpx'>\n"
+             "%s</div>\n",
              w, zOut);
       free(zOut);
     }
