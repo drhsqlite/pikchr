@@ -235,25 +235,23 @@ A complete input file to Pikchr consists of a single *statement-list*.
 ## *dot-edgename*:
   * **.n**
   * **.north**
+  * **.t**
+  * **.top**
   * **.ne**
   * **.e**
   * **.east**
+  * **.right**
   * **.se**
   * **.s**
   * **.south**
+  * **.bot**
+  * **.bottom**
   * **.sw**
   * **.w**
   * **.west**
-  * **.nw**
-  * **.start**
-  * **.end**
-  * **.c**
-  * **.t**
-  * **.top**
-  * **.bot**
-  * **.bottom**
   * **.left**
-  * **.right**
+  * **.nw**
+  * **.c**
   * **.start**
   * **.end**
 
