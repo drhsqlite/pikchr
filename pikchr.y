@@ -424,6 +424,8 @@ static PPoint pik_nth_vertex(Pik *p, PToken *pNth, PToken *pErr, PElem *pElem);
 static PToken pik_next_semantic_token(Pik *p, PToken *pThis);
 static void pik_compute_layout_settings(Pik*);
 static void pik_behind(Pik*,PElem*);
+static PElem *pik_assert(Pik*,PNum,PToken*,PNum);
+static PElem *pik_place_assert(Pik*,PPoint*,PToken*,PPoint*);
 
 
 } // end %include
@@ -495,6 +497,13 @@ element(A) ::= PLACENAME(N) COLON position(P).
                  if(A){ A->ptAt = P; pik_elem_setname(p,A,&N); }}
 element(A) ::= unnamed_element(X).  {A = X;}
 element(A) ::= print prlist.  {pik_append(p,"<br>\n",5); A=0;}
+
+// assert() statements are undocumented and are intended for testing and
+// debugging use only.  If the equality comparison of the assert() fails
+// then an error message is generated.
+element(A) ::= ASSERT LP expr(X) EQ(OP) expr(Y) RP.  {A=pik_assert(p,X,&OP,Y);}
+element(A) ::= ASSERT LP place(X) EQ(OP) place(Y) RP.  
+                                             {A=pik_place_assert(p,&X,&OP,&Y);}
 
 lvalue(A) ::= ID(A).
 lvalue(A) ::= FILL(A).
@@ -581,8 +590,8 @@ go ::= .
 even ::= UNTIL EVEN WITH.
 even ::= EVEN WITH.
 
-withclause ::=  DOT_E edge(E) AT(A) position(P).{ pik_set_at(p,&E,&P,&A); }
-withclause ::=  edge(E) AT(A) position(P).      { pik_set_at(p,&E,&P,&A); }
+withclause ::=  DOT_E EDGEPT(E) AT(A) position(P).{ pik_set_at(p,&E,&P,&A); }
+withclause ::=  EDGEPT(E) AT(A) position(P).      { pik_set_at(p,&E,&P,&A); }
 
 // Properties that require an argument
 numproperty(A) ::= HEIGHT|WIDTH|RADIUS|DIAMETER|THICKNESS(P).  {A = P;}
@@ -640,12 +649,14 @@ between ::= OF THE WAY BETWEEN.
 
 place(A) ::= object(O).                 {A = pik_place_of_elem(p,O,0);}
 place(A) ::= object(O) DOT_E edge(X).   {A = pik_place_of_elem(p,O,&X);}
-place(A) ::= object(O) DOT_L START(X).  {A = pik_place_of_elem(p,O,&X);}
-place(A) ::= object(O) DOT_L END(X).    {A = pik_place_of_elem(p,O,&X);}
-place(A) ::= START(X) OF object(O).     {A = pik_place_of_elem(p,O,&X);}
-place(A) ::= END(X) OF object(O).       {A = pik_place_of_elem(p,O,&X);}
 place(A) ::= edge(X) OF object(O).      {A = pik_place_of_elem(p,O,&X);}
 place(A) ::= NTH(N) VERTEX(E) OF object(X). {A = pik_nth_vertex(p,&N,&E,X);}
+
+edge(A) ::= EDGEPT(A).
+edge(A) ::= TOP(A).
+edge(A) ::= BOTTOM(A).
+edge(A) ::= START(A).
+edge(A) ::= END(A).
 
 object(A) ::= objectname(A).
 object(A) ::= nth(N).                     {A = pik_find_nth(p,0,&N);}
@@ -655,52 +666,39 @@ objectname(A) ::= PLACENAME(N).           {A = pik_find_byname(p,0,&N);}
 objectname(A) ::= objectname(B) DOT_U PLACENAME(N).
                                           {A = pik_find_byname(p,B,&N);}
 
-nth(A) ::= NTH(N) CLASSNAME(ID).     {A=ID; A.eCode = pik_nth_value(p,&N); }
+nth(A) ::= NTH(N) CLASSNAME(ID).      {A=ID; A.eCode = pik_nth_value(p,&N); }
 nth(A) ::= NTH(N) LAST CLASSNAME(ID). {A=ID; A.eCode = -pik_nth_value(p,&N); }
-nth(A) ::= LAST CLASSNAME(ID).       {A=ID; A.eCode = -1;}
-nth(A) ::= LAST(ID).                 {A=ID; A.eCode = -1;}
-nth(A) ::= NTH(N) LB(ID) RB.         {A=ID; A.eCode = pik_nth_value(p,&N);}
-nth(A) ::= NTH(N) LAST LB(ID) RB.    {A=ID; A.eCode = -pik_nth_value(p,&N);}
-nth(A) ::= LAST LB(ID) RB.           {A=ID; A.eCode = -1; }
+nth(A) ::= LAST CLASSNAME(ID).        {A=ID; A.eCode = -1;}
+nth(A) ::= LAST(ID).                  {A=ID; A.eCode = -1;}
+nth(A) ::= NTH(N) LB(ID) RB.          {A=ID; A.eCode = pik_nth_value(p,&N);}
+nth(A) ::= NTH(N) LAST LB(ID) RB.     {A=ID; A.eCode = -pik_nth_value(p,&N);}
+nth(A) ::= LAST LB(ID) RB.            {A=ID; A.eCode = -1; }
 
-expr(A) ::= expr(X) PLUS expr(Y).     {A=X+Y;}
-expr(A) ::= expr(X) MINUS expr(Y).    {A=X-Y;}
-expr(A) ::= expr(X) STAR expr(Y).     {A=X*Y;}
-expr(A) ::= expr(X) SLASH(E) expr(Y).    {
+expr(A) ::= expr(X) PLUS expr(Y).                 {A=X+Y;}
+expr(A) ::= expr(X) MINUS expr(Y).                {A=X-Y;}
+expr(A) ::= expr(X) STAR expr(Y).                 {A=X*Y;}
+expr(A) ::= expr(X) SLASH(E) expr(Y).             {
   if( Y==0.0 ){ pik_error(p, &E, "division by zero"); A = 0.0; }
   else{ A = X/Y; }
 }
-expr(A) ::= MINUS expr(X). [UMINUS]  {A=-X;}
-expr(A) ::= PLUS expr(X). [UMINUS]   {A=X;}
-expr(A) ::= LP expr(X) RP.           {A=X;}
-expr(A) ::= NUMBER(N).               {A=pik_atof(p,&N);}
-expr(A) ::= ID(N).                   {A=pik_get_var(p,&N);}
+expr(A) ::= MINUS expr(X). [UMINUS]               {A=-X;}
+expr(A) ::= PLUS expr(X). [UMINUS]                {A=X;}
+expr(A) ::= LP expr(X) RP.                        {A=X;}
+expr(A) ::= NUMBER(N).                            {A=pik_atof(p,&N);}
+expr(A) ::= ID(N).                                {A=pik_get_var(p,&N);}
 expr(A) ::= FUNC1(F) LP expr(X) RP.               {A = pik_func(p,&F,X,0.0);}
 expr(A) ::= FUNC2(F) LP expr(X) COMMA expr(Y) RP. {A = pik_func(p,&F,X,Y);}
+expr(A) ::= place(B) DOT_XY X.                    {A = B.x;}
+expr(A) ::= place(B) DOT_XY Y.                    {A = B.y;}
+expr(A) ::= object(O) DOT_L numproperty(P).       {A=pik_property_of(p,O,&P);}
+expr(A) ::= object(O) DOT_L dashproperty(P).      {A=pik_property_of(p,O,&P);}
+expr(A) ::= object(O) DOT_L colorproperty(P).     {A=pik_property_of(p,O,&P);}
+expr(A) ::= LP X OF place(B) RP.                  {A = B.x;}
+expr(A) ::= LP Y OF place(B) RP.                  {A = B.y;}
+expr(A) ::= LP dashproperty(P) OF object(O) RP.   {A=pik_property_of(p,O,&P);}
+expr(A) ::= LP numproperty(P) OF object(O) RP.    {A=pik_property_of(p,O,&P);}
+expr(A) ::= LP colorproperty(P) OF object(O) RP.  {A=pik_property_of(p,O,&P);}
 
-expr(A) ::= object(O) DOT_L locproperty(P).    {A=pik_property_of(p,O,&P);}
-expr(A) ::= object(O) DOT_L numproperty(P).    {A=pik_property_of(p,O,&P);}
-expr(A) ::= object(O) DOT_L dashproperty(P).   {A=pik_property_of(p,O,&P);}
-expr(A) ::= object(O) DOT_L colorproperty(P).  {A=pik_property_of(p,O,&P);}
-expr(A) ::= object(O) DOT_E edge(E) DOT_L X.   {A=pik_place_of_elem(p,O,&E).x;}
-expr(A) ::= object(O) DOT_E edge(E) DOT_L Y.   {A=pik_place_of_elem(p,O,&E).y;}
-expr(A) ::= LP locproperty(P) OF object(O) RP.   {A=pik_property_of(p,O,&P);}
-expr(A) ::= LP dashproperty(P) OF object(O) RP.  {A=pik_property_of(p,O,&P);}
-expr(A) ::= LP numproperty(P) OF object(O) RP.   {A=pik_property_of(p,O,&P);}
-expr(A) ::= LP colorproperty(P) OF object(O) RP. {A=pik_property_of(p,O,&P);}
-
-expr(A) ::= NTH(N) VERTEX(E) OF object(X) DOT_L X.
-                                             {A = pik_nth_vertex(p,&N,&E,X).x;}
-expr(A) ::= NTH(N) VERTEX(E) OF object(X) DOT_L Y.
-                                             {A = pik_nth_vertex(p,&N,&E,X).y;}
-
-locproperty(A) ::= X|Y(A).
-
-edge(A) ::= EDGEPT(A).
-edge(A) ::= TOP(A).
-edge(A) ::= BOTTOM(A).
-edge(A) ::= LEFT(A).
-edge(A) ::= RIGHT(A).
 
 %code {
 
@@ -2136,6 +2134,40 @@ static void pik_error(Pik *p, PToken *pErr, const char *zMsg){
   pik_append_text(p, zMsg, -1, 0);
   pik_append(p, "\n", 1);
   pik_append(p, "\n</pre></div>\n", -1);
+}
+
+/*
+** Process an "assert( e1 == e2 )" statement.  Always return NULL.
+*/
+static PElem *pik_assert(Pik *p, PNum e1, PToken *pEq, PNum e2){
+  char zE1[50], zE2[50], zMsg[200];
+
+  /* Convert the numbers to strings using %g for comparison.  This
+  ** limits the precision of the comparison to account for rounding error. */
+  snprintf(zE1, sizeof(zE1), "%g", e1); zE1[sizeof(zE1)-1] = 0;
+  snprintf(zE2, sizeof(zE2), "%g", e2); zE1[sizeof(zE2)-1] = 0;
+  if( strcmp(zE1,zE2)!=0 ){
+    snprintf(zMsg, sizeof(zMsg), "%s != %s", zE1, zE2);
+    pik_error(p, pEq, zMsg);
+  }
+  return 0;
+}
+
+/*
+** Process an "assert( place1 == place2 )" statement.  Always return NULL.
+*/
+static PElem *pik_place_assert(Pik *p, PPoint *e1, PToken *pEq, PPoint *e2){
+  char zE1[100], zE2[100], zMsg[200];
+
+  /* Convert the numbers to strings using %g for comparison.  This
+  ** limits the precision of the comparison to account for rounding error. */
+  snprintf(zE1, sizeof(zE1), "(%g,%g)", e1->x, e1->y); zE1[sizeof(zE1)-1] = 0;
+  snprintf(zE2, sizeof(zE2), "(%g,%g)", e2->x, e2->y); zE1[sizeof(zE2)-1] = 0;
+  if( strcmp(zE1,zE2)!=0 ){
+    snprintf(zMsg, sizeof(zMsg), "%s != %s", zE1, zE2);
+    pik_error(p, pEq, zMsg);
+  }
+  return 0;
 }
 
 /* Free a complete list of elements */
@@ -3782,6 +3814,7 @@ static const PikWord pik_keywords[] = {
   { "aligned",    7,   T_ALIGNED,   0,         0       },
   { "and",        3,   T_AND,       0,         0       },
   { "as",         2,   T_AS,        0,         0       },
+  { "assert",     6,   T_ASSERT,    0,         0       },
   { "at",         2,   T_AT,        0,         0       },
   { "behind",     6,   T_BEHIND,    0,         0       },
   { "below",      5,   T_BELOW,     0,         0       },
@@ -3991,8 +4024,15 @@ static int pik_token_length(PToken *pToken){
     case ',': {   pToken->eType = T_COMMA;   return 1; }
     case ':': {   pToken->eType = T_COLON;   return 1; }
     case '>': {   pToken->eType = T_GT;      return 1; }
-    case '=': {   pToken->eType = T_ASSIGN;
-                  pToken->eCode = T_ASSIGN;  return 1; }
+    case '=': {
+       if( z[1]=='=' ){
+         pToken->eType = T_EQ;
+         return 2;
+       }
+       pToken->eType = T_ASSIGN;
+       pToken->eCode = T_ASSIGN;
+       return 1;
+    }
     case '-': {
       if( z[1]=='>' ){
         pToken->eType = T_RARROW;
@@ -4029,9 +4069,18 @@ static int pik_token_length(PToken *pToken){
           for(i=2; (c = z[i])>='a' && c<='z'; i++){}
           pFound = pik_find_word((const char*)z+1, i-1,
                                     pik_keywords, count(pik_keywords));
-          if( pFound && (pFound->eType==T_EDGEPT || pFound->eEdge>0) ){
+          if( pFound && (pFound->eEdge>0 ||
+                         pFound->eType==T_EDGEPT ||
+                         pFound->eType==T_START ||
+                         pFound->eType==T_END)
+          ){
+            /* Dot followed by something that is a 2-D place value */
             pToken->eType = T_DOT_E;
+          }else if( pFound->eType==T_X || pFound->eType==T_Y ){
+            /* Dot followed by "x" or "y" */
+            pToken->eType = T_DOT_XY;
           }else{
+            /* Any other "dot" */
             pToken->eType = T_DOT_L;
           }
           return 1;
