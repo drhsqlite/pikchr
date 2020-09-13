@@ -423,6 +423,7 @@ static void pik_same(Pik *p, PElem*, PToken*);
 static PPoint pik_nth_vertex(Pik *p, PToken *pNth, PToken *pErr, PElem *pElem);
 static PToken pik_next_semantic_token(Pik *p, PToken *pThis);
 static void pik_compute_layout_settings(Pik*);
+static void pik_behind(Pik*,PElem*);
 
 
 } // end %include
@@ -572,6 +573,7 @@ attribute ::= SAME(E).                          {pik_same(p,0,&E);}
 attribute ::= SAME(E) AS object(X).             {pik_same(p,X,&E);}
 attribute ::= STRING(T) textposition(P).        {pik_add_txt(p,&T,P);}
 attribute ::= FIT(E).                           {pik_size_to_fit(p,&E); }
+attribute ::= BEHIND object(X).                 {pik_behind(p,X);}
 
 go ::= GO.
 go ::= .
@@ -2830,6 +2832,16 @@ static void pik_close_path(Pik *p, PToken *pErr){
   pElem->bClose = 1;
 }
 
+/* Lower the layer of the current element so that it is behind the
+** given element.
+*/
+static void pik_behind(Pik *p, PElem *pOther){
+  PElem *pElem = p->cur;
+  if( pElem->iLayer>=pOther->iLayer ){
+    pElem->iLayer = pOther->iLayer - 1;
+  }
+}
+
 
 /* Set the "at" of an element
 */
@@ -3769,6 +3781,7 @@ static const PikWord pik_keywords[] = {
   { "and",        3,   T_AND,       0,         0       },
   { "as",         2,   T_AS,        0,         0       },
   { "at",         2,   T_AT,        0,         0       },
+  { "behind",     6,   T_BEHIND,    0,         0       },
   { "below",      5,   T_BELOW,     0,         0       },
   { "between",    7,   T_BETWEEN,   0,         0       },
   { "big",        3,   T_BIG,       0,         0       },
