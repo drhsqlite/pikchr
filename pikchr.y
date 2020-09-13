@@ -2170,14 +2170,14 @@ static void pik_error(Pik *p, PToken *pErr, const char *zMsg){
 ** Process an "assert( e1 == e2 )" statement.  Always return NULL.
 */
 static PElem *pik_assert(Pik *p, PNum e1, PToken *pEq, PNum e2){
-  char zE1[50], zE2[50], zMsg[200];
+  char zE1[100], zE2[100], zMsg[300];
 
   /* Convert the numbers to strings using %g for comparison.  This
   ** limits the precision of the comparison to account for rounding error. */
   snprintf(zE1, sizeof(zE1), "%g", e1); zE1[sizeof(zE1)-1] = 0;
   snprintf(zE2, sizeof(zE2), "%g", e2); zE1[sizeof(zE2)-1] = 0;
   if( strcmp(zE1,zE2)!=0 ){
-    snprintf(zMsg, sizeof(zMsg), "%s != %s", zE1, zE2);
+    snprintf(zMsg, sizeof(zMsg), "%.50s != %.50s", zE1, zE2);
     pik_error(p, pEq, zMsg);
   }
   return 0;
