@@ -623,6 +623,8 @@ position(A) ::= LP position(X) COMMA position(Y) RP.  {A.x=X.x; A.y=Y.y;}
 position(A) ::= LP position(X) RP.                    {A=X;}
 position(A) ::= expr(X) between position(P1) AND position(P2).
                                        {A = pik_position_between(p,X,P1,P2);}
+position(A) ::= expr(X) LT position(P1) COMMA position(P2) GT.
+                                       {A = pik_position_between(p,X,P1,P2);}
 position(A) ::= expr(X) ABOVE position(B).    {A=B; A.y += X;}
 position(A) ::= expr(X) BELOW position(B).    {A=B; A.y -= X;}
 position(A) ::= expr(X) LEFT OF position(B).  {A=B; A.x -= X;}
@@ -3986,6 +3988,7 @@ static int pik_token_length(PToken *pToken){
     case ']': {   pToken->eType = T_RB;      return 1; }
     case ',': {   pToken->eType = T_COMMA;   return 1; }
     case ':': {   pToken->eType = T_COLON;   return 1; }
+    case '>': {   pToken->eType = T_GT;      return 1; }
     case '=': {   pToken->eType = T_ASSIGN;
                   pToken->eCode = T_ASSIGN;  return 1; }
     case '-': {
@@ -4011,8 +4014,8 @@ static int pik_token_length(PToken *pToken){
            return 2;
          }
       }else{
-        pToken->eType = T_ERROR;
-         return 1;
+        pToken->eType = T_LT;
+        return 1;
       }
     }
     default: {

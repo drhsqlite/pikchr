@@ -4,7 +4,7 @@ linewid = 0.25
 
 # Start and end blocks
 #
-box "element-list" bold fit
+box "statement-list" bold fit
 line down 75% from last box.sw
 dot rad 250% color black
 X0: last.e + (0.3,0)
@@ -17,7 +17,7 @@ arrow from X9 to last box.w
 
 # The main rule that goes straight through from start to finish
 #
-box "element" italic fit at 1/2 way between X0 and X9
+box "statement" italic fit at 0.5<X0,X9>
 arrow to X9
 arrow from X0 to last box.w
 
