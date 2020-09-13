@@ -189,7 +189,8 @@ to add whitespace between them:
 ~~~~~
 
 Implementation note:  A "move" is really just an invisible "line".  So
-the following script generates the same output as the previous.  (Try it!)
+the following script generates the same output as the previous.
+([Try it!](/pikchrshow?content=box;line%20invisible;circle;line%20invisible;cylinder))
 
 ~~~~~
     box; line invisible; circle; line invisible; cylinder
@@ -427,6 +428,9 @@ Consider how this simplifies our previous example:
             then to C1.s
 ~~~~~
 
-By giving symbolic names to the box and cylinder, the arrow path 
+By giving symbolic names to the box and cylinder, the arrow path
 description is simplified.  Futhermore, if the ellipse gets changed
 into another cylinder, the arrow still refers to the correct cylinder.
+Note that the indentation of the lines following each symbolic name
+above is syntacially unimportant - it serves only to improve
+readability.
