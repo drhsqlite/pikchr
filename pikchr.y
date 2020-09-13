@@ -1358,6 +1358,25 @@ static void lineInit(Pik *p, PElem *pElem){
   pElem->rad = pik_value(p, "linerad",7,0);
   pElem->fill = -1.0;
 }
+static PPoint lineOffset(Pik *p, PElem *pElem, int cp){
+
+#if 0  /* No.  Just make .center the geometic center of the line.
+       ** This is different from legacy-PIC and Gnu-PIC, but it seems
+       ** to work better.  And the two points are the same in most
+       ** cases anyhow. */
+  /* The .center of an unclosed line is half way between
+  ** its .start and .end.  For everything else, the offset
+  ** is the same as for box */
+  if( cp==CP_C && !pElem->bClose ){
+    PPoint out;
+    out.x = 0.5*(pElem->ptEnter.x + pElem->ptExit.x) - pElem->ptAt.x;
+    out.y = 0.5*(pElem->ptEnter.x + pElem->ptExit.y) - pElem->ptAt.y;
+    return out;
+  }
+#endif
+
+  return boxOffset(p,pElem,cp);
+}
 static void lineRender(Pik *p, PElem *pElem){
   int i;
   if( pElem->sw>0.0 ){
@@ -1533,7 +1552,7 @@ static const PClass aClass[] = {
       /* xInit */         arrowInit,
       /* xNumProp */      0,
       /* xChop */         0,
-      /* xOffset */       0,
+      /* xOffset */       lineOffset,
       /* xFit */          0,
       /* xRender */       splineRender 
    },
@@ -1603,7 +1622,7 @@ static const PClass aClass[] = {
       /* xInit */         lineInit,
       /* xNumProp */      0,
       /* xChop */         0,
-      /* xOffset */       0,
+      /* xOffset */       lineOffset,
       /* xFit */          0,
       /* xRender */       splineRender
    },
@@ -1633,7 +1652,7 @@ static const PClass aClass[] = {
       /* xInit */         splineInit,
       /* xNumProp */      0,
       /* xChop */         0,
-      /* xOffset */       0,
+      /* xOffset */       lineOffset,
       /* xFit */          0,
       /* xRender */       splineRender
    },
@@ -3350,11 +3369,6 @@ static PPoint pik_place_of_elem(Pik *p, PElem *pElem, PToken *pEdge){
   }
   pClass = pElem->type;
   if( pEdge->eType==T_EDGEPT || pEdge->eEdge>0 ){
-    if( pClass->isLine ){
-      pik_error(0, pEdge,
-          "line objects have only \"start\" and \"end\" points");
-      return pt;
-    }
     if( pClass->xOffset==0 ){
       pt = boxOffset(p, pElem, pEdge->eEdge);
     }else{
@@ -3605,7 +3619,11 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
     /* If this is a polygon (if it has the "close" attribute), then
     ** adjust the exit point */
     if( pElem->bClose ){
+      /* "closed" lines work like block objects */
       pik_elem_set_exit(p, pElem, pElem->inDir);
+    }else{
+      /* For an open line, the "center" is half way between
+      ** the .start and the .end */
     }
   }else{
     PNum w2 = pElem->w/2.0;
