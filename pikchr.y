@@ -581,10 +581,8 @@ go ::= .
 even ::= UNTIL EVEN WITH.
 even ::= EVEN WITH.
 
-withclause ::= with.
-withclause ::= withclause AND with.
-with ::=  DOT_E edge(E) AT(A) position(P).{ pik_set_at(p,&E,&P,&A); }
-with ::=  edge(E) AT(A) position(P).      { pik_set_at(p,&E,&P,&A); }
+withclause ::=  DOT_E edge(E) AT(A) position(P).{ pik_set_at(p,&E,&P,&A); }
+withclause ::=  edge(E) AT(A) position(P).      { pik_set_at(p,&E,&P,&A); }
 
 // Properties that require an argument
 numproperty(A) ::= HEIGHT|WIDTH|RADIUS|DIAMETER|THICKNESS(P).  {A = P;}
