@@ -77,7 +77,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **right**
   * **down**
   * **left**
-  * **right**
+  * **up**
 
 ## *assignment-op*:
   * **=**
@@ -175,17 +175,17 @@ A complete input file to Pikchr consists of a single *statement-list*.
   *  *place*
   *  *place* **+** *expr* **,** *expr*
   *  *place* **-** *expr* **,** *expr*
-  *  *place* **+(** *expr* **,** *expr* **)**
-  *  *place* **-(** *expr* **,** *expr* **)**
+  *  *place* **+ (** *expr* **,** *expr* **)**
+  *  *place* **- (** *expr* **,** *expr* **)**
   *  **(** *position* **,** *position* **)**
   *  **(** *position* **)**
   *  *expr* **of the way between** *position* **and** *position*
   *  *expr* **way between** *position* **and** *position*
   *  *expr* **between** *position* **and** *position*
   *  *expr* **<** *position* **,** *position* **>**
-  *  *expr* *heading-from* *position*
+  *  *expr* *which-way* *position*
 
-## *heading-from*:
+## *which-way*:
 
   *  **above**
   *  **below**
@@ -252,6 +252,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **.left**
   * **.nw**
   * **.c**
+  * **.center**
   * **.start**
   * **.end**
 
@@ -274,6 +275,8 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **bottom**
   * **left**
   * **right**
+  * **c**
+  * **center**
   * **start**
   * **end**
 
@@ -296,10 +299,10 @@ A complete input file to Pikchr consists of a single *statement-list*.
   *  **abs(** *expr* **)**
   *  **cos(** *expr* **)**
   *  **int(** *expr* **)**
-  *  **sin(** *expr* **)**
-  *  **sqrt(** *expr* **)**
   *  **max(** *expr* **,** *expr* **)**
   *  **min(** *expr* **,** *expr* **)**
+  *  **sin(** *expr* **)**
+  *  **sqrt(** *expr* **)**
 
 ## *dot-property*:
 

@@ -137,7 +137,6 @@ typedef struct PVar PVar;        /* script-defined variable */
 typedef struct PBox PBox;        /* A bounding box */
 
 /* Compass points */
-#define CP_C      0   /* Center of the object.  (Always PElem.ptAt) */
 #define CP_N      1
 #define CP_NE     2
 #define CP_E      3
@@ -146,10 +145,11 @@ typedef struct PBox PBox;        /* A bounding box */
 #define CP_SW     6
 #define CP_W      7
 #define CP_NW     8
+#define CP_C      9   /* .center or .c */
 
 /* Heading angles corresponding to compass points */
 static const PNum pik_hdg_angle[] = {
-  /* C  */    0.0,
+/* none  */   0.0,
   /* N  */    0.0,
   /* NE */   45.0,
   /* E  */   90.0,
@@ -158,6 +158,7 @@ static const PNum pik_hdg_angle[] = {
   /* SW */  225.0,
   /* W  */  270.0,
   /* NW */  315.0,
+  /* C  */    0.0,
 };
 
 /* Built-in functions */
@@ -638,8 +639,14 @@ position(A) ::= expr(X) ABOVE position(B).    {A=B; A.y += X;}
 position(A) ::= expr(X) BELOW position(B).    {A=B; A.y -= X;}
 position(A) ::= expr(X) LEFT OF position(B).  {A=B; A.x -= X;}
 position(A) ::= expr(X) RIGHT OF position(B). {A=B; A.x += X;}
+position(A) ::= expr(D) ON HEADING EDGEPT(E) OF position(P).
+                                        {A = pik_position_at_hdg(p,D,&E,P);}
+position(A) ::= expr(D) HEADING EDGEPT(E) OF position(P).
+                                        {A = pik_position_at_hdg(p,D,&E,P);}
 position(A) ::= expr(D) EDGEPT(E) OF position(P).
                                         {A = pik_position_at_hdg(p,D,&E,P);}
+position(A) ::= expr(D) ON HEADING expr(G) FROM position(P).
+                                        {A = pik_position_at_angle(p,D,G,P);}
 position(A) ::= expr(D) HEADING expr(G) FROM position(P).
                                         {A = pik_position_at_angle(p,D,G,P);}
 
@@ -658,6 +665,7 @@ place2(A) ::= object(O).                     {A = pik_place_of_elem(p,O,0);}
 place2(A) ::= object(O) DOT_E edge(X).       {A = pik_place_of_elem(p,O,&X);}
 place2(A) ::= NTH(N) VERTEX(E) OF object(X). {A = pik_nth_vertex(p,&N,&E,X);}
 
+edge(A) ::= CENTER(A).
 edge(A) ::= EDGEPT(A).
 edge(A) ::= TOP(A).
 edge(A) ::= BOTTOM(A).
@@ -3828,7 +3836,7 @@ static const PikWord pik_keywords[] = {
   { "bottom",     6,   T_BOTTOM,    0,         CP_S    },
   { "c",          1,   T_EDGEPT,    0,         CP_C    },
   { "ccw",        3,   T_CCW,       0,         0       },
-  { "center",     6,   T_CENTER,    0,         0       },
+  { "center",     6,   T_CENTER,    0,         CP_C    },
   { "chop",       4,   T_CHOP,      0,         0       },
   { "close",      5,   T_CLOSE,     0,         0       },
   { "color",      5,   T_COLOR,     0,         0       },
@@ -4074,7 +4082,7 @@ static int pik_token_length(PToken *pToken){
           if( pFound && (pFound->eEdge>0 ||
                          pFound->eType==T_EDGEPT ||
                          pFound->eType==T_START ||
-                         pFound->eType==T_END)
+                         pFound->eType==T_END )
           ){
             /* Dot followed by something that is a 2-D place value */
             pToken->eType = T_DOT_E;

@@ -22,9 +22,9 @@ AE: end of last arrow
 # Validate various kinds of expressions and locations as a test of
 # parser expression processing and layout
 #
-assert( start of last arrow.x == C2.ne.x )
+assert( last arrow.start.x == C2.ne.x )
 assert( AS.y == C2.ne.y )
-assert( end of last arrow.x == C3.sw.x )
+assert( last arrow.end.x == C3.sw.x )
 assert( AE.y == C3.sw.y )
 assert( AE == C3.sw )
 assert( 1st last arrow.end == C3.sw )
