@@ -590,8 +590,8 @@ go ::= .
 even ::= UNTIL EVEN WITH.
 even ::= EVEN WITH.
 
-withclause ::=  DOT_E EDGEPT(E) AT(A) position(P).{ pik_set_at(p,&E,&P,&A); }
-withclause ::=  EDGEPT(E) AT(A) position(P).      { pik_set_at(p,&E,&P,&A); }
+withclause ::=  DOT_E edge(E) AT(A) position(P).{ pik_set_at(p,&E,&P,&A); }
+withclause ::=  edge(E) AT(A) position(P).      { pik_set_at(p,&E,&P,&A); }
 
 // Properties that require an argument
 numproperty(A) ::= HEIGHT|WIDTH|RADIUS|DIAMETER|THICKNESS(P).  {A = P;}
@@ -693,11 +693,6 @@ expr(A) ::= place(B) DOT_XY Y.                    {A = B.y;}
 expr(A) ::= object(O) DOT_L numproperty(P).       {A=pik_property_of(p,O,&P);}
 expr(A) ::= object(O) DOT_L dashproperty(P).      {A=pik_property_of(p,O,&P);}
 expr(A) ::= object(O) DOT_L colorproperty(P).     {A=pik_property_of(p,O,&P);}
-expr(A) ::= LP X OF place(B) RP.                  {A = B.x;}
-expr(A) ::= LP Y OF place(B) RP.                  {A = B.y;}
-expr(A) ::= LP dashproperty(P) OF object(O) RP.   {A=pik_property_of(p,O,&P);}
-expr(A) ::= LP numproperty(P) OF object(O) RP.    {A=pik_property_of(p,O,&P);}
-expr(A) ::= LP colorproperty(P) OF object(O) RP.  {A=pik_property_of(p,O,&P);}
 
 
 %code {

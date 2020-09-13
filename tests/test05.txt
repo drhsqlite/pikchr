@@ -10,4 +10,6 @@ print cos(scale)
 print sqrt(17)
 print min(5,10)
 print max(5,10)
+
+# NB: deliberate sqrt() error in order to test math logic
 print sqrt(-11)

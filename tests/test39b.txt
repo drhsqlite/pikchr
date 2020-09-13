@@ -3,7 +3,7 @@ textwid = 1mm
         arrow "character" "defns" right 150%
 CPU:    box "CPU" "(16-bit mini)"
         arrow <- from top of CPU up "input " rjust
-        arrow right from right of CPU
+        arrow right from CPU.e
 CRT:    "   CRT" ljust
         line from CRT - 0,0.075 up 0.15 \
                 then right 0.5 \
@@ -16,4 +16,4 @@ Paper:  CRT + 1.05,0.75
         " ...  paper" ljust at end of last arrow + 0, 0.25
         circle rad 0.05 at Paper + (-0.055, -0.25)
         circle rad 0.05 at Paper + (0.055, -0.25)
-        box invis wid 120% "   rollers" ljust at Paper + (0.1, -0.25)
+        text "   rollers" ljust at Paper + (0.1, -0.25)
