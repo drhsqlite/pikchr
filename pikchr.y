@@ -4400,7 +4400,7 @@ int main(int argc, char **argv){
     if( zOut ){
       if( w<0 ){
         printf("<p>ERROR:</p>\n");
-      }else{
+      }else if( bNoEcho==0 ){
         printf("<p>Output size: %d by %d</p>\n", w, h);
       }
       printf("<div style='border:3px solid lightgray;max-width:%dpx'>\n"

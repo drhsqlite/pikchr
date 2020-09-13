@@ -39,13 +39,16 @@ circle ".start&sup1;" fit at 2.5cm heading 295 from B.start
     arrow thin from previous to B.start chop
 circle ".nw" fit at 1cm nw of B.nw; arrow thin from previous to B.nw chop
 circle ".c" fit at 2.5cm heading -25 from B.c
-    line from previous to 0.5<previous,B.c> chop
+    line thin from previous to 0.5<previous,B.c> chop
     arrow thin from previous.end to B.c
 circle ".center" fit at 3.6cm heading 180-44 from B.center
-    line from previous to 0.5<previous,B.center> chop
+    line thin from previous to 0.5<previous,B.center> chop
     arrow thin from previous.end to B.center
+circle "&lambda;" fit at 2.5cm heading 250 from B
+    line from previous to 0.5<previous,B> chop
+    arrow thin from previous.end to B
 
 ]
-"20 Names For 9 Boundary Points" big big with .s at .5cm above All.n
+"21 Names For 9 Boundary Points" big big with .s at .5cm above All.n
 "&sup1; \"start\" and \"end\" assume a \"right\" layout direction" below \
   with .n at 2mm below All.s
