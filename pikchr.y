@@ -1248,6 +1248,16 @@ static void dotNumProp(Pik *p, PElem *pElem, PToken *pId){
       break;
   }
 }
+static void dotCheck(Pik *p, PElem *pElem){
+  pElem->w = pElem->h = 0;
+  pik_bbox_addellipse(&pElem->bbox, pElem->ptAt.x, pElem->ptAt.y,
+                       pElem->rad, pElem->rad);
+}
+static PPoint dotOffset(Pik *p, PElem *pElem, int cp){
+  PPoint zero;
+  zero.x = zero.y = 0;
+  return zero;
+}
 static void dotRender(Pik *p, PElem *pElem){
   PNum r = pElem->rad;
   PPoint pt = pElem->ptAt;
@@ -1633,9 +1643,9 @@ static const PClass aClass[] = {
       /* eJust */         0,
       /* xInit */         dotInit,
       /* xNumProp */      dotNumProp,
-      /* xCheck */        0,
+      /* xCheck */        dotCheck,
       /* xChop */         circleChop,
-      /* xOffset */       ellipseOffset,
+      /* xOffset */       dotOffset,
       /* xFit */          0,
       /* xRender */       dotRender 
    },
@@ -3666,10 +3676,8 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
       case DIR_UP:     pElem->ptExit.y += h2;  break;
       case DIR_DOWN:   pElem->ptExit.y -= h2;  break;
     }
-    pElem->bbox.sw.x = pElem->ptAt.x - w2;
-    pElem->bbox.sw.y = pElem->ptAt.y - h2;
-    pElem->bbox.ne.x = pElem->ptAt.x + w2;
-    pElem->bbox.ne.y = pElem->ptAt.y + h2;
+    pik_bbox_add_xy(&pElem->bbox, pElem->ptAt.x - w2, pElem->ptAt.y - h2);
+    pik_bbox_add_xy(&pElem->bbox, pElem->ptAt.x + w2, pElem->ptAt.y + h2);
   }
   p->eDir = pElem->outDir;
 }
