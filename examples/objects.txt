@@ -1,3 +1,4 @@
+# demo label: Object types
 AllObjects: [
 
 # First row of objects

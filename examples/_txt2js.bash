@@ -41,12 +41,17 @@ done
 ########################################################################
 # Optional *brief* user-friendly descriptive name of test files, in
 # the form desc_TESTNAME="name", where TESTNAME is the base filename
-# part of an input file. The default friendly name is that base
+# part of an input file. If none is set, the file is grepped for
+# a line with:
+#
+#  demo label: ...
+#
+# and if set, that is used. The default friendly name is that base
 # filename. These names are the ones shown in pikchrshow's example
 # script selection list.
-desc_objects="Core object types"
-desc_swimlane="Swimlanes"
-desc_headings01="Cardinal headings"
+#desc_objects="Core object types"
+#desc_swimlane="Swimlanes"
+#desc_headings01="Cardinal headings"
 ########################################################################
 
 #echo "scriptList=${scriptList[@]}"
@@ -67,7 +72,12 @@ desc_headings01="Cardinal headings"
         fb=${fb##*/}
         descVar=desc_${fb}
         desc=${!descVar}
-        [[ x = "x${desc}" ]] && desc="$fb"
+        if [[ x = "x${desc}" ]]; then
+            desc=$(awk -F: '/demo label: */{gsub(/^ /, "", $2); print $2}' < "$f")
+            if [[ x = "x${desc}" ]]; then
+                desc="$fb"
+            fi
+        fi
         #echo f=${f} fb=${fb} descV=${descV} desc=$desc
         [[ $n -gt 0 ]] && echo -n ","
         echo -n '{name:"'${desc}'",'

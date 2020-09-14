@@ -1,3 +1,4 @@
+# demo label: Cardinal headings
    linerad = 5px
 C: circle "Center" rad 150%
    circle "N"  at 1.0 n  of C; arrow from C to last chop ->
