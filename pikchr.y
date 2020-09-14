@@ -2891,7 +2891,7 @@ static void pik_add_to(Pik *p, PElem *pElem, PToken *pTk, PPoint *pPt){
     pik_error(p, pTk, "polygon is closed");
     return;
   }
-  if( p->mTPath==3 || p->thenFlag ){
+  if( n==0 || p->mTPath==3 || p->thenFlag ){
     n = pik_next_rpath(p, pTk);
   }
   p->aTPath[n] = *pPt;
@@ -3560,11 +3560,13 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
   if( p->nErr ) return;
 
   /* Position block elements */
-  ofst = pik_elem_offset(p, pElem, pElem->eWith);
-  dx = (pElem->with.x - ofst.x) - pElem->ptAt.x;
-  dy = (pElem->with.y - ofst.y) - pElem->ptAt.y;
-  if( dx!=0 || dy!=0 ){
-    pik_elem_move(pElem, dx, dy);
+  if( pElem->type->isLine==0 ){
+    ofst = pik_elem_offset(p, pElem, pElem->eWith);
+    dx = (pElem->with.x - ofst.x) - pElem->ptAt.x;
+    dy = (pElem->with.y - ofst.y) - pElem->ptAt.y;
+    if( dx!=0 || dy!=0 ){
+      pik_elem_move(pElem, dx, dy);
+    }
   }
 
   /* For a line object with no movement specified, a single movement
