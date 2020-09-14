@@ -121,14 +121,14 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **chop**
   * **fit**
 
-## *color-expr*:
+## *color-expr*: [&#9654;info](./colorexpr.md)
   * *expr*
 
-## *new-property-value*:
+## *new-property-value*:  [&#9654;info](./newpropval.md)
   * *expr*
   * *expr* **%**
 
-## *numeric-property*:
+## *numeric-property*:  [&#9654;info](./numprop.md)
   * **width**
   * **wid**
   * **height**
