@@ -201,9 +201,14 @@ struct PBox {
   PPoint sw, ne;         /* Lower-left and top-right corners */
 };
 
-/* An Absolute or a relative distance.  The distance is in absolute
-** units if isAbs is 1 and is relative to the default distance
-** if isAbs is 0.
+/* An Absolute or a relative distance.  The absolute distance
+** is stored in rAbs and the relative distance is stored in rRel.
+** Usually, one or the other will be 0.0.  When using a PRel to
+** update an existing value, the computation is usually something
+** like this:
+**
+**          value = PRel.rAbs + value*PRel.rRel
+**
 */
 struct PRel {
   PNum rAbs;            /* Absolute value */
