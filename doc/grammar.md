@@ -151,7 +151,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
 
 ## *path-element*:
   * **from** *position*
-  * **to** *position*
+  * **then**? **to** *position*
   * **then**? **go**? *direction* *distance*?
   * **then**? **go**? *direction* **until**? **even with** *place*
   * (**then**|**go**) *distance*? **heading** *compass-angle*
@@ -316,13 +316,13 @@ A complete input file to Pikchr consists of a single *statement-list*.
   *  *expr* **/** *expr*
   *  **-** *expr*
   *  **+** *expr*
-  *  **abs(** *expr* **)**
-  *  **cos(** *expr* **)**
-  *  **int(** *expr* **)**
-  *  **max(** *expr* **,** *expr* **)**
-  *  **min(** *expr* **,** *expr* **)**
-  *  **sin(** *expr* **)**
-  *  **sqrt(** *expr* **)**
+  *  **abs (** *expr* **)**
+  *  **cos (** *expr* **)**
+  *  **int (** *expr* **)**
+  *  **max (** *expr* **,** *expr* **)**
+  *  **min (** *expr* **,** *expr* **)**
+  *  **sin (** *expr* **)**
+  *  **sqrt (** *expr* **)**
 
 ## *dot-property*:
 

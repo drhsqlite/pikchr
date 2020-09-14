@@ -18,8 +18,8 @@ Labels always begin with an upper-case ASCII character.
 Labels do not have to be unique.  When there are two or more
 labels with the same name, the later one takes precedence.
 This allows a label to be effectively redefined.  New labels do not
-come into existance until after the object or place to which they are
-attached has been completely parsed an analyzed.  This allowed labels
+come into existence until after the object or place to which they are
+attached has been completely parsed and analyzed.  This allows labels
 to be redefined in terms of themselves.  Consider an example:
 
 ~~~~~
@@ -75,7 +75,7 @@ Pikchr has built-in variables as follows:
 | circlerad     |: 0.250 :| Default radius for "circle" objects              |
 | color         |: 0.000 :| Default foreground color                         |
 | cylht         |: 0.500 :| Default height for "cylinder" objects            |
-| cylrad        |: 0.075 :| Default minor axix for ellipses in a cylinder    |
+| cylrad        |: 0.075 :| Default minor axis for ellipses in a cylinder    |
 | cylwid        |: 0.750 :| Default width of a "cylinder" object             |
 | dashwid       |: 0.050 :| Default width of dashes in dashed lines          |
 | dotrad        |: 0.015 :| Default radius for a "dot" object                |
@@ -83,7 +83,7 @@ Pikchr has built-in variables as follows:
 | ellipsewid    |: 0.750 :| Default width for "ellipse" objects              |
 | fileht        |: 0.750 :| Default height for "file" objects                |
 | filerad       |: 0.150 :| Default corner fold length for "file" objects    |
-| filewid       |: 0.500 :| Default width for "file objects                  |
+| filewid       |: 0.500 :| Default width for "file" objects                 |
 | fill          |: -1.00 :| Default fill color.  Negative means "none"       |
 | lineht        |: 0.500 :| Default length for lines drawn up or down        |
 | linewid       |: 0.500 :| Default length for lines drawn left or right     |
