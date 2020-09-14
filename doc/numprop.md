@@ -8,7 +8,7 @@ There are really only four numeric properties:
   * thickness
 
 The width and height are the size of most objects.  The radius is used
-to set the size of circles.  The thinkness value is the width of lines used to
+to set the size of circles.  The thickness value is the width of lines used to
 draw each object.  The other property names are just aliases for these
 four:
 
