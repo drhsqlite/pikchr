@@ -6,7 +6,9 @@ in *italic*.  Special token classes are shown in ALL-CAPS.  A grammar
 symbol followed by "*" means zero-or-more.  A grammar symbol
 followed by "?" means zero-or-one.  Parentheses are used for grouping.
 Two grammar symbols within "(..|..)" means one or the other.
-"&lambda;" means a null production rule.
+ Marks of the form
+"[&#9654;info](./grammar.md)" are links to more information and are
+not part of the grammar.
 
 The following special token classes are recognized:
 
@@ -59,13 +61,13 @@ The following special token classes are recognized:
 
 A complete input file to Pikchr consists of a single *statement-list*.
 
-## *statement-list*:
-  * *statement* 
-  * *statement-list* NEWLINE *statement*
-  * *statement-list* **;** *statement*
+## *statement-list*: [&#9654;info](./stmtlist.md)
 
-## *statement*:
-  * &lambda;
+  * *statement*?
+  * *statement-list* NEWLINE *statement*?
+  * *statement-list* **;** *statement*?
+
+## *statement*:  [&#9654;info](./stmt.md)
   * *object-definition*
   * LABEL **:** *object-definition*
   * LABEL **:** *place*
