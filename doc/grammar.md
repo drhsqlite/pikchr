@@ -25,21 +25,21 @@ The following special token classes are recognized:
   *  VARIABLE  &rarr;  A variable name consisting of a lower-case
      ASCII letter or "$" or "@" and followed by zero or more
      ASCII letters, digits, and/or underscores.  VARIABLEs may
-     contain upper-case letter, but they never begin with an upper-case.
+     contain upper-case letters, but they never begin with an upper-case.
      In this way, VARIABLEs are distinct from LABELs.
 
   *  NUMBER  &rarr;  A numeric literal.  The value can be a decimal
      integer, a floating point value, or a hexadecimal literal
      starting with "0x".  Decimal and floating point values can
-     optionally by a two-character unit designator which is one
-     of:  "in", "cm", "px", "pt", "pc", or "mm".  There can be
+     optionally be followed by a two-character unit designator that is
+     one of:  "in", "cm", "px", "pt", "pc", or "mm".  There can be
      no whitespace in between the numeric portion of the constant and
      the unit.
 
   *  ORDINAL  &rarr;  A non-zero integer literal followed by one of the
      suffixes "st", "nd", "rd", or "th".  Examples: "1st", "2nd",
     "3rd", "4th", "5th", and so forth.   As a special case, "first"
-     is accepted as a special-case spelling of "1st".
+     is accepted as an alternative spelling of "1st".
 
   *  STRING  &rarr;  A string literal that begins and ends with
      double-quotes (U+0022).  Within the string literal, a double-quote
