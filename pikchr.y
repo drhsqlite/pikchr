@@ -2889,7 +2889,7 @@ static void pik_add_to(Pik *p, PElem *pElem, PToken *pTk, PPoint *pPt){
     pik_error(p, pTk, "polygon is closed");
     return;
   }
-  if( p->mTPath || p->mTPath ){
+  if( p->mTPath==3 ){
     n = pik_next_rpath(p, pTk);
   }
   p->aTPath[n] = *pPt;
