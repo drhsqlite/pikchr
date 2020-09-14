@@ -7,8 +7,8 @@ There are really only four numeric properties:
   * radius
   * thickness
 
-The width and height are the size of most objects.  The radius is use
-to set the size of circles.  The thinkness is width of lines used to
+The width and height are the size of most objects.  The radius is used
+to set the size of circles.  The thickness value is the width of lines used to
 draw each object.  The other property names are just aliases for these
 four:
 
@@ -20,7 +20,7 @@ four:
 ## Radius Of A "box" Object
 
 By default, boxes have a radius of 0.  But if you assign a positive
-radius to a box, it cause the box to have rounded corners:
+radius to a box, it causes the box to have rounded corners:
 
 ~~~~~ pikchr center
 box "radius 0"

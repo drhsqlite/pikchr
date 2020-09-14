@@ -368,10 +368,11 @@ struct PClass {
   const char *zName;                     /* Name of class */
   char isLine;                           /* True if a line class */
   char eJust;                            /* Use box-style text justification */
-  void (*xInit)(Pik*,PElem*);            /* Initializer */
-  void (*xNumProp)(Pik*,PElem*,PToken*); /* Value change notification */
-  PPoint (*xChop)(PElem*,PPoint*);       /* Chopper */
-  PPoint (*xOffset)(Pik*,PElem*,int);    /* Offset from center to edge point */
+  void (*xInit)(Pik*,PElem*);              /* Initializer */
+  void (*xNumProp)(Pik*,PElem*,PToken*);   /* Value change notification */
+  void (*xCheck)(Pik*,PElem*);             /* Checks to after parsing */
+  PPoint (*xChop)(PElem*,PPoint*);         /* Chopper */
+  PPoint (*xOffset)(Pik*,PElem*,int);      /* Offset from .c to edge point */
   void (*xFit)(Pik*,PElem*,PNum w,PNum h); /* Size to fit text */
   void (*xRender)(Pik*,PElem*);            /* Render */
 };
@@ -941,24 +942,38 @@ static void arcInit(Pik *p, PElem *pElem){
 ** mean based on available documentation.  (2) Arcs are rarely used,
 ** and so do not seem that important.
 */
-static void arcRender(Pik *p, PElem *pElem){
+static PPoint arcControlPoint(int cw, PPoint f, PPoint t, PNum rScale){
+  PPoint m;
   PNum dx, dy;
+  m.x = 0.5*(f.x+t.x);
+  m.y = 0.5*(f.y+t.y);
+  dx = t.x - f.x;
+  dy = t.y - f.y;
+  if( cw ){
+    m.x -= 0.5*rScale*dy;
+    m.y += 0.5*rScale*dx;
+  }else{
+    m.x += 0.5*rScale*dy;
+    m.y -= 0.5*rScale*dx;
+  }
+  return m;
+}
+static void arcCheck(Pik *p, PElem *pElem){
+  PPoint m;
+  if( p->nTPath>2 ){
+    pik_error(p, &pElem->errTok, "arc geometry error");
+    return;
+  }
+  m = arcControlPoint(pElem->cw, p->aTPath[0], p->aTPath[1], 0.5);
+  pik_bbox_add_xy(&pElem->bbox, m.x, m.y);
+}
+static void arcRender(Pik *p, PElem *pElem){
   PPoint f, m, t;
   if( pElem->nPath<2 ) return;
   if( pElem->sw<=0.0 ) return;
   f = pElem->aPath[0];
   t = pElem->aPath[1];
-  m.x = 0.5*(f.x+t.x);
-  m.y = 0.5*(f.y+t.y);
-  dx = t.x - f.x;
-  dy = t.y - f.y;
-  if( pElem->cw ){
-    m.x -= 0.4*dy;
-    m.y += 0.4*dx;
-  }else{
-    m.x += 0.4*dy;
-    m.y -= 0.4*dx;
-  }
+  m = arcControlPoint(pElem->cw,f,t,1.0);
   if( pElem->larrow ){
     pik_draw_arrowhead(p,&m,&f,pElem);
   }
@@ -1234,13 +1249,23 @@ static void dotNumProp(Pik *p, PElem *pElem, PToken *pId){
       break;
   }
 }
+static void dotCheck(Pik *p, PElem *pElem){
+  pElem->w = pElem->h = 0;
+  pik_bbox_addellipse(&pElem->bbox, pElem->ptAt.x, pElem->ptAt.y,
+                       pElem->rad, pElem->rad);
+}
+static PPoint dotOffset(Pik *p, PElem *pElem, int cp){
+  PPoint zero;
+  zero.x = zero.y = 0;
+  return zero;
+}
 static void dotRender(Pik *p, PElem *pElem){
   PNum r = pElem->rad;
   PPoint pt = pElem->ptAt;
   if( pElem->sw>0.0 ){
     pik_append_x(p,"<circle cx=\"", pt.x, "\"");
     pik_append_y(p," cy=\"", pt.y, "\"");
-    pik_append_dis(p," r=\"", r, "\" ");
+    pik_append_dis(p," r=\"", r, "\"");
     pik_append_style(p,pElem);
     pik_append(p,"\" />\n", -1);
   }
@@ -1529,6 +1554,14 @@ static void textInit(Pik *p, PElem *pElem){
   pik_value(p, "textht",6,0);
   pElem->sw = 0.0;
 }
+static PPoint textOffset(Pik *p, PElem *pElem, int cp){
+  /* Automatically slim-down the width and height of text
+  ** elements so that the bounding box tightly encloses the text,
+  ** then get boxOffset() to do the offset computation.
+  */
+  pik_size_to_fit(p, &pElem->errTok);
+  return boxOffset(p, pElem, cp);
+}
 
 /* Methods for the "sublist" class */
 static void sublistInit(Pik *p, PElem *pElem){
@@ -1556,6 +1589,7 @@ static const PClass aClass[] = {
       /* eJust */         0,
       /* xInit */         arcInit,
       /* xNumProp */      0,
+      /* xCheck */        arcCheck,
       /* xChop */         0,
       /* xOffset */       0,
       /* xFit */          0,
@@ -1566,6 +1600,7 @@ static const PClass aClass[] = {
       /* eJust */         0,
       /* xInit */         arrowInit,
       /* xNumProp */      0,
+      /* xCheck */        0,
       /* xChop */         0,
       /* xOffset */       lineOffset,
       /* xFit */          0,
@@ -1576,6 +1611,7 @@ static const PClass aClass[] = {
       /* eJust */         1,
       /* xInit */         boxInit,
       /* xNumProp */      0,
+      /* xCheck */        0,
       /* xChop */         boxChop,
       /* xOffset */       boxOffset,
       /* xFit */          boxFit,
@@ -1586,6 +1622,7 @@ static const PClass aClass[] = {
       /* eJust */         0,
       /* xInit */         circleInit,
       /* xNumProp */      circleNumProp,
+      /* xCheck */        0,
       /* xChop */         circleChop,
       /* xOffset */       ellipseOffset,
       /* xFit */          circleFit,
@@ -1596,6 +1633,7 @@ static const PClass aClass[] = {
       /* eJust */         1,
       /* xInit */         cylinderInit,
       /* xNumProp */      0,
+      /* xCheck */        0,
       /* xChop */         boxChop,
       /* xOffset */       cylinderOffset,
       /* xFit */          0,
@@ -1606,8 +1644,9 @@ static const PClass aClass[] = {
       /* eJust */         0,
       /* xInit */         dotInit,
       /* xNumProp */      dotNumProp,
+      /* xCheck */        dotCheck,
       /* xChop */         circleChop,
-      /* xOffset */       ellipseOffset,
+      /* xOffset */       dotOffset,
       /* xFit */          0,
       /* xRender */       dotRender 
    },
@@ -1616,6 +1655,7 @@ static const PClass aClass[] = {
       /* eJust */         0,
       /* xInit */         ellipseInit,
       /* xNumProp */      0,
+      /* xCheck */        0,
       /* xChop */         ellipseChop,
       /* xOffset */       ellipseOffset,
       /* xFit */          0,
@@ -1626,6 +1666,7 @@ static const PClass aClass[] = {
       /* eJust */         1,
       /* xInit */         fileInit,
       /* xNumProp */      0,
+      /* xCheck */        0,
       /* xChop */         boxChop,
       /* xOffset */       fileOffset,
       /* xFit */          fileFit,
@@ -1636,6 +1677,7 @@ static const PClass aClass[] = {
       /* eJust */         0,
       /* xInit */         lineInit,
       /* xNumProp */      0,
+      /* xCheck */        0,
       /* xChop */         0,
       /* xOffset */       lineOffset,
       /* xFit */          0,
@@ -1646,6 +1688,7 @@ static const PClass aClass[] = {
       /* eJust */         0,
       /* xInit */         moveInit,
       /* xNumProp */      0,
+      /* xCheck */        0,
       /* xChop */         0,
       /* xOffset */       0,
       /* xFit */          0,
@@ -1656,6 +1699,7 @@ static const PClass aClass[] = {
       /* eJust */         1,
       /* xInit */         ovalInit,
       /* xNumProp */      ovalNumProp,
+      /* xCheck */        0,
       /* xChop */         boxChop,
       /* xOffset */       boxOffset,
       /* xFit */          ovalFit,
@@ -1666,6 +1710,7 @@ static const PClass aClass[] = {
       /* eJust */         0,
       /* xInit */         splineInit,
       /* xNumProp */      0,
+      /* xCheck */        0,
       /* xChop */         0,
       /* xOffset */       lineOffset,
       /* xFit */          0,
@@ -1676,8 +1721,9 @@ static const PClass aClass[] = {
       /* eJust */         0,
       /* xInit */         textInit,
       /* xNumProp */      0,
+      /* xCheck */        0,
       /* xChop */         boxChop,
-      /* xOffset */       boxOffset,
+      /* xOffset */       textOffset,
       /* xFit */          boxFit,
       /* xRender */       boxRender 
    },
@@ -1688,6 +1734,7 @@ static const PClass sublistClass =
       /* eJust */         0,
       /* xInit */         sublistInit,
       /* xNumProp */      0,
+      /* xCheck */        0,
       /* xChop */         0,
       /* xOffset */       0,
       /* xFit */          0,
@@ -1699,6 +1746,7 @@ static const PClass noopClass =
       /* eJust */         0,
       /* xInit */         0,
       /* xNumProp */      0,
+      /* xCheck */        0,
       /* xChop */         0,
       /* xOffset */       0,
       /* xFit */          0,
@@ -2854,7 +2902,7 @@ static void pik_add_to(Pik *p, PElem *pElem, PToken *pTk, PPoint *pPt){
     pik_error(p, pTk, "polygon is closed");
     return;
   }
-  if( p->mTPath || p->mTPath ){
+  if( n==0 || p->mTPath==3 || p->thenFlag ){
     n = pik_next_rpath(p, pTk);
   }
   p->aTPath[n] = *pPt;
@@ -3521,11 +3569,15 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
   PNum dx, dy;
 
   if( p->nErr ) return;
-  ofst = pik_elem_offset(p, pElem, pElem->eWith);
-  dx = (pElem->with.x - ofst.x) - pElem->ptAt.x;
-  dy = (pElem->with.y - ofst.y) - pElem->ptAt.y;
-  if( dx!=0 || dy!=0 ){
-    pik_elem_move(pElem, dx, dy);
+
+  /* Position block elements */
+  if( pElem->type->isLine==0 ){
+    ofst = pik_elem_offset(p, pElem, pElem->eWith);
+    dx = (pElem->with.x - ofst.x) - pElem->ptAt.x;
+    dy = (pElem->with.y - ofst.y) - pElem->ptAt.y;
+    if( dx!=0 || dy!=0 ){
+      pik_elem_move(pElem, dx, dy);
+    }
   }
 
   /* For a line object with no movement specified, a single movement
@@ -3540,7 +3592,7 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
       case DIR_LEFT:  p->aTPath[1].x -= pElem->w; break;
       case DIR_UP:    p->aTPath[1].y += pElem->h; break;
     }
-    if( strcmp(pElem->type->zName,"arc")==0 ){
+    if( pElem->type->xInit==arcInit ){
       p->eDir = pElem->outDir = (pElem->inDir + (pElem->cw ? 1 : 3))%4;
       switch( pElem->outDir ){
         default:        p->aTPath[1].x += pElem->w; break;
@@ -3551,15 +3603,18 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
     }
   }
 
-  /* Run "fit" on the text type automatically */
-  if( pElem->type->xInit==textInit && pElem->nTxt ){
-    pik_size_to_fit(p, &pElem->errTok);
+  /* Initialize the bounding box prior to running xCheck */
+  pik_bbox_init(&pElem->bbox);
+
+  /* Run object-specific code */
+  if( pElem->type->xCheck!=0 ){
+    pElem->type->xCheck(p,pElem);
+    if( p->nErr ) return;
   }
 
   /* Compute final bounding box, entry and exit points, center
   ** point (ptAt) and path for the element
   */
-  pik_bbox_init(&pElem->bbox);
   if( pElem->type->isLine ){
     pElem->aPath = malloc( sizeof(PPoint)*p->nTPath );
     if( pElem->aPath==0 ){
@@ -3622,10 +3677,8 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
       case DIR_UP:     pElem->ptExit.y += h2;  break;
       case DIR_DOWN:   pElem->ptExit.y -= h2;  break;
     }
-    pElem->bbox.sw.x = pElem->ptAt.x - w2;
-    pElem->bbox.sw.y = pElem->ptAt.y - h2;
-    pElem->bbox.ne.x = pElem->ptAt.x + w2;
-    pElem->bbox.ne.y = pElem->ptAt.y + h2;
+    pik_bbox_add_xy(&pElem->bbox, pElem->ptAt.x - w2, pElem->ptAt.y - h2);
+    pik_bbox_add_xy(&pElem->bbox, pElem->ptAt.x + w2, pElem->ptAt.y + h2);
   }
   p->eDir = pElem->outDir;
 }
@@ -3796,12 +3849,13 @@ static void pik_render(Pik *p, PEList *pEList){
       /* emit original pikchr source code as metadata */
       /* FIXME: emit this only if a certain p->mFlags is set. */
       pik_append(p, "<metadata>\n", 11);
-      pik_append(p, "<pikchr:PIKCHR xmlns:pikchr="
-                 "\"https://pikchr.org/svg-metadata-v1\">\n", -1);
+      pik_append(p, "<pikchr:pikchr xmlns:pikchr="
+         "\"https://pikchr.org/home/doc/trunk/doc/grammar.md\">\n",
+          -1);
       pik_append(p, "<pikchr:src><![CDATA[", 21);
       pik_append(p, p->zIn, (int)p->nIn);
       pik_append(p, "]]></pikchr:src>\n", 17);
-      pik_append(p, "</pikchr:PIKCHR>\n", 17);
+      pik_append(p, "</pikchr:pikchr>\n", 17);
       pik_append(p, "</metadata>\n", 12);
     }
     pik_elist_render(p, pEList);
@@ -3948,6 +4002,15 @@ static const PikWord *pik_find_word(
   return 0;
 }
 
+/*
+** Set a symbolic debugger breakpoint on this routine to receive a
+** breakpoint when the "#breakpoint" token is parsed.
+*/
+static void pik_breakpoint(const unsigned char *z){
+  /* Prevent C compilers from optimizing out this routine. */
+  if( z[2]=='X' ) exit(1);
+}
+
 
 /*
 ** Return the length of next token.  The token starts on
@@ -3993,6 +4056,10 @@ static int pik_token_length(PToken *pToken){
     case '#': {
       for(i=1; (c = z[i])!=0 && c!='\n'; i++){}
       pToken->eType = T_WHITESPACE;
+      /* If the comment is "#breakpoint" then invoke the pik_breakpoint()
+      ** routine.  The pik_breakpoint() routie is a no-op that serves as
+      ** a convenient place to set a gdb breakpoint when debugging. */
+      if( strncmp((const char*)z,"#breakpoint",11)==0 ) pik_breakpoint(z);
       return i;
     }
     case '/': {
