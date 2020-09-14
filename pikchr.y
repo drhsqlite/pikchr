@@ -337,6 +337,7 @@ struct Pik {
   unsigned int nOut;       /* Bytes written to zOut[] so far */
   unsigned int nOutAlloc;  /* Space allocated to zOut[] */
   unsigned char eDir;      /* Current direction */
+  unsigned int mFlags;     /* Flags passed to pikchr() */
   PElem *cur;              /* Element under construction */
   PEList *list;            /* Element list under construction */
   PVar *pVar;              /* Application-defined variables */
@@ -1914,7 +1915,7 @@ static void pik_append_arc(Pik *p, PNum r1, PNum r2, PNum x, PNum y){
 ** the caller wants to add some more.
 */
 static void pik_append_style(Pik *p, PElem *pElem){
-  pik_append(p, "style=\"", -1);
+  pik_append(p, " style=\"", -1);
   if( pElem->fill>=0 ){
     pik_append_clr(p, "fill:", pElem->fill, ";");
   }else{
@@ -3791,6 +3792,18 @@ static void pik_render(Pik *p, PEList *pEList){
     p->hSVG = (int)(p->rScale*h);
     pik_append_dis(p, " viewBox=\"0 0 ",w,"");
     pik_append_dis(p, " ",h,"\">\n");
+    if(1){
+      /* emit original pikchr source code as metadata */
+      /* FIXME: emit this only if a certain p->mFlags is set. */
+      pik_append(p, "<metadata>\n", 11);
+      pik_append(p, "<pikchr:PIKCHR xmlns:pikchr="
+                 "\"https://pikchr.org/svg-metadata-v1\">\n", -1);
+      pik_append(p, "<pikchr:src><![CDATA[", 21);
+      pik_append(p, p->zIn, (int)p->nIn);
+      pik_append(p, "]]></pikchr:src>\n", 17);
+      pik_append(p, "</pikchr:PIKCHR>\n", 17);
+      pik_append(p, "</metadata>\n", 12);
+    }
     pik_elist_render(p, pEList);
     pik_append(p,"</svg>\n", -1);
   }else{
@@ -4249,6 +4262,7 @@ char *pikchr(
   s.nIn = (unsigned int)strlen(zText);
   s.eDir = DIR_RIGHT;
   s.zClass = zClass;
+  s.mFlags = mFlags;
   pik_parserInit(&sParse, &s);
 #if 0
   pik_parserTrace(stdout, "parser: ");
