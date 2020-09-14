@@ -132,6 +132,7 @@ typedef struct PElem PElem;      /* A single diagram object or "element" */
 typedef struct PEList PEList;    /* A list of elements */
 typedef struct PClass PClass;    /* Description of elements types */
 typedef double PNum;             /* Numeric value */
+typedef struct PRel PRel;        /* Absolute or percentage value */
 typedef struct PPoint PPoint;    /* A position in 2-D space */
 typedef struct PVar PVar;        /* script-defined variable */
 typedef struct PBox PBox;        /* A bounding box */
@@ -198,6 +199,15 @@ struct PPoint {
 /* A bounding box */
 struct PBox {
   PPoint sw, ne;         /* Lower-left and top-right corners */
+};
+
+/* An Absolute or a relative distance.  The distance is in absolute
+** units if isAbs is 1 and is relative to the default distance
+** if isAbs is 0.
+*/
+struct PRel {
+  PNum rAbs;            /* Absolute value */
+  PNum rRel;            /* Value relative to current value */
 };
 
 /* A variable created by the ID = EXPR construct of the PIKCHR script 
@@ -392,11 +402,12 @@ static PNum pik_atof(Pik*,PToken*);
 static void pik_after_adding_attributes(Pik*,PElem*);
 static void pik_elem_move(PElem*,PNum dx, PNum dy);
 static void pik_elist_move(PEList*,PNum dx, PNum dy);
-static void pik_set_numprop(Pik*,PToken*,PNum,PNum);
+static void pik_set_numprop(Pik*,PToken*,PRel*);
+static void pik_set_clrprop(Pik*,PToken*,PNum);
 static void pik_set_dashed(Pik*,PToken*,PNum*);
 static void pik_then(Pik*,PToken*,PElem*);
-static void pik_add_direction(Pik*,PToken*,PNum*,int);
-static void pik_move_hdg(Pik*,PNum*,PToken*,PNum,PToken*,PToken*);
+static void pik_add_direction(Pik*,PToken*,PRel*);
+static void pik_move_hdg(Pik*,PRel*,PToken*,PNum,PToken*,PToken*);
 static void pik_evenwith(Pik*,PToken*,PPoint*);
 static void pik_set_from(Pik*,PElem*,PToken*,PPoint*);
 static void pik_add_to(Pik*,PElem*,PToken*,PPoint*);
@@ -468,6 +479,8 @@ static PElem *pik_place_assert(Pik*,PPoint*,PToken*,PPoint*);
 %type rvalue {PNum}
 %type lvalue {PToken}
 %type even {PToken}
+%type relexpr {PRel}
+%type optrelexpr {PRel}
 
 %syntax_error {
   if( TOKEN.z && TOKEN.z[0] ){
@@ -546,36 +559,32 @@ direction(A) ::= DOWN(A).
 direction(A) ::= LEFT(A).
 direction(A) ::= RIGHT(A).
 
-attribute_list ::= expr(X) alist.           { pik_add_direction(p,0,&X,0);}
-attribute_list ::= expr(X) PERCENT alist.   { pik_add_direction(p,0,&X,1);}
+relexpr(A) ::= expr(B).             {A.rAbs = B; A.rRel = 0;}
+relexpr(A) ::= expr(B) PERCENT.     {A.rAbs = 0; A.rRel = B/100;}
+optrelexpr(A) ::= relexpr(A).
+optrelexpr(A) ::= .                 {A.rAbs = 0; A.rRel = 1.0;}
+
+attribute_list ::= relexpr(X) alist.    {pik_add_direction(p,0,&X);}
 attribute_list ::= alist.
 alist ::=.
 alist ::= alist attribute.
-attribute ::= numproperty(P) expr(X) PERCENT.
-                                      { pik_set_numprop(p,&P,0.0,X/100.0); }
-attribute ::= numproperty(P) expr(X). { pik_set_numprop(p,&P,X,0.0); }
-attribute ::= dashproperty(P) expr(X).  { pik_set_dashed(p,&P,&X); }
-attribute ::= dashproperty(P).          { pik_set_dashed(p,&P,0);  }
-attribute ::= colorproperty(P) rvalue(X). { pik_set_numprop(p,&P,X,0.0); }
-attribute ::= go direction(D) expr(X) PERCENT.
-                                       { pik_add_direction(p,&D,&X,1);}
-attribute ::= go direction(D) expr(X). { pik_add_direction(p,&D,&X,0);}
-attribute ::= go direction(D).         { pik_add_direction(p,&D,0,0); }
+attribute ::= numproperty(P) relexpr(X).     { pik_set_numprop(p,&P,&X); }
+attribute ::= dashproperty(P) expr(X).       { pik_set_dashed(p,&P,&X); }
+attribute ::= dashproperty(P).               { pik_set_dashed(p,&P,0);  }
+attribute ::= colorproperty(P) rvalue(X).    { pik_set_clrprop(p,&P,X); }
+attribute ::= go direction(D) optrelexpr(X). { pik_add_direction(p,&D,&X);}
 attribute ::= go direction(D) even position(P). {pik_evenwith(p,&D,&P);}
 attribute ::= CLOSE(E).             { pik_close_path(p,&E); }
 attribute ::= CHOP.                 { p->cur->bChop = 1; }
 attribute ::= FROM(T) position(X).  { pik_set_from(p,p->cur,&T,&X); }
 attribute ::= TO(T) position(X).    { pik_add_to(p,p->cur,&T,&X); }
 attribute ::= THEN(T).              { pik_then(p, &T, p->cur); }
-attribute ::= THEN(E) expr(D) HEADING(H) expr(A).
+attribute ::= THEN(E) optrelexpr(D) HEADING(H) expr(A).
                                                 {pik_move_hdg(p,&D,&H,A,0,&E);}
-attribute ::= THEN(E) HEADING(H) expr(A).       {pik_move_hdg(p,0,&H,A,0,&E);}
-attribute ::= THEN(E) expr(D) EDGEPT(C).        {pik_move_hdg(p,&D,0,0,&C,&E);}
-attribute ::= THEN(E) EDGEPT(C).                {pik_move_hdg(p,0,0,0,&C,&E);}
-attribute ::= GO(E) expr(D) HEADING(H) expr(A). {pik_move_hdg(p,&D,&H,A,0,&E);}
-attribute ::= GO(E) HEADING(H) expr(A).         {pik_move_hdg(p,0,&H,A,0,&E);}
-attribute ::= GO(E) expr(D) EDGEPT(C).          {pik_move_hdg(p,&D,0,0,&C,&E);}
-attribute ::= GO(E) EDGEPT(C).                  {pik_move_hdg(p,0,0,0,&C,&E);}
+attribute ::= THEN(E) optrelexpr(D) EDGEPT(C).  {pik_move_hdg(p,&D,0,0,&C,&E);}
+attribute ::= GO(E) optrelexpr(D) HEADING(H) expr(A).
+                                                {pik_move_hdg(p,&D,&H,A,0,&E);}
+attribute ::= GO(E) optrelexpr(D) EDGEPT(C).    {pik_move_hdg(p,&D,0,0,&C,&E);}
 attribute ::= boolproperty.
 attribute ::= AT(A) position(P).                    { pik_set_at(p,0,&P,&A); }
 attribute ::= WITH withclause.
@@ -2553,52 +2562,49 @@ static int pik_param_ok(
 ** The rAbs term is an absolute value to add in.  rRel is
 ** a relative value by which to change the current value.
 */
-void pik_set_numprop(Pik *p, PToken *pId, PNum rAbs, PNum rRel){
+void pik_set_numprop(Pik *p, PToken *pId, PRel *pVal){
   PElem *pElem = p->cur;
   switch( pId->eType ){
     case T_HEIGHT:
       if( pik_param_ok(p, pElem, pId, A_HEIGHT, A_BOTTOM|A_TOP|A_AT) ) return;
-      pElem->h = pElem->h*rRel + rAbs;
-      break;
-    case T_TOP:
-      if( pik_param_ok(p, pElem, pId, A_TOP, A_BOTTOM|A_WIDTH|A_AT) ) return;
-      pElem->top = rAbs;
-      break;
-    case T_BOTTOM:
-      if( pik_param_ok(p, pElem, pId, A_BOTTOM, A_TOP|A_WIDTH|A_AT) ) return;
-      pElem->bottom = rAbs;
+      pElem->h = pElem->h*pVal->rRel + pVal->rAbs;
       break;
     case T_WIDTH:
       if( pik_param_ok(p, pElem, pId, A_WIDTH, A_RIGHT|A_LEFT|A_AT) ) return;
-      pElem->w = pElem->w*rRel + rAbs;
-      break;
-    case T_RIGHT:
-      if( pik_param_ok(p, pElem, pId, A_RIGHT, A_WIDTH|A_LEFT|A_AT) ) return;
-      pElem->right = rAbs;
-      break;
-    case T_LEFT:
-      if( pik_param_ok(p, pElem, pId, A_LEFT, A_WIDTH|A_RIGHT|A_AT) ) return;
-      pElem->left = rAbs;
+      pElem->w = pElem->w*pVal->rRel + pVal->rAbs;
       break;
     case T_RADIUS:
       if( pik_param_ok(p, pElem, pId, A_RADIUS, 0) ) return;
-      pElem->rad = pElem->rad*rRel + rAbs;
+      pElem->rad = pElem->rad*pVal->rRel + pVal->rAbs;
       break;
     case T_DIAMETER:
       if( pik_param_ok(p, pElem, pId, A_RADIUS, 0) ) return;
-      pElem->rad = pElem->rad*rRel + 0.5*rAbs; /* diam it 2x radius */
+      pElem->rad = pElem->rad*pVal->rRel + 0.5*pVal->rAbs; /* diam it 2x rad */
       break;
     case T_THICKNESS:
       if( pik_param_ok(p, pElem, pId, A_THICKNESS, 0) ) return;
-      pElem->sw = pElem->sw*rRel + rAbs;
+      pElem->sw = pElem->sw*pVal->rRel + pVal->rAbs;
       break;
+  }
+  if( pElem->type->xNumProp ){
+    pElem->type->xNumProp(p, pElem, pId);
+  }
+  return;
+}
+
+/*
+** Set a color property.  The argument is an RGB value.
+*/
+void pik_set_clrprop(Pik *p, PToken *pId, PNum rClr){
+  PElem *pElem = p->cur;
+  switch( pId->eType ){
     case T_FILL:
       if( pik_param_ok(p, pElem, pId, A_FILL, 0) ) return;
-      pElem->fill = rAbs;
+      pElem->fill = rClr;
       break;
     case T_COLOR:
       if( pik_param_ok(p, pElem, pId, A_COLOR, 0) ) return;
-      pElem->color = rAbs;
+      pElem->color = rClr;
       break;
   }
   if( pElem->type->xNumProp ){
@@ -2667,26 +2673,12 @@ static int pik_next_rpath(Pik *p, PToken *pErr){
 }
 
 /* Add a direction term to an element.  "up 0.5", or "left 3", or "down"
-** or "down to 1.3".  Specific processing depends on parameters:
-**
-**   pVal==0   Add the default width or height to the coordinate.
-**             Used to implement "down" and similar.
-**
-**   rel==0    Add or subtract *pVal to the path coordinate.  Used to
-**             implement "up 0.5" and similar.
-**
-**   rel==1    Multiple 0.01*pVal with the width or height (as appropriate)
-**             and add that to the coordinate.  Used for "left 50%" and
-**             similar.
-**
-**   rel==2    Make the coordinate exactly equal to *pVal.  Used to
-**             implement things like "down to 1.3".
+** or "down 50%".
 */
-static void pik_add_direction(Pik *p, PToken *pDir, PNum *pVal, int rel){
+static void pik_add_direction(Pik *p, PToken *pDir, PRel *pVal){
   PElem *pElem = p->cur;
   int n;
   int dir;
-  PNum scale = 1.0;
   if( !pElem->type->isLine ){
     if( pDir ){
       pik_error(p, pDir, "use with line-oriented objects only");
@@ -2695,13 +2687,6 @@ static void pik_add_direction(Pik *p, PToken *pDir, PNum *pVal, int rel){
       pik_error(p, &x, "syntax error");
     }
     return;
-  }
-  if( pVal && rel==1 ){
-    scale = *pVal/100;
-    pVal = 0;
-  }
-  if( rel==2 ){
-    pElem->mProp |= A_FROM;
   }
   n = p->nTPath - 1;
   if( p->thenFlag || p->mTPath==3 || n==0 ){
@@ -2712,26 +2697,22 @@ static void pik_add_direction(Pik *p, PToken *pDir, PNum *pVal, int rel){
   switch( dir ){
     case DIR_UP:
        if( p->mTPath & 2 ) n = pik_next_rpath(p, pDir);
-       if( rel==2 ) p->aTPath[n].y = 0;
-       p->aTPath[n].y += (pVal ? *pVal : pElem->h*scale);
+       p->aTPath[n].y += pVal->rAbs + pElem->h*pVal->rRel;
        p->mTPath |= 2;
        break;
     case DIR_DOWN:
        if( p->mTPath & 2 ) n = pik_next_rpath(p, pDir);
-       if( rel==2 ) p->aTPath[n].y = 0;
-       p->aTPath[n].y -= (pVal ? *pVal : pElem->h*scale);
+       p->aTPath[n].y -= pVal->rAbs + pElem->h*pVal->rRel;
        p->mTPath |= 2;
        break;
     case DIR_RIGHT:
        if( p->mTPath & 1 ) n = pik_next_rpath(p, pDir);
-       if( rel==2 ) p->aTPath[n].x = 0;
-       p->aTPath[n].x += (pVal ? *pVal : pElem->w*scale);
+       p->aTPath[n].x += pVal->rAbs + pElem->w*pVal->rRel;
        p->mTPath |= 1;
        break;
     case DIR_LEFT:
        if( p->mTPath & 1 ) n = pik_next_rpath(p, pDir);
-       if( rel==2 ) p->aTPath[n].x = 0;
-       p->aTPath[n].x -= (pVal ? *pVal : pElem->w*scale);
+       p->aTPath[n].x -= pVal->rAbs + pElem->w*pVal->rRel;
        p->mTPath |= 1;
        break;
   }
@@ -2742,13 +2723,11 @@ static void pik_add_direction(Pik *p, PToken *pDir, PNum *pVal, int rel){
 **
 **         pDist   pHdgKW  rHdg    pEdgept
 **     GO distance HEADING angle
-**     GO          HEADING angle
 **     GO distance               compasspoint
-**     GO                        compasspoint
 */
 static void pik_move_hdg(
   Pik *p,              /* The Pikchr context */
-  PNum *pDist,         /* Distance to move.  NULL means standard distance */
+  PRel *pDist,         /* Distance to move */
   PToken *pHeading,    /* "heading" keyword if present */
   PNum rHdg,           /* Angle argument to "heading" keyword */
   PToken *pEdgept,     /* EDGEPT keyword "ne", "sw", etc... */
@@ -2756,15 +2735,10 @@ static void pik_move_hdg(
 ){
   PElem *pElem = p->cur;
   int n;
-  PNum rDist;
+  PNum rDist = pDist->rAbs + pik_value(p,"linewid",7,0)*pDist->rRel;
   if( !pElem->type->isLine ){
     pik_error(p, pErr, "use with line-oriented objects only");
     return;
-  }
-  if( pDist ){
-    rDist = *pDist;
-  }else{
-    rDist = pik_value(p, "linewid", 7, 0);
   }
   do{
     n = pik_next_rpath(p, pErr);

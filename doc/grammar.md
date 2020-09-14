@@ -103,12 +103,11 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * STRING *text-attribute*\*
   * **same**
   * **same as** *object*
-  * *numeric-property* *expr*
-  * *numeric-property* *expr* **%**
+  * *numeric-property* *new-property-value*
   * **dashed** *expr*?
   * **dotted** *expr*?
-  * **color** *expr*
-  * **fill** *expr*
+  * **color** *color-expr*
+  * **fill** *color-expr*
   * **behind** *object*
   * **cw**
   * **ccw**
@@ -121,6 +120,13 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **thin**
   * **chop**
   * **fit**
+
+## *color-expr*:
+  * *expr*
+
+## *new-property-value*:
+  * *expr*
+  * *expr* **%**
 
 ## *numeric-property*:
   * **width**
@@ -146,11 +152,20 @@ A complete input file to Pikchr consists of a single *statement-list*.
 ## *path-element*:
   * **from** *position*
   * **to** *position*
-  * **then**? **go**? *direction* *expr*? **%**?
+  * **then**? **go**? *direction* *distance*?
   * **then**? **go**? *direction* **until**? **even with** *place*
-  * (**then**|**go**) *expr*? **heading** *expr*
-  * (**then**|**go**) *expr*? *compass-direction*
+  * (**then**|**go**) *distance*? **heading** *compass-angle*
+  * (**then**|**go**) *distance*? *compass-direction*
   * **close**
+
+## *distance*:
+
+  * *expr*
+  * *expr* **%**
+
+## *compass-angle*:
+
+  * *expr*
 
 ## *compass-direction*:
   * **n**
@@ -181,13 +196,16 @@ A complete input file to Pikchr consists of a single *statement-list*.
   *  *place* **- (** *expr* **,** *expr* **)**
   *  **(** *position* **,** *position* **)**
   *  **(** *position* **)**
-  *  *expr* **of the way between** *position* **and** *position*
-  *  *expr* **way between** *position* **and** *position*
-  *  *expr* **between** *position* **and** *position*
-  *  *expr* **<** *position* **,** *position* **>**
-  *  *expr* *which-way* *position*
+  *  *fraction* **of the way between** *position* **and** *position*
+  *  *fraction* **way between** *position* **and** *position*
+  *  *fraction* **between** *position* **and** *position*
+  *  *fraction* **<** *position* **,** *position* **>**
+  *  *distance* *which-way-from* *position*
 
-## *which-way*:
+## *fraction*:
+  *  *expr*
+
+## *which-way-from*:
 
   *  **above**
   *  **below**
@@ -205,7 +223,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
   *  **w of**
   *  **west of**
   *  **nw of**
-  *  **heading** *expr* **from**
+  *  **heading** *compass-angle* **from**
 
 ## *place*:
 
