@@ -47,11 +47,6 @@ The following special token classes are recognized:
      can also be used to escape a backslash.  No other escape sequences
      are recognized.
 
-  *  OBJCLASS &rarr;  The name of a graphics object class.  One of:
-     "arc", "arrow", "box", "circle", "cylinder", "dot", "ellipse",
-     "file", "line", "move", "oval", "spline", or "text".  New object
-     classes may be added in future releases.
-
   *  COLORNAME &rarr;  One of the 140 official HTML color names, in 
      any mixture of upper and lower cases.  The value of a COLORNAME is
      an integer which is the 24-bit RGB value of that color.  Two
@@ -93,9 +88,24 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * STRING
 
 ## *object-definition*:
-  * OBJCLASS *attribute*\*
+  * *object-class* *attribute*\*
   * STRING *text-attribute*\* *attribute*\*
   * **[** *statement-list* **]** *attribute*\*
+
+## *object-class*:
+  * **arc**
+  * **arrow**
+  * **box**
+  * **circle**
+  * **cylinder**
+  * **dot**
+  * **ellipse**
+  * **file**
+  * **line**
+  * **move**
+  * **oval**
+  * **spline**
+  * **text**
 
 ## *attribute*:
   * *path-element*
@@ -239,11 +249,11 @@ A complete input file to Pikchr consists of a single *statement-list*.
 
 ## *nth-object*:
 
-  *  ORDINAL OBJCLASS
-  *  ORDINAL **last** OBJCLASS
-  *  ORDINAL **previous** OBJCLASS
-  *  **last** OBJCLASS
-  *  **previous** OBJCLASS
+  *  ORDINAL *object-class*
+  *  ORDINAL **last** *object-class*
+  *  ORDINAL **previous** *object-class*
+  *  **last** *object-class*
+  *  **previous** *object-class*
   *  **last**
   *  **previous**
   *  ORDINAL **[]**
