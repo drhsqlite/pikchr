@@ -1239,7 +1239,7 @@ static void dotRender(Pik *p, PElem *pElem){
   if( pElem->sw>0.0 ){
     pik_append_x(p,"<circle cx=\"", pt.x, "\"");
     pik_append_y(p," cy=\"", pt.y, "\"");
-    pik_append_dis(p," r=\"", r, "\"");
+    pik_append_dis(p," r=\"", r, "\" ");
     pik_append_style(p,pElem);
     pik_append(p,"\" />\n", -1);
   }
@@ -2201,7 +2201,7 @@ static PElem *pik_assert(Pik *p, PNum e1, PToken *pEq, PNum e2){
 ** Process an "assert( place1 == place2 )" statement.  Always return NULL.
 */
 static PElem *pik_place_assert(Pik *p, PPoint *e1, PToken *pEq, PPoint *e2){
-  char zE1[100], zE2[100], zMsg[200];
+  char zE1[100], zE2[100], zMsg[210];
 
   /* Convert the numbers to strings using %g for comparison.  This
   ** limits the precision of the comparison to account for rounding error. */
