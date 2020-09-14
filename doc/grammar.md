@@ -95,15 +95,15 @@ A complete input file to Pikchr consists of a single *statement-list*.
 ## *object-class*:
   * **arc**
   * **arrow**
-  * **box**
-  * **circle**
-  * **cylinder**
+  * **box**          [&#9654;info](./boxobj.md)
+  * **circle**       [&#9654;info](./circleobj.md)
+  * **cylinder**     [&#9654;info](./cylinderobj.md)
   * **dot**
-  * **ellipse**
+  * **ellipse**      [&#9654;info](./ellipseobj.md)
   * **file**
   * **line**
   * **move**
-  * **oval**
+  * **oval**         [&#9654;info](./ovalobj.md)
   * **spline**
   * **text**
 
