@@ -30,7 +30,7 @@
 ** string is obtained from malloc() and should be freed by the caller.
 ** NULL might be returned if there is a memory allocation error.
 **
-** If there are error in the PIKCHR input, the output will consist of an
+** If there are errors in the PIKCHR input, the output will consist of an
 ** error message and the original PIKCHR input text (inside of <pre>...</pre>).
 **
 ** The subroutine implemented by this file is intended to be stand-alone.
@@ -73,7 +73,7 @@
 ** parsed into a PElem object.  These are stored on an extensible array
 ** called PEList.  All parameters to each PElem are computed as the
 ** object is parsed.  (Hence, the parameters to a PElem may only refer
-** to prior elements.) Once the PElem is completely assemblied, it is
+** to prior elements.) Once the PElem is completely assembled, it is
 ** added to the end of a PEList and never changes thereafter - except,
 ** PElem objects that are part of a "[...]" block might have their
 ** absolute position shifted when the outer [...] block is positioned.
@@ -91,8 +91,8 @@
 ** on a single layer, but multiple layers are possible.)  A separate pass
 ** is made through the list for each layer.
 **
-** After all output is generated, the Pik object, and the all the PEList
-** and PElem objects are deallocated and the generate output string is
+** After all output is generated, the Pik object and all the PEList
+** and PElem objects are deallocated and the generated output string is
 ** returned.  Upon any error, the Pik.nErr flag is set, processing quickly
 ** stops, and the stack unwinds.  No attempt is made to continue reading
 ** input after an error.
@@ -106,14 +106,14 @@
 ** Variables go into PVar objects that form a linked list.
 **
 ** Each PElem has zero or one names.  Input constructs that attempt
-** to assign a new name from an older name, like:
+** to assign a new name from an older name, for example:
 **
 **      Abc:  Abc + (0.5cm, 0)
 **
-** These generate a new "noop" object at the specified place and with
-** the specified name.  As place-names are searched by scanning the list
-** in reverse order, this has the effect of overriding the "Abc" name
-** when referenced by subsequent objects.
+** Statements like these generate a new "noop" object at the specified
+** place and with the given name. As place-names are searched by scanning
+** the list in reverse order, this has the effect of overriding the "Abc"
+** name when referenced by subsequent objects.
 */
 #include <stdio.h>
 #include <stdlib.h>
@@ -236,8 +236,8 @@ struct PToken {
   unsigned char eEdge;       /* Corner value for corner keywords */
 };
 
-/* Return negative, zero, or positive if pToken is less then, equal to
-** or greater than zero-terminated string z[]
+/* Return negative, zero, or positive if pToken is less than, equal to
+** or greater than the zero-terminated string z[]
 */
 static int pik_token_eq(PToken *pToken, const char *z){
   int c = strncmp(pToken->z,z,pToken->n);
@@ -261,7 +261,7 @@ static int pik_token_eq(PToken *pToken, const char *z){
 #define IsLeftRight(X)  (((X)&1)==0)
 
 /* Bitmask for the various attributes for PElem.  These bits are
-** collected in PElem.mProp and PElem.mCalc to check for contraint
+** collected in PElem.mProp and PElem.mCalc to check for constraint
 ** errors. */
 #define A_WIDTH         0x000001
 #define A_HEIGHT        0x000002
@@ -289,23 +289,19 @@ struct PElem {
   PPoint ptEnter, ptExit;  /* Entry and exit points */
   PEList *pSublist;        /* Substructure for [...] elements */
   char *zName;             /* Name assigned to this element */
-  PNum w;                  /* width */
-  PNum h;                  /* height */
-  PNum rad;                /* radius */
-  PNum sw;                 /* stroke width ("thinkness") */
-  PNum dotted;             /* dotted:  <=0.0 for off */
-  PNum dashed;             /* dashed:  <=0.0 for off */
-  PNum fill;               /* fill color.  Negative for off */
-  PNum color;              /* Stroke color */
-  PNum top;                /* Top edge */
-  PNum bottom;             /* Bottom edge */
-  PNum left;               /* Left edge */
-  PNum right;              /* Right edge */
+  PNum w;                  /* "width" property */
+  PNum h;                  /* "height" property */
+  PNum rad;                /* "radius" property */
+  PNum sw;                 /* "thickness" property. (Mnemonic: "stroke width")*/
+  PNum dotted;             /* "dotted" property.   <=0.0 for off */
+  PNum dashed;             /* "dashed" property.   <=0.0 for off */
+  PNum fill;               /* "fill" property.  Negative for off */
+  PNum color;              /* "color" property */
   PPoint with;             /* Position constraint from WITH clause */
   char eWith;              /* Type of heading point on WITH clause */
   char cw;                 /* True for clockwise arc */
-  char larrow;             /* Arrow at beginning */
-  char rarrow;             /* Arrow at end */
+  char larrow;             /* Arrow at beginning (<- or <->) */
+  char rarrow;             /* Arrow at end  (-> or <->) */
   char bClose;             /* True if "close" is seen */
   char bChop;              /* True if "chop" is seen */
   unsigned char nTxt;      /* Number of text values */
@@ -361,7 +357,7 @@ struct Pik {
 
 /*
 ** The behavior of an object class is defined by an instance of
-** this structure. This it the "virtual method" table.
+** this structure. This is the "virtual method" table.
 */
 struct PClass {
   const char *zName;                     /* Name of class */
@@ -556,7 +552,7 @@ basetype(A) ::= LB savelist(L) element_list(X) RB(E).
       { p->list = L; A = pik_elem_new(p,0,0,X); if(A) A->errTok = E; }
 
 %type savelist {PEList*}
-// No distructor required as this same PEList is also held by
+// No destructor required as this same PEList is also held by
 // an "element" non-terminal deeper on the stack.
 savelist(A) ::= .   {A = p->list; p->list = 0;}
 
@@ -1333,7 +1329,7 @@ static void fileInit(Pik *p, PElem *pElem){
   pElem->h = pik_value(p, "fileht",6,0);
   pElem->rad = pik_value(p, "filerad",7,0);
 }
-/* Return offset from the center of the box to the compass point 
+/* Return offset from the center of the file to the compass point 
 ** given by parameter cp */
 static PPoint fileOffset(Pik *p, PElem *pElem, int cp){
   PPoint pt;
@@ -1482,7 +1478,7 @@ static void splineInit(Pik *p, PElem *pElem){
   pElem->fill = -1.0;  /* Disable fill by default */
 }
 /* Return a point along the path from "f" to "t" that is r units
-** prior to reach "t", except if the path is less than 2*r total,
+** prior to reaching "t", except if the path is less than 2*r total,
 ** return the midpoint.
 */
 static PPoint radiusMidpoint(PPoint f, PPoint t, PNum r, int *pbMid){
@@ -1846,7 +1842,7 @@ static void pik_append(Pik *p, const char *zText, int n){
 **      text to preserve leading and trailing whitespace.  Turns out we
 **      cannot use &nbsp; as that is an HTML-ism and is not valid in XML.
 **
-**   *  The "&" character is changed into "&amp;" if mFlags as the
+**   *  The "&" character is changed into "&amp;" if mFlags has the
 **      0x02 bit set.  This is needed when generating error message text.
 **
 **   *  Except for the above, only "<" and ">" are escaped.
@@ -2020,7 +2016,7 @@ static void pik_txt_vertical_layout(Pik *p, PElem *pElem){
         }
       }
     }
-    /* If more than one TP_BELOW, change the last to TP_BELOW2 */
+    /* If there is more than one TP_BELOW, change the last to TP_BELOW2 */
     for(j=mJust=0, i=0; i<n; i++){
       if( aTxt[i].eCode & TP_BELOW ){
         if( j==0 ){
@@ -2063,15 +2059,12 @@ static void pik_txt_vertical_layout(Pik *p, PElem *pElem){
   }
 }
 
-/* Append multiple <text> SGV element for the text fields of the PElem.
+/* Append multiple <text> SVG element for the text fields of the PElem.
 ** Parameters:
 **
 **    p          The Pik object into which we are rendering
 **
 **    pElem      Object containing the text to be rendered
-**
-**    jw         LJUST text is shifted to the left by this amount.
-**               RJUST text is shifted to the right.
 **
 **    pBox       If not NULL, do no rendering at all.  Instead
 **               expand the box object so that it will include all
@@ -2352,7 +2345,7 @@ static void pik_bbox_addbox(PBox *pA, PBox *pB){
 }
 
 /* Enlarge the PBox of the first argument, if necessary, so that
-** it contains the PPoint in the second argument
+** it contains the point described by the 2nd and 3rd arguments.
 */
 static void pik_bbox_add_xy(PBox *pA, PNum x, PNum y){
   if( pik_bbox_isempty(pA) ){
@@ -2667,7 +2660,7 @@ void pik_set_clrprop(Pik *p, PToken *pId, PNum rClr){
 }
 
 /*
-** Set a "dashed" property like "dash 0.05" or "chop"
+** Set a "dashed" property like "dash 0.05"
 **
 ** Use the value supplied by pVal if available.  If pVal==0, use
 ** a default.
@@ -2829,7 +2822,7 @@ static void pik_move_hdg(
 **
 ** pDir is the first keyword, "right" or "left" or "up" or "down".
 ** The movement is in that direction until its closest approach to
-** point specified by pPoint.
+** the point specified by pPoint.
 */
 static void pik_evenwith(Pik *p, PToken *pDir, PPoint *pPlace){
   PElem *pElem = p->cur;
@@ -2999,11 +2992,12 @@ static int pik_text_position(Pik *p, int iPrev, PToken *pFlag){
   return iRes;
 }
 
-/* Return an estimate of the actually number of displayed characters
+/* Return an estimate of the actual number of displayed characters
 ** in a character string.
 **
 ** Omit "\" used to escape characters.  And count entities like
-** "&lt;" as a single character.
+** "&lt;" as a single character.  Multi-byte UTF8 characters count
+** as a single character.
 */
 static int pik_text_length(const PToken *pToken){
   int n = pToken->n;
@@ -3023,7 +3017,7 @@ static int pik_text_length(const PToken *pToken){
   return cnt;
 }
 
-/* Adjust the width, height, and or radius of the object so that
+/* Adjust the width, height, and/or radius of the object so that
 ** it fits around the text that has been added so far.
 **
 **    (1) Only text specified prior to this attribute is considered.
@@ -3334,8 +3328,8 @@ static PElem *pik_find_byname(Pik *p, PElem *pBasis, PToken *pName){
 }
 
 /* Change most of the settings for the current object to be the
-** same as the pElem object, or the most recent element of the same
-** type if pElem is NULL.
+** same as the pOther object, or the most recent element of the same
+** type if pOther is NULL.
 */
 static void pik_same(Pik *p, PElem *pOther, PToken *pErrTok){
   PElem *pElem = p->cur;
@@ -3425,7 +3419,7 @@ static PPoint pik_position_between(Pik *p, PNum x, PPoint p1, PPoint p2){
 
 /* Compute the position that is dist away from pt at an heading angle of r
 **
-** The angle is compass heading in degrees.  North is 0 (or 360).
+** The angle is a compass heading in degrees.  North is 0 (or 360).
 ** East is 90.  South is 180.  West is 270.  And so forth.
 */
 static PPoint pik_position_at_angle(Pik *p, PNum dist, PNum r, PPoint pt){
@@ -3960,7 +3954,7 @@ static const PikWord pik_keywords[] = {
 };
 
 /*
-** Search a PikWordlist for the given keyword.  A pointer to the
+** Search a PikWordlist for the given keyword.  Return a pointer to the
 ** element found.  Or return 0 if not found.
 */
 static const PikWord *pik_find_word(
@@ -4287,7 +4281,7 @@ static PToken pik_next_semantic_token(Pik *p, PToken *pThis){
 ** is HTML formatted.  So regardless of what happens, the return text
 ** is safe to be insertd into an HTML output stream.
 **
-** If pnWidth and pnHeight are NULL, then this routine writes the
+** If pnWidth and pnHeight are not NULL, then this routine writes the
 ** width and height of the <SVG> object into the integers that they
 ** point to.  A value of -1 is written if an error is seen.
 **
