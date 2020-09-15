@@ -333,6 +333,7 @@ struct Pik {
   unsigned int nOut;       /* Bytes written to zOut[] so far */
   unsigned int nOutAlloc;  /* Space allocated to zOut[] */
   unsigned char eDir;      /* Current direction */
+  unsigned int mFlags;     /* Flags passed to pikchr() */
   PElem *cur;              /* Element under construction */
   PEList *list;            /* Element list under construction */
   PVar *pVar;              /* Application-defined variables */
@@ -354,6 +355,17 @@ struct Pik {
   int mTPath;              /* For last entry, 1: x set,  2: y set */
   PPoint aTPath[1000];     /* Path under construction */
 };
+
+
+/*
+** Flag values for Pik.mFlags (to be picked up by makeheaders on systems
+** that use makeheaders.
+*/
+#undef INTERFACE
+#define INTERFACE 1
+#if INTERFACE
+#define PIKCHR_INCLUDE_SOURCE 0x0001  /* Include Pikchr src in SVG output */
+#endif /* INTERFACE */
 
 /*
 ** The behavior of an object class is defined by an instance of
@@ -1958,7 +1970,7 @@ static void pik_append_arc(Pik *p, PNum r1, PNum r2, PNum x, PNum y){
 ** the caller wants to add some more.
 */
 static void pik_append_style(Pik *p, PElem *pElem){
-  pik_append(p, "style=\"", -1);
+  pik_append(p, " style=\"", -1);
   if( pElem->fill>=0 ){
     pik_append_clr(p, "fill:", pElem->fill, ";");
   }else{
@@ -2242,7 +2254,7 @@ static PElem *pik_assert(Pik *p, PNum e1, PToken *pEq, PNum e2){
 ** Process an "assert( place1 == place2 )" statement.  Always return NULL.
 */
 static PElem *pik_place_assert(Pik *p, PPoint *e1, PToken *pEq, PPoint *e2){
-  char zE1[100], zE2[100], zMsg[200];
+  char zE1[100], zE2[100], zMsg[210];
 
   /* Convert the numbers to strings using %g for comparison.  This
   ** limits the precision of the comparison to account for rounding error. */
@@ -3838,6 +3850,19 @@ static void pik_render(Pik *p, PEList *pEList){
     p->hSVG = (int)(p->rScale*h);
     pik_append_dis(p, " viewBox=\"0 0 ",w,"");
     pik_append_dis(p, " ",h,"\">\n");
+    if( (p->mFlags & PIKCHR_INCLUDE_SOURCE)!=0 ){
+      /* emit original pikchr source code as metadata */
+      /* FIXME: emit this only if a certain p->mFlags is set. */
+      pik_append(p, "<metadata>\n", 11);
+      pik_append(p, "<pikchr:pikchr xmlns:pikchr="
+         "\"https://pikchr.org/home/doc/trunk/doc/grammar.md\">\n",
+          -1);
+      pik_append(p, "<pikchr:src><![CDATA[", 21);
+      pik_append(p, p->zIn, (int)p->nIn);
+      pik_append(p, "]]></pikchr:src>\n", 17);
+      pik_append(p, "</pikchr:pikchr>\n", 17);
+      pik_append(p, "</metadata>\n", 12);
+    }
     pik_elist_render(p, pEList);
     pik_append(p,"</svg>\n", -1);
   }else{
@@ -4309,6 +4334,7 @@ char *pikchr(
   s.nIn = (unsigned int)strlen(zText);
   s.eDir = DIR_RIGHT;
   s.zClass = zClass;
+  s.mFlags = mFlags;
   pik_parserInit(&sParse, &s);
 #if 0
   pik_parserTrace(stdout, "parser: ");
@@ -4383,7 +4409,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *aData, size_t nByte){
 */
 int main(int argc, char **argv){
   int i;
-  int bNoEcho = 0;    /* Do not the text of the script */
+  int bNoEcho = 0;         /* Do not the text of the script */
+  int mPikchrFlags = 0;    /* Flags passed into pikchr() */
   printf(
     "<!DOCTYPE html>\n"
     "<html lang=\"en-US\">\n"
@@ -4407,6 +4434,9 @@ int main(int argc, char **argv){
       if( z[0]=='-' ) z++;
       if( strcmp(z,"no-echo")==0 ){
         bNoEcho = 1;
+      }else
+      if( strcmp(z,"include-source")==0 ){
+        mPikchrFlags |= PIKCHR_INCLUDE_SOURCE;
       }else
       {
         fprintf(stderr,"unknown option: \"%s\"\n", argv[i]);
@@ -4452,7 +4482,7 @@ int main(int argc, char **argv){
       }
       printf("</pre></blockquote>\n");
     }
-    zOut = pikchr(zIn, "pikchr", 0, &w, &h);
+    zOut = pikchr(zIn, "pikchr", mPikchrFlags, &w, &h);
     free(zIn);
     if( zOut ){
       if( w<0 ){
