@@ -21,6 +21,20 @@ Is generated using the following Markdown:
    ~~~~
 ~~~~~~
 
+## Copyright
+
+Zero-clause BSD
+
+The Pikchr source code is a self-contained original work.  It has no
+external dependencies apart from the standard C library and does not
+use code taken from the internet or other external sources.  All of the Pikchr
+source code is released under a zero-clause BSD license.  After being
+processed using [Lemon][lemon], the Pikchr source code is a single
+file of C89 named "`pikchr.c`".  These features
+are designed to make Pikchr easy to integrate into other systems.
+
+[lemon]: https://www.sqlite.org/lemon.html
+
 ## A Work In Progress
 
 As of this writing (2020-09-09), Pikchr is a work-in-progress.
@@ -37,10 +51,12 @@ Volunteers are welcomed, of course.
   *  [](/pikchrshow)
   *  [Wiki Sandbox](/wikiedit?name=Sandbox)
 
-## Internal Links
+## Internal Links (all documents are incomplete)
 
-  *  [Pikchr User Manual](./doc/userman.md) (still very incomplete)
+  *  [Pikchr User Manual](./doc/userman.md)
   *  [Pikchr Language Grammar](./doc/grammar.md)
+  *  [Differences From PIC](./doc/differences.md)
+  *  [Invoking Pikchr From Markdown](./doc/usepikchr.md)
 
 ## External Links
 

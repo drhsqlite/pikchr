@@ -54,7 +54,7 @@ dot ".sw " rjust below at A.sw
 dot ".w " rjust at A.w
 dot ".nw " rjust above at A.nw
 
-A: box thin at 2.0*boxwid right of previous box rad 0.3
+A: box thin at 2.0*boxwid right of previous box rad 15px
 dot ".c" above at A
 dot ".n" above at A.n
 dot " .ne" ljust above at A.ne

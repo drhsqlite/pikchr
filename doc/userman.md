@@ -5,15 +5,17 @@
 This is a guide to generating diagrams using Pikchr
 (pronounced "Picture").  This guide is
 designed to teach you to use Pikchr.  It is not a reference for the
-Pikchr language (that is a separate document) nor is it an explanation
+Pikchr language (that is a [separate document][gram]) nor is it an explanation
 of why you might want to use Pikchr.  The goal here is to provide
 a practical and accessible tutorial on using Pikchr.
 
+[gram]: ./grammar.md
+
 ## Running Pikchr Scripts
 
-The original goal of Pikchr is to embed diagrams into Markdown or other
-simple markup languages.  The details on how to do that are covered
-separately.  For the purpose of this tutorial, we will only write
+The design goal of Pikchr is to enabled embedded line diagrams in Markdown or other
+simple markup languages.  The details on how to embedded Pikchr in Markdown is
+[covered separately][embed].  For the purpose of this tutorial, we will only write
 pure Pikchr scripts without the surrounding markup.  To experiement
 with Pikchr, visit the [](/pikchrshow) page on the website hosting
 this document (preferrably in a separate window).  Type in the following
@@ -34,6 +36,8 @@ So there you go: you've created and rendered your first diagram using
 Pikchr!  You will do well to keep that /pikchrshow screen handy, in a
 separate browser window, so that you can try out scripts as you proceed
 through this tutoral.
+
+[embed]: ./usepikchr.md
 
 ## About Pikchr Scripts
 
