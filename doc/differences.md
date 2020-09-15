@@ -78,7 +78,7 @@ arrow rad 10px go heading 30 then go 200% heading 175 \
 
 ## 4.0 The "`color`" and "`fill`" attributes
 
-  *  Mention hexadecimal notation for RGV color values
+  *  Mention hexadecimal notation for RGB color values
   *  Mention the 140 HTML color names
 
 ## 5.0 The "`thickness`" attribute
