@@ -1,6 +1,8 @@
 # Pikchr User Manual
 
-## Introduction
+ <!--markdown-paragraph-numbers-->
+
+# Introduction
 
 This is a guide to generating diagrams using Pikchr
 (pronounced "Picture").  This guide is
@@ -11,7 +13,7 @@ a practical and accessible tutorial on using Pikchr.
 
 [gram]: ./grammar.md
 
-## Running Pikchr Scripts
+# Running Pikchr Scripts
 
 The design goal of Pikchr is to enabled embedded line diagrams in Markdown or other
 simple markup languages.  The details on how to embedded Pikchr in Markdown is
@@ -39,7 +41,7 @@ through this tutoral.
 
 [embed]: ./usepikchr.md
 
-## About Pikchr Scripts
+# About Pikchr Scripts
 
 The structure of a Pikchr script is very simple.  A Pikchr script is
 just a sequence of Pikchr statements, separated by either new-lines or
@@ -78,7 +80,7 @@ a backslash character and the new-line will be treated as any other space:
 
 So, a Pikchr script is just a list of statements.  But what is a statement?
 
-## Pikchr Statements
+# Pikchr Statements
 
 *Most* statements are descriptions of a single graphic object that
 becomes part of the diagram.  The first token of the statement is the
@@ -119,7 +121,7 @@ we see that that script contains three object descriptions:
       inside the box.
   3.  An "arrow" object with no attributes.
 
-## Layout
+# Layout
 
 By default, objects are stacked beside each other from left to right.
 The Pikchr layout engine keeps track of the "layout direction" which
@@ -200,7 +202,7 @@ the following script generates the same output as the previous.
     box; line invisible; circle; line invisible; cylinder
 ~~~~~
 
-## Controlling Layout Using Attributes
+# Controlling Layout Using Attributes
 
 The automatic stacking of objects is convenient in many cases.  But
 most diagrams will want some objects placed somewhere other than
@@ -332,7 +334,7 @@ The final phrase in the "arrow" statement is
 from whereever it is at the moment, directly to the ".s" corner
 of the cylinder.
 
-## The Advantage Of Relative Layout
+# The Advantage Of Relative Layout
 
 Notice that our sample diagram contains no coordinates and only
 one hard-coded distance (the "down 1cm" in the arrow).  The script
@@ -377,7 +379,7 @@ a little study of the syntax options available to you (and discussed
 further below) you will be generating complex diagrams using Pikchr
 in no time.
 
-## Single-Pass Design
+# Single-Pass Design
 
 Both Pikchr and legacy-PIC operate on a single-pass design.  Objects
 can refer to other objects that occur before them in the script, but not
@@ -397,7 +399,7 @@ forward and backward layout constraints to find a solution.  This
 simplicity of design helps to keep Pikchr scripts easy to write and
 easy to understand.
 
-## Names Of Objects
+# Names Of Objects
 
 The previous example used the phrases "`first box`" and "`first cylinder`"
 to refer to particular objects.  There are many variations on this naming

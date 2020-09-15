@@ -4409,7 +4409,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *aData, size_t nByte){
 */
 int main(int argc, char **argv){
   int i;
-  int bNoEcho = 0;         /* Do not the text of the script */
+  int bNoEcho = 0;         /* Do not show the text of the script */
   int mPikchrFlags = 0;    /* Flags passed into pikchr() */
   printf(
     "<!DOCTYPE html>\n"
