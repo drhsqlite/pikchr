@@ -2,7 +2,7 @@
 
 An oval is a box in which the narrow ends are formed by semicircles.
 If the height is less than the width (the default) then the semicircles
-are on the ends.  If the width is less than the height, then the
+are on the left and right.  If the width is less than the height, then the
 semicircles are on the top and bottom:
 
 ~~~~ pikchr indent
@@ -32,7 +32,8 @@ line thin color gray from previous text.e right until even with X3 ->
 ~~~~
 
 An oval works like a [box](./boxobj.md) in which the radius is
-set to half the minimum of the height and width.
+set to half the minimum of the height and width.  An oval where the
+width and height are the same is a [circle](./circleobj.md)
 
 
 ## Boundary points:

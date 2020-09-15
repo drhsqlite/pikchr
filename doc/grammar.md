@@ -100,7 +100,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **cylinder**     [&#9654;info](./cylinderobj.md)
   * **dot**
   * **ellipse**      [&#9654;info](./ellipseobj.md)
-  * **file**
+  * **file**         [&#9654;info](./fileobj.md)
   * **line**
   * **move**
   * **oval**         [&#9654;info](./ovalobj.md)
