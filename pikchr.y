@@ -147,6 +147,8 @@ typedef struct PBox PBox;        /* A bounding box */
 #define CP_W      7
 #define CP_NW     8
 #define CP_C      9   /* .center or .c */
+#define CP_END   10   /* .end */
+#define CP_START 11   /* .start */
 
 /* Heading angles corresponding to compass points */
 static const PNum pik_hdg_angle[] = {
@@ -263,22 +265,17 @@ static int pik_token_eq(PToken *pToken, const char *z){
 /* Bitmask for the various attributes for PElem.  These bits are
 ** collected in PElem.mProp and PElem.mCalc to check for constraint
 ** errors. */
-#define A_WIDTH         0x000001
-#define A_HEIGHT        0x000002
-#define A_RADIUS        0x000004
-#define A_THICKNESS     0x000008
-#define A_DASHED        0x000010 /* Includes "dotted" */
-#define A_FILL          0x000020
-#define A_COLOR         0x000040
-#define A_ARROW         0x000080
-#define A_TOP           0x000100
-#define A_BOTTOM        0x000200
-#define A_LEFT          0x000400
-#define A_RIGHT         0x000800
-#define A_CORNER        0x001000
-#define A_FROM          0x002000
-#define A_CW            0x004000
-#define A_AT            0x008000
+#define A_WIDTH         0x0001
+#define A_HEIGHT        0x0002
+#define A_RADIUS        0x0004
+#define A_THICKNESS     0x0008
+#define A_DASHED        0x0010 /* Includes "dotted" */
+#define A_FILL          0x0020
+#define A_COLOR         0x0040
+#define A_ARROW         0x0080
+#define A_FROM          0x0100
+#define A_CW            0x0200
+#define A_AT            0x0400
 
 
 /* A single element */
@@ -1013,6 +1010,29 @@ static void boxInit(Pik *p, PElem *pElem){
   pElem->h = pik_value(p, "boxht",5,0);
   pElem->rad = pik_value(p, "boxrad",6,0);
 }
+/* Translate the CP_START and CP_END reference points into the
+** corresponding compass point based on the direction.
+*/
+static int boxTranslateEndPoint(PElem *pElem, int cp){
+#if 0
+  if( cp==CP_START ){
+    switch( pElem->inDir ){
+      case DIR_RIGHT: cp = CP_W;  break;
+      case DIR_DOWN:  cp = CP_N;  break;
+      case DIR_LEFT:  cp = CP_E;  break;
+      case DIR_UP:    cp = CP_S;  break;
+    }
+  }else if( cp==CP_END ){
+    switch( pElem->outDir ){
+      case DIR_RIGHT: cp = CP_E;  break;
+      case DIR_DOWN:  cp = CP_S;  break;
+      case DIR_LEFT:  cp = CP_W;  break;
+      case DIR_UP:    cp = CP_N;  break;
+    }
+  }
+#endif
+  return cp;
+}
 /* Return offset from the center of the box to the compass point 
 ** given by parameter cp */
 static PPoint boxOffset(Pik *p, PElem *pElem, int cp){
@@ -1029,7 +1049,7 @@ static PPoint boxOffset(Pik *p, PElem *pElem, int cp){
     rx = 0.29289321881345252392*rad;
   }
   pt.x = pt.y = 0.0;
-  switch( cp ){
+  switch( boxTranslateEndPoint(pElem,cp) ){
     case CP_C:   pt.x = 0.0;      pt.y = 0.0;    break;
     case CP_N:   pt.x = 0.0;      pt.y = h2;     break;
     case CP_NE:  pt.x = w2-rx;    pt.y = h2-rx;  break;
@@ -1226,7 +1246,7 @@ static PPoint cylinderOffset(Pik *p, PElem *pElem, int cp){
   PNum w2 = pElem->w*0.5;
   PNum h1 = pElem->h*0.5;
   PNum h2 = h1 - pElem->rad;
-  switch( cp ){
+  switch( boxTranslateEndPoint(pElem,cp) ){
     case CP_C:   pt.x = 0.0;   pt.y = 0.0;    break;
     case CP_N:   pt.x = 0.0;   pt.y = h1;     break;
     case CP_NE:  pt.x = w2;    pt.y = h2;     break;
@@ -1307,7 +1327,7 @@ static PPoint ellipseOffset(Pik *p, PElem *pElem, int cp){
   PNum w2 = w*0.70710678118654747608;
   PNum h = pElem->h*0.5;
   PNum h2 = h*0.70710678118654747608;
-  switch( cp ){
+  switch( boxTranslateEndPoint(pElem,cp) ){
     case CP_C:   pt.x = 0.0;   pt.y = 0.0;    break;
     case CP_N:   pt.x = 0.0;   pt.y = h;      break;
     case CP_NE:  pt.x = w2;    pt.y = h2;     break;
@@ -1353,7 +1373,7 @@ static PPoint fileOffset(Pik *p, PElem *pElem, int cp){
   if( rx<mn*0.25 ) rx = mn*0.25;
   pt.x = pt.y = 0.0;
   rx *= 0.5;
-  switch( cp ){
+  switch( boxTranslateEndPoint(pElem,cp) ){
     case CP_C:   pt.x = 0.0;      pt.y = 0.0;    break;
     case CP_N:   pt.x = 0.0;      pt.y = h2;     break;
     case CP_NE:  pt.x = w2-rx;    pt.y = h2-rx;  break;
@@ -1407,13 +1427,9 @@ static void lineInit(Pik *p, PElem *pElem){
 }
 static PPoint lineOffset(Pik *p, PElem *pElem, int cp){
 
-#if 0  /* No.  Just make .center the geometic center of the line.
-       ** This is different from legacy-PIC and Gnu-PIC, but it seems
-       ** to work better.  And the two points are the same in most
-       ** cases anyhow. */
-  /* The .center of an unclosed line is half way between
-  ** its .start and .end.  For everything else, the offset
-  ** is the same as for box */
+#if 0
+  /* In legacy PIC, the .center of an unclosed line is half way between
+  ** its .start and .end. */
   if( cp==CP_C && !pElem->bClose ){
     PPoint out;
     out.x = 0.5*(pElem->ptEnter.x + pElem->ptExit.x) - pElem->ptAt.x;
@@ -1582,7 +1598,7 @@ static void sublistInit(Pik *p, PElem *pElem){
   pElem->h = pElem->bbox.ne.y - pElem->bbox.sw.y;
   pElem->ptAt.x = 0.5*(pElem->bbox.ne.x + pElem->bbox.sw.x);
   pElem->ptAt.y = 0.5*(pElem->bbox.ne.y + pElem->bbox.sw.y);
-  pElem->mCalc |= A_WIDTH|A_HEIGHT;
+  pElem->mCalc |= A_WIDTH|A_HEIGHT|A_RADIUS;
 }
 
 
@@ -1598,7 +1614,7 @@ static const PClass aClass[] = {
       /* xNumProp */      0,
       /* xCheck */        arcCheck,
       /* xChop */         0,
-      /* xOffset */       0,
+      /* xOffset */       boxOffset,
       /* xFit */          0,
       /* xRender */       arcRender
    },
@@ -1697,7 +1713,7 @@ static const PClass aClass[] = {
       /* xNumProp */      0,
       /* xCheck */        0,
       /* xChop */         0,
-      /* xOffset */       0,
+      /* xOffset */       boxOffset,
       /* xFit */          0,
       /* xRender */       moveRender
    },
@@ -1743,7 +1759,7 @@ static const PClass sublistClass =
       /* xNumProp */      0,
       /* xCheck */        0,
       /* xChop */         0,
-      /* xOffset */       0,
+      /* xOffset */       boxOffset,
       /* xFit */          0,
       /* xRender */       0 
    };
@@ -1755,7 +1771,7 @@ static const PClass noopClass =
       /* xNumProp */      0,
       /* xCheck */        0,
       /* xChop */         0,
-      /* xOffset */       0,
+      /* xOffset */       boxOffset,
       /* xFit */          0,
       /* xRender */       0
    };
@@ -1818,11 +1834,7 @@ static void pik_draw_arrowhead(Pik *p, PPoint *f, PPoint *t, PElem *pElem){
 ** an element.
 */
 static PPoint pik_elem_offset(Pik *p, PElem *pElem, int cp){
-  if( pElem->type->xOffset==0 ){
-    return boxOffset(p, pElem, cp);
-  }else{
-    return pElem->type->xOffset(p, pElem, cp);
-  }
+  return pElem->type->xOffset(p, pElem, cp);
 }
 
 
@@ -2545,7 +2557,7 @@ static void pik_set_direction(Pik *p, int eDir){
   p->eDir = eDir;
 
   /* It seems to make sense to reach back into the last object and
-  ** changes its exit point (its ".end") to correspond to the new
+  ** change its exit point (its ".end") to correspond to the new
   ** direction.  Things just seem to work better this way.  However,
   ** legacy PIC does *not* do this.
   **
@@ -2607,10 +2619,8 @@ static int pik_param_ok(
   Pik *p,             /* For storing the error message (if any) */
   PElem *pElem,       /* The element under construction */
   PToken *pId,        /* Make the error point to this token */
-  int mThis,          /* Value we are trying to set */
-  int mBlockers       /* Other value that might block this one */
+  int mThis           /* Value we are trying to set */
 ){
-  int m;
   if( pElem->mProp & mThis ){
     pik_error(p, pId, "value is already set");
     return 1;
@@ -2618,10 +2628,6 @@ static int pik_param_ok(
   if( pElem->mCalc & mThis ){
     pik_error(p, pId, "value already fixed by prior constraints");
     return 1;
-  }
-  m = pElem->mProp & mBlockers;
-  if( m ){
-    pElem->mCalc |= mThis|mBlockers;
   }
   pElem->mProp |= mThis;
   return 0;
@@ -2638,23 +2644,23 @@ void pik_set_numprop(Pik *p, PToken *pId, PRel *pVal){
   PElem *pElem = p->cur;
   switch( pId->eType ){
     case T_HEIGHT:
-      if( pik_param_ok(p, pElem, pId, A_HEIGHT, A_BOTTOM|A_TOP|A_AT) ) return;
+      if( pik_param_ok(p, pElem, pId, A_HEIGHT) ) return;
       pElem->h = pElem->h*pVal->rRel + pVal->rAbs;
       break;
     case T_WIDTH:
-      if( pik_param_ok(p, pElem, pId, A_WIDTH, A_RIGHT|A_LEFT|A_AT) ) return;
+      if( pik_param_ok(p, pElem, pId, A_WIDTH) ) return;
       pElem->w = pElem->w*pVal->rRel + pVal->rAbs;
       break;
     case T_RADIUS:
-      if( pik_param_ok(p, pElem, pId, A_RADIUS, 0) ) return;
+      if( pik_param_ok(p, pElem, pId, A_RADIUS) ) return;
       pElem->rad = pElem->rad*pVal->rRel + pVal->rAbs;
       break;
     case T_DIAMETER:
-      if( pik_param_ok(p, pElem, pId, A_RADIUS, 0) ) return;
+      if( pik_param_ok(p, pElem, pId, A_RADIUS) ) return;
       pElem->rad = pElem->rad*pVal->rRel + 0.5*pVal->rAbs; /* diam it 2x rad */
       break;
     case T_THICKNESS:
-      if( pik_param_ok(p, pElem, pId, A_THICKNESS, 0) ) return;
+      if( pik_param_ok(p, pElem, pId, A_THICKNESS) ) return;
       pElem->sw = pElem->sw*pVal->rRel + pVal->rAbs;
       break;
   }
@@ -2671,11 +2677,11 @@ void pik_set_clrprop(Pik *p, PToken *pId, PNum rClr){
   PElem *pElem = p->cur;
   switch( pId->eType ){
     case T_FILL:
-      if( pik_param_ok(p, pElem, pId, A_FILL, 0) ) return;
+      if( pik_param_ok(p, pElem, pId, A_FILL) ) return;
       pElem->fill = rClr;
       break;
     case T_COLOR:
-      if( pik_param_ok(p, pElem, pId, A_COLOR, 0) ) return;
+      if( pik_param_ok(p, pElem, pId, A_COLOR) ) return;
       pElem->color = rClr;
       break;
   }
@@ -2967,18 +2973,8 @@ static void pik_set_at(Pik *p, PToken *pEdge, PPoint *pAt, PToken *pErrTok){
     pik_error(p, pErrTok, "location fixed by prior \"at\"");
     return;
   }
-  if( pElem->mCalc & A_AT ){
-    pik_error(p, pErrTok, "location fixed by prior constraints");
-    return;
-  }
-  if( pElem->mProp & (A_WIDTH|A_LEFT|A_RIGHT) ){
-    pElem->mCalc |= (A_WIDTH|A_LEFT|A_RIGHT|A_AT);
-  }
-  if( pElem->mProp & (A_HEIGHT|A_TOP|A_BOTTOM) ){
-    pElem->mCalc |= (A_HEIGHT|A_TOP|A_BOTTOM|A_AT);
-  }
   pElem->mProp |= A_AT;
-  pElem->eWith = pEdge ? pEdge->eEdge : CP_C;
+  pElem->eWith = pEdge ? boxTranslateEndPoint(pElem,pEdge->eEdge) : CP_C;
   pElem->with = *pAt;
 }
 
@@ -3415,12 +3411,8 @@ static PPoint pik_place_of_elem(Pik *p, PElem *pElem, PToken *pEdge){
     return pElem->ptAt;
   }
   pClass = pElem->type;
-  if( pEdge->eType==T_EDGEPT || pEdge->eEdge>0 ){
-    if( pClass->xOffset==0 ){
-      pt = boxOffset(p, pElem, pEdge->eEdge);
-    }else{
-      pt = pClass->xOffset(p, pElem, pEdge->eEdge);
-    }
+  if( pEdge->eType==T_EDGEPT || (pEdge->eEdge>0 && pEdge->eEdge<CP_END) ){
+    pt = pClass->xOffset(p, pElem, pEdge->eEdge);
     pt.x += pElem->ptAt.x;
     pt.y += pElem->ptAt.y;
     return pt;
@@ -3903,93 +3895,93 @@ typedef struct PikWord {
 ** Keywords
 */
 static const PikWord pik_keywords[] = {
-  { "above",      5,   T_ABOVE,     0,         0       },
-  { "abs",        3,   T_FUNC1,     FN_ABS,    0       },
-  { "aligned",    7,   T_ALIGNED,   0,         0       },
-  { "and",        3,   T_AND,       0,         0       },
-  { "as",         2,   T_AS,        0,         0       },
-  { "assert",     6,   T_ASSERT,    0,         0       },
-  { "at",         2,   T_AT,        0,         0       },
-  { "behind",     6,   T_BEHIND,    0,         0       },
-  { "below",      5,   T_BELOW,     0,         0       },
-  { "between",    7,   T_BETWEEN,   0,         0       },
-  { "big",        3,   T_BIG,       0,         0       },
-  { "bold",       4,   T_BOLD,      0,         0       },
-  { "bot",        3,   T_EDGEPT,    0,         CP_S    },
-  { "bottom",     6,   T_BOTTOM,    0,         CP_S    },
-  { "c",          1,   T_EDGEPT,    0,         CP_C    },
-  { "ccw",        3,   T_CCW,       0,         0       },
-  { "center",     6,   T_CENTER,    0,         CP_C    },
-  { "chop",       4,   T_CHOP,      0,         0       },
-  { "close",      5,   T_CLOSE,     0,         0       },
-  { "color",      5,   T_COLOR,     0,         0       },
-  { "cos",        3,   T_FUNC1,     FN_COS,    0       },
-  { "cw",         2,   T_CW,        0,         0       },
-  { "dashed",     6,   T_DASHED,    0,         0       },
-  { "diameter",   8,   T_DIAMETER,  0,         0       },
-  { "dotted",     6,   T_DOTTED,    0,         0       },
-  { "down",       4,   T_DOWN,      DIR_DOWN,  0       },
-  { "e",          1,   T_EDGEPT,    0,         CP_E    },
-  { "east",       4,   T_EDGEPT,    0,         CP_E    },
-  { "end",        3,   T_END,       0,         0       },
-  { "even",       4,   T_EVEN,      0,         0       },
-  { "fill",       4,   T_FILL,      0,         0       },
-  { "first",      5,   T_NTH,       0,         0       },
-  { "fit",        3,   T_FIT,       0,         0       },
-  { "from",       4,   T_FROM,      0,         0       },
-  { "go",         2,   T_GO,        0,         0       },
-  { "heading",    7,   T_HEADING,   0,         0       },
-  { "height",     6,   T_HEIGHT,    0,         0       },
-  { "ht",         2,   T_HEIGHT,    0,         0       },
-  { "in",         2,   T_IN,        0,         0       },
-  { "int",        3,   T_FUNC1,     FN_INT,    0       },
-  { "invis",      5,   T_INVIS,     0,         0       },
-  { "invisible",  9,   T_INVIS,     0,         0       },
-  { "italic",     6,   T_ITALIC,    0,         0       },
-  { "last",       4,   T_LAST,      0,         0       },
-  { "left",       4,   T_LEFT,      DIR_LEFT,  CP_W    },
-  { "ljust",      5,   T_LJUST,     0,         0       },
-  { "max",        3,   T_FUNC2,     FN_MAX,    0       },
-  { "min",        3,   T_FUNC2,     FN_MIN,    0       },
-  { "n",          1,   T_EDGEPT,    0,         CP_N    },
-  { "ne",         2,   T_EDGEPT,    0,         CP_NE   },
-  { "north",      5,   T_EDGEPT,    0,         CP_N    },
-  { "nw",         2,   T_EDGEPT,    0,         CP_NW   },
-  { "of",         2,   T_OF,        0,         0       },
-  { "previous",   8,   T_LAST,      0,         0,      },
-  { "print",      5,   T_PRINT,     0,         0       },
-  { "rad",        3,   T_RADIUS,    0,         0       },
-  { "radius",     6,   T_RADIUS,    0,         0       },
-  { "right",      5,   T_RIGHT,     DIR_RIGHT, CP_E    },
-  { "rjust",      5,   T_RJUST,     0,         0       },
-  { "s",          1,   T_EDGEPT,    0,         CP_S    },
-  { "same",       4,   T_SAME,      0,         0       },
-  { "se",         2,   T_EDGEPT,    0,         CP_SE   },
-  { "sin",        3,   T_FUNC1,     FN_SIN,    0       },
-  { "small",      5,   T_SMALL,     0,         0       },
-  { "south",      5,   T_EDGEPT,    0,         CP_S    },
-  { "sqrt",       4,   T_FUNC1,     FN_SQRT,   0       },
-  { "start",      5,   T_START,     0,         0       },
-  { "sw",         2,   T_EDGEPT,    0,         CP_SW   },
-  { "t",          1,   T_TOP,       0,         CP_N    },
-  { "the",        3,   T_THE,       0,         0       },
-  { "then",       4,   T_THEN,      0,         0       },
-  { "thick",      5,   T_THICK,     0,         0       },
-  { "thickness",  9,   T_THICKNESS, 0,         0       },
-  { "thin",       4,   T_THIN,      0,         0       },
-  { "to",         2,   T_TO,        0,         0       },
-  { "top",        3,   T_TOP,       0,         CP_N    },
-  { "until",      5,   T_UNTIL,     0,         0       },
-  { "up",         2,   T_UP,        DIR_UP,    0       },
-  { "vertex",     6,   T_VERTEX,    0,         0       },
-  { "w",          1,   T_EDGEPT,    0,         CP_W    },
-  { "way",        3,   T_WAY,       0,         0       },
-  { "west",       4,   T_EDGEPT,    0,         CP_W    },
-  { "wid",        3,   T_WIDTH,     0,         0       },
-  { "width",      5,   T_WIDTH,     0,         0       },
-  { "with",       4,   T_WITH,      0,         0       },
-  { "x",          1,   T_X,         0,         0       },
-  { "y",          1,   T_Y,         0,         0       },
+  { "above",      5,   T_ABOVE,     0,         0        },
+  { "abs",        3,   T_FUNC1,     FN_ABS,    0        },
+  { "aligned",    7,   T_ALIGNED,   0,         0        },
+  { "and",        3,   T_AND,       0,         0        },
+  { "as",         2,   T_AS,        0,         0        },
+  { "assert",     6,   T_ASSERT,    0,         0        },
+  { "at",         2,   T_AT,        0,         0        },
+  { "behind",     6,   T_BEHIND,    0,         0        },
+  { "below",      5,   T_BELOW,     0,         0        },
+  { "between",    7,   T_BETWEEN,   0,         0        },
+  { "big",        3,   T_BIG,       0,         0        },
+  { "bold",       4,   T_BOLD,      0,         0        },
+  { "bot",        3,   T_EDGEPT,    0,         CP_S     },
+  { "bottom",     6,   T_BOTTOM,    0,         CP_S     },
+  { "c",          1,   T_EDGEPT,    0,         CP_C     },
+  { "ccw",        3,   T_CCW,       0,         0        },
+  { "center",     6,   T_CENTER,    0,         CP_C     },
+  { "chop",       4,   T_CHOP,      0,         0        },
+  { "close",      5,   T_CLOSE,     0,         0        },
+  { "color",      5,   T_COLOR,     0,         0        },
+  { "cos",        3,   T_FUNC1,     FN_COS,    0        },
+  { "cw",         2,   T_CW,        0,         0        },
+  { "dashed",     6,   T_DASHED,    0,         0        },
+  { "diameter",   8,   T_DIAMETER,  0,         0        },
+  { "dotted",     6,   T_DOTTED,    0,         0        },
+  { "down",       4,   T_DOWN,      DIR_DOWN,  0        },
+  { "e",          1,   T_EDGEPT,    0,         CP_E     },
+  { "east",       4,   T_EDGEPT,    0,         CP_E     },
+  { "end",        3,   T_END,       0,         CP_END   },
+  { "even",       4,   T_EVEN,      0,         0        },
+  { "fill",       4,   T_FILL,      0,         0        },
+  { "first",      5,   T_NTH,       0,         0        },
+  { "fit",        3,   T_FIT,       0,         0        },
+  { "from",       4,   T_FROM,      0,         0        },
+  { "go",         2,   T_GO,        0,         0        },
+  { "heading",    7,   T_HEADING,   0,         0        },
+  { "height",     6,   T_HEIGHT,    0,         0        },
+  { "ht",         2,   T_HEIGHT,    0,         0        },
+  { "in",         2,   T_IN,        0,         0        },
+  { "int",        3,   T_FUNC1,     FN_INT,    0        },
+  { "invis",      5,   T_INVIS,     0,         0        },
+  { "invisible",  9,   T_INVIS,     0,         0        },
+  { "italic",     6,   T_ITALIC,    0,         0        },
+  { "last",       4,   T_LAST,      0,         0        },
+  { "left",       4,   T_LEFT,      DIR_LEFT,  CP_W     },
+  { "ljust",      5,   T_LJUST,     0,         0        },
+  { "max",        3,   T_FUNC2,     FN_MAX,    0        },
+  { "min",        3,   T_FUNC2,     FN_MIN,    0        },
+  { "n",          1,   T_EDGEPT,    0,         CP_N     },
+  { "ne",         2,   T_EDGEPT,    0,         CP_NE    },
+  { "north",      5,   T_EDGEPT,    0,         CP_N     },
+  { "nw",         2,   T_EDGEPT,    0,         CP_NW    },
+  { "of",         2,   T_OF,        0,         0        },
+  { "previous",   8,   T_LAST,      0,         0,       },
+  { "print",      5,   T_PRINT,     0,         0        },
+  { "rad",        3,   T_RADIUS,    0,         0        },
+  { "radius",     6,   T_RADIUS,    0,         0        },
+  { "right",      5,   T_RIGHT,     DIR_RIGHT, CP_E     },
+  { "rjust",      5,   T_RJUST,     0,         0        },
+  { "s",          1,   T_EDGEPT,    0,         CP_S     },
+  { "same",       4,   T_SAME,      0,         0        },
+  { "se",         2,   T_EDGEPT,    0,         CP_SE    },
+  { "sin",        3,   T_FUNC1,     FN_SIN,    0        },
+  { "small",      5,   T_SMALL,     0,         0        },
+  { "south",      5,   T_EDGEPT,    0,         CP_S     },
+  { "sqrt",       4,   T_FUNC1,     FN_SQRT,   0        },
+  { "start",      5,   T_START,     0,         CP_START },
+  { "sw",         2,   T_EDGEPT,    0,         CP_SW    },
+  { "t",          1,   T_TOP,       0,         CP_N     },
+  { "the",        3,   T_THE,       0,         0        },
+  { "then",       4,   T_THEN,      0,         0        },
+  { "thick",      5,   T_THICK,     0,         0        },
+  { "thickness",  9,   T_THICKNESS, 0,         0        },
+  { "thin",       4,   T_THIN,      0,         0        },
+  { "to",         2,   T_TO,        0,         0        },
+  { "top",        3,   T_TOP,       0,         CP_N     },
+  { "until",      5,   T_UNTIL,     0,         0        },
+  { "up",         2,   T_UP,        DIR_UP,    0        },
+  { "vertex",     6,   T_VERTEX,    0,         0        },
+  { "w",          1,   T_EDGEPT,    0,         CP_W     },
+  { "way",        3,   T_WAY,       0,         0        },
+  { "west",       4,   T_EDGEPT,    0,         CP_W     },
+  { "wid",        3,   T_WIDTH,     0,         0        },
+  { "width",      5,   T_WIDTH,     0,         0        },
+  { "with",       4,   T_WITH,      0,         0        },
+  { "x",          1,   T_X,         0,         0        },
+  { "y",          1,   T_Y,         0,         0        },
 };
 
 /*

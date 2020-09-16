@@ -373,7 +373,7 @@ compensate automatically:
 
 Both Legacy-PIC and Pikchr allow you to specify hard-coded coordinates
 and distances when laying out your diagram.  But you are encouraged
-to avoid that approach.  Instead, position each new object you create
+to avoid that approach.  Instead, place each new object you create
 relative to the position of prior objects.
 Pikchr provides many mechanisms for specifying the location
 of each object in terms of the locations of its predecessors.  With
@@ -446,14 +446,14 @@ readability.
 # Layout Of Block Objects
 
 For lines (and arrows and splines), you have to specify a path that the line
-follows, a path that might involve multiple binds and turns.  Defining the location
+follows, a path that might involve multiple bends and turns.  Defining the location
 of block objects is easier.  You just provide a single location to place
 the object.  Ideally, you should place the object relative to some other
 object, of course.
 
 Let's say you have box and you want to position a circle 2 centimeters to the
 right of that box.  You simply use an "`at`" attribute on the circle to tell it
-to position itself 2cm to the right of the box:
+to position itself 2 cm to the right of the box:
 
 ~~~~~
   B1: box
@@ -483,7 +483,7 @@ javascript enabled - just click on the diagram.)
 
 The circle is positioned so that its *center* is 2 centimeters to the
 right of the *center* of the box.  If what you really wanted is that the
-left (or west) side of the circle is 2cm to the of the right (or east) side
+left (or west) side of the circle is 2 cm to the of the right (or east) side
 of the box, then just say so:
 
 ~~~~~
@@ -494,7 +494,7 @@ of the box, then just say so:
 Normally at "`at`" clause will set the center of an object.  But if
 you add a "`with`" prefix you can specify to use any other boundary
 point of the object to be the reference for positioning.  The Pikchr
-script above is saying "make the C1.w point be 2cm right of B1.e".
+script above is saying "make the C1.w point be 2 cm right of B1.e".
 And we have:
 
 ~~~~~ pikchr center
@@ -581,7 +581,7 @@ we can show by putting a red dot at (0,0):
 ~~~~~
 
 Because the layout direction is "right", the start and end of the box
-are the .w and .e boundary points.  Prove this by put more colored dots
+are the .w and .e boundary points.  Prove this by putting more colored dots
 at those points and rendering the result:
 
 ~~~~~
@@ -608,17 +608,57 @@ circle is created but before the cylinder is created:
     right; box; circle; down; cylinder
 ~~~~~
 
-The .end of circle is still its .e point because the layout direction
-was "right" when the circle was created.  But when the cylinder is
-created, the layout direction is down, so the .start for the cylinder 
-is its .n boundry point.  Hence by the standard layout rule, the
-.n boundary point of the cylinder will end up on top of the .e point
-of the circle:
+This script works a little differently on Pikchr than it does on PIC.
+The change in behavior is deliberate, because we feel that the Pikchr
+approach is better.  On PIC, the diagram above would be rendered
+like this:
 
 ~~~~~ pikchr
-    right; box; circle; down //; line; cylinder
+    right; box; circle; cylinder with .n at previous.e
+~~~~~
+
+But on Pikchr the placement of the cylinder is different:
+
+~~~~~ pikchr
+    right; box; circle; cylinder with .n at previous.s
+~~~~~
+
+Let's take apart what is happening here.  In both systems, after
+the "circle" object has been parsed and positioned, the .end of
+the circle is the same as .e, because the layout direction is "right".
+If we omit the "down" and "cylinder" and draw a dot at the ".end" of
+circle to show where it is, we can see this:
+
+~~~~~ pikchr
+    right; box; circle
+    dot color red at last circle.end
+~~~~~
+
+The next statement is "down".  The "down" statement changes the layout
+direction to "down" in both systems.  In legacy PIC the .end of the circle
+remains at the .e boundary.  Then when the "cylinder" is positioned,
+its ".start" is at .n because the layout direction is now "down"
+and so the .n point of the cylinder is aligned to the .e point of
+the circle.
+
+Pikchr works like PIC with on important change.  When the "down" statement
+is evaluated, Pikchr also moves the ".end" of the previous object
+to a new location that is approprate for the new direction.  So, in other
+words, the down command move the .end of the circle from .e to .s.
+You can see this by setting a red dot at the .end of
+the circle *after* the "down" command:
+
+~~~~~ pikchr
+    right; box; circle; down
     dot color red at first circle.end
-    dot color green at first circle.start
-    text at 1cm right of last circle.e "Interrupted" ljust \
-      "I'll continue to this later" ljust
+~~~~~
+
+Or, we can "`print`" the coordinates of the .end of the circle before
+and after the "down" command as see that they shift:
+
+~~~~~ pikchr
+    right; box; C1: circle
+    print "before: ", C1.end.x, ", ", C1.end.y
+    down
+    print "after: ", C1.end.x, ", ", C1.end.y
 ~~~~~
