@@ -4,11 +4,11 @@
 #
 All: [
 
-B: line thick color blue go 0.8 heading 350 then go 0.4 heading 120 \
+B: line thick thick color blue go 0.8 heading 350 then go 0.4 heading 120 \
     then go 0.5 heading 35 \
     then go 1.2 heading 190  then go 0.4 heading 340 "+"
 
-   line thin dashed from B.nw to B.ne to B.se to B.sw close
+   line thin dashed color gray from B.nw to B.ne to B.se to B.sw close
 
 circle ".n" fit at 1.5cm heading 0 from B.n
     arrow thin from previous to B.n chop
@@ -53,4 +53,4 @@ circle "&lambda;" fit at 1.7cm heading 250 from B
     arrow thin from previous.end to B
 
 ]
-"21 Names For 9 Boundary Points" big big with .s at .5cm above All.n
+"21 Names For 11 Boundary Points" big big with .s at .5cm above All.n

@@ -1993,6 +1993,9 @@ static void pik_append_style(Pik *p, PElem *pElem){
   if( pElem->sw>0.0 && pElem->color>=0.0 ){
     PNum sw = pElem->sw;
     pik_append_dis(p, "stroke-width:", sw, ";");
+    if( pElem->nPath>2 && pElem->rad<=pElem->sw ){
+      pik_append(p, "stroke-linejoin:round;", -1);
+    }
     pik_append_clr(p, "stroke:",pElem->color,";");
     if( pElem->dotted>0.0 ){
       PNum v = pElem->dotted;
