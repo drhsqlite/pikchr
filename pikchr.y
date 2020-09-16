@@ -4255,7 +4255,7 @@ static int pik_token_length(PToken *pToken){
             while( (c = z[i])>=0 && c<='9' ){ i++; }
           }
         }
-        c2 = z[i+1];
+        c2 = c ? z[i+1] : 0;
         if( isInt ){
           if( (c=='t' && c2=='h')
            || (c=='r' && c2=='d')
