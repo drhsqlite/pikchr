@@ -1425,7 +1425,6 @@ static void lineInit(Pik *p, PElem *pElem){
   pElem->fill = -1.0;
 }
 static PPoint lineOffset(Pik *p, PElem *pElem, int cp){
-
 #if 0
   /* In legacy PIC, the .center of an unclosed line is half way between
   ** its .start and .end. */
@@ -1436,7 +1435,6 @@ static PPoint lineOffset(Pik *p, PElem *pElem, int cp){
     return out;
   }
 #endif
-
   return boxOffset(p,pElem,cp);
 }
 static void lineRender(Pik *p, PElem *pElem){
@@ -3656,12 +3654,11 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
     pElem->aPath = malloc( sizeof(PPoint)*p->nTPath );
     if( pElem->aPath==0 ){
       pik_error(p, 0, 0);
-      pElem->nPath = 0;
+      return;
     }else{
       pElem->nPath = p->nTPath;
       for(i=0; i<p->nTPath; i++){
         pElem->aPath[i] = p->aTPath[i];
-        pik_bbox_add_xy(&pElem->bbox, pElem->aPath[i].x, pElem->aPath[i].y);
       }
     }
 
@@ -3675,11 +3672,14 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
       pik_autochop(p, &pElem->aPath[1], &pElem->aPath[0]);
     }
 
-    pElem->ptEnter = p->aTPath[0];
-    pElem->ptExit = p->aTPath[p->nTPath-1];
+    pElem->ptEnter = pElem->aPath[0];
+    pElem->ptExit = pElem->aPath[pElem->nPath-1];
 
     /* Compute the center of the line based on the bounding box over
     ** the vertexes */
+    for(i=0; i<pElem->nPath; i++){
+      pik_bbox_add_xy(&pElem->bbox, pElem->aPath[i].x, pElem->aPath[i].y);
+    }
     pElem->ptAt.x = (pElem->bbox.ne.x + pElem->bbox.sw.x)/2.0;
     pElem->ptAt.y = (pElem->bbox.ne.y + pElem->bbox.sw.y)/2.0;
 
