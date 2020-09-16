@@ -3051,7 +3051,7 @@ static int pik_text_length(const PToken *pToken){
       j++;
     }else if( z[j]=='&' ){
       int k;
-      for(k=j+1; k<j+7 && z[k]!=';'; k++){}
+      for(k=j+1; k<j+7 && z[k]!=0 && z[k]!=';'; k++){}
       if( z[k]==';' ) j = k;
     }
   }
@@ -4069,7 +4069,11 @@ static int pik_token_length(PToken *pToken){
     }
     case '"': {
       for(i=1; (c = z[i])!=0; i++){
-        if( c=='\\' ){ i++; continue; }
+        if( c=='\\' ){ 
+          if( z[i+1]==0 ) break;
+          i++;
+          continue;
+        }
         if( c=='"' ){
           pToken->eType = T_STRING;
           return i+1;
