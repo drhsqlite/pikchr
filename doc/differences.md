@@ -162,10 +162,22 @@ land exactly on the border of that object.
 ~~~ pikchr indent
 file "A"
 cylinder "B" at 5cm heading 125 from A
-arrow <-> from A to B chop "from A to B chop" aligned
+arrow <-> from A to B chop "from A to B chop" aligned above
 ~~~
 
 ## The "`same as` *object*" construct
+
+The plain old "`same`" attribute was as in PIC - it copies the
+configuration of the previous object of the same time.  But Pikchr
+is extended with the "`same as` *object*" clause, that copies the
+configuration from any other prior object, including objects of
+different types.
+
+~~~ pikchr indent
+box thick thick fill lightgray "box" "thick" "fill lightgray"
+move
+file same as last box "file" "same as" "last box" rad filerad
+~~~
 
 ## New ways to discribe line paths
 
