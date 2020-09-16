@@ -1,0 +1,8 @@
+margin = 4mm
+All: [
+file thick thick fill lightgray \
+   "wide-file" "test 1" "abcde" "uvwxyz" "bottom" fit
+move
+cylinder thick thick fill lightgray "cylinder" "test 1" fit
+]
+text "Fit &amp; Background for" "File and Cylinder" with .s at .2 above All.n
