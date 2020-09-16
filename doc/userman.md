@@ -43,7 +43,7 @@ through this tutoral.
 
 # About Pikchr Scripts
 
-The structure of a Pikchr script is very simple.  A Pikchr script is
+Pikchr is designed to be simple.  A Pikchr script is
 just a sequence of Pikchr statements, separated by either new-lines or
 semicolons.  The "Hello, world!" example above used three statements,
 a "line", a "box", and an "arrow", each separated by semicolons.
@@ -125,7 +125,7 @@ we see that that script contains three object descriptions:
 
 By default, objects are stacked beside each other from left to right.
 The Pikchr layout engine keeps track of the "layout direction" which
-can be one of "right", "down", "left", or "right".  The layout direction
+can be one of "right", "down", "left", or "up".  The layout direction
 defaults to "right".  But you can change it using a statement which
 consists of just the name of the new direction.  So, for example,
 if we insert the "down" statement in front of our test script, like
@@ -180,7 +180,7 @@ Yields:
     box; circle; cylinder
 ~~~~~
 
-But more often, you want to put space in between the block objects.
+More often, you want to put space in between the block objects.
 The special "move" object exists for that purpose.  Consider:
 
 ~~~~~
@@ -240,8 +240,10 @@ simple.  We'll take it apart and explain it piece by piece.
 First note that the "arrow" statement is broken up into four separate
 lines of text, with a "`\`" at the end of the first three lines to
 prevent the subsequent new-line from prematurely closing the statement.
-When you split a statement across multiple lines, don't forget the
-backslashes!
+Splitting up the arrow into separate lines this way is purely for
+human readability.  If you are more comfortable putting the whole
+statement on one line, that is fine too.  Pikchr doesn't care.  Just
+be sure to remember the backslashes if you do split lines!
 
 The attributes on the "arrow" statement describe the path taken by
 the arrow.  The first attribute is "`from first box.s`".  This "from"
@@ -371,9 +373,9 @@ compensate automatically:
 
 Both Legacy-PIC and Pikchr allow you to specify hard-coded coordinates
 and distances when laying out your diagram.  But you are encouraged
-to avoid that approach.  Instead, pick an "anchor object" (usually the first
-object you create) and lay out all other objects relative to the
-anchor.  Pikchr provides many mechanisms for specifying the location
+to avoid that approach.  Instead, position each new object you create
+relative to the position of prior objects.
+Pikchr provides many mechanisms for specifying the location
 of each object in terms of the locations of its predecessors.  With
 a little study of the syntax options available to you (and discussed
 further below) you will be generating complex diagrams using Pikchr
@@ -393,7 +395,7 @@ origin of the container.  Their shape and locations relative to each
 other are fixed, but their final absolute position is not fixed until
 their container itself is fixed.)
 
-The single-pass design contributes to the conceptual simplicity of
+The single-pass approach contributes to the conceptual simplicity of
 Pikchr (and legacy-PIC).  There is no "solver" that has to work through
 forward and backward layout constraints to find a solution.  This
 simplicity of design helps to keep Pikchr scripts easy to write and
@@ -401,7 +403,7 @@ easy to understand.
 
 # Names Of Objects
 
-The previous example used the phrases "`first box`" and "`first cylinder`"
+The previous example used the phrases like "`first box`" and "`first cylinder`"
 to refer to particular objects.  There are many variations on this naming
 scheme:
 
@@ -438,5 +440,185 @@ By giving symbolic names to the box and cylinder, the arrow path
 description is simplified.  Futhermore, if the ellipse gets changed
 into another cylinder, the arrow still refers to the correct cylinder.
 Note that the indentation of the lines following each symbolic name
-above is syntacially unimportant - it serves only to improve
+above is syntacially unimportant - it serves only to improve human
 readability.
+
+# Layout Of Block Objects
+
+For lines (and arrows and splines), you have to specify a path that the line
+follows, a path that might involve multiple binds and turns.  Defining the location
+of block objects is easier.  You just provide a single location to place
+the object.  Ideally, you should place the object relative to some other
+object, of course.
+
+Let's say you have box and you want to position a circle 2 centimeters to the
+right of that box.  You simply use an "`at`" attribute on the circle to tell it
+to position itself 2cm to the right of the box:
+
+~~~~~
+  B1: box
+      circle at 2cm right of B1
+~~~~~
+
+The resulting diagram is:
+
+~~~~~ pikchr center
+  B1: box
+      circle at 2cm right of B1
+
+  X1: line thin color gray down 50% from 2mm south of B1.s
+  X2: line same from (last circle.s,X1.start)
+      arrow <-> thin from 3/4<X1.start,X1.end> right until even with X2 \
+         "2cm" above color gray
+      assert( last arrow.width == 2cm )
+~~~~~
+
+(Actually, I added a three more objects in order to show the dimension lines
+in the diagram.  If you want to see the exact Pikchr code that generates any
+of the diagrams in this user manual - and assuming you are viewing this user
+manual from [Fossil][fossil] and that you are using a web browser with
+javascript enabled - just click on the diagram.)
+
+[fossil]: https://fossil-scm.org/
+
+The circle is positioned so that its *center* is 2 centimeters to the
+right of the *center* of the box.  If what you really wanted is that the
+left (or west) side of the circle is 2cm to the of the right (or east) side
+of the box, then just say so:
+
+~~~~~
+  B1: box
+  C1: circle with .w at 2cm right of B1.e
+~~~~~
+
+Normally at "`at`" clause will set the center of an object.  But if
+you add a "`with`" prefix you can specify to use any other boundary
+point of the object to be the reference for positioning.  The Pikchr
+script above is saying "make the C1.w point be 2cm right of B1.e".
+And we have:
+
+~~~~~ pikchr center
+  B1: box
+  C1: circle with .w at 2cm right of B1.e
+
+  X1: line thin color gray down 50% from 2mm south of B1.se
+  X2: line same from (C1.w,X1.start)
+      arrow <-> thin from 3/4<X1.start,X1.end> right until even with X2 \
+         "2cm" above color gray
+      assert( last arrow.width == 2cm )
+~~~~~
+
+That's the whole story behind positioning block objects on a diagram.
+You just add an attribute of the form:
+
+>  **with** *reference-point* **at** *position*
+
+And Pikchr will place the specified reference-point of the object at
+*position*.  If you omit the "`with`" clause, the center of the
+object ("`.c`") is used as the *reference-point*.  The power of Pikchr
+comes from the fact that "*position*" can be a rather complex expression.
+The previous example used a relatively simple *position*
+of "`2cm right of B1.e`".  That was sufficient for our simple diagram.
+More complex diagrams can have move complex *position* phrases.
+
+## Automatic Layout Of Block Objects
+
+If you omit the "`at`" attribute from a block object, the object is positioned
+as if you had used the following:
+
+>  `with .start at previous.end`
+
+Except, the very first object in the script has no "previous" and so it
+is positioned using:
+
+>  `with .c at (0,0)`
+
+Let's talk little more about the usual case:
+"`with .start at previous.end`".  The "`previous`" keyword means the
+previous object in the script.  (You can also use the keyword "`last`"
+for this purpose.)  So we are positioning the current object relative
+to the previous object.  But what about the ".start" and ".end".
+
+Remember that every object has 8 boundary points whose names correspond
+to compass directions:  ".n", ".ne", ".e", ".se", ".s", ".sw", ".w",
+and ".nw", plus the center point ".c".  The ".start" and ".end" are also
+boundary points, but their position varies depending on the
+layout direction that is current when the object is created.
+
+<blockquote>
+<table border="1" cellpadding="10px" cellspacing="0">
+<tr><th>Layout Direction<th>.start<th>.end
+<tr><td>right<td>.w<td>.e
+<tr><td>down<td>.n<td>.s
+<tr><td>left<td>.e<td>.w
+<tr><td>up<td>.s<td>.n
+</table></blockquote>
+
+Recall the earlier example that consisted of three objects stacked
+together:
+
+~~~~~
+    right; box; circle; cylinder
+~~~~~
+
+(I added an "`right`" at the beginning to make the layout direction
+clear, but as "right" is the default layout direction, it doesn't change
+anything.)
+
+Armed with our new knowledge of how "`at`"-less block objects are
+positioned, we can better understand what is going on.  The box is
+the first object.  It gets positioned with its center at (0,0), which
+we can show by putting a red dot at (0,0):
+
+~~~~~
+    right; box; circle; cylinder
+    dot color red at (0,0)
+~~~~~
+
+~~~~~ pikchr
+    right; box; circle; cylinder
+    dot color red at (0,0)
+~~~~~
+
+Because the layout direction is "right", the start and end of the box
+are the .w and .e boundary points.  Prove this by put more colored dots
+at those points and rendering the result:
+
+~~~~~
+    right; box; circle; cylinder
+    dot color green at 1st box.start
+    dot color blue at 1st box.end
+~~~~~
+
+~~~~~ pikchr
+    right; box; circle; cylinder
+    dot color green at 1st box.start
+    dot color blue at 1st box.end
+~~~~~
+
+Similarly, we can show that the .start and .end of the circle are its
+.w and .e boundary points.  (Add new color dots to prove this to yourself
+if you like.)  And clearly, the .start of the circle is directly on top
+of the .end of the box.
+
+Now consider what happens if we change the layout direction after the
+circle is created but before the cylinder is created:
+
+~~~~~
+    right; box; circle; down; cylinder
+~~~~~
+
+The .end of circle is still its .e point because the layout direction
+was "right" when the circle was created.  But when the cylinder is
+created, the layout direction is down, so the .start for the cylinder 
+is its .n boundry point.  Hence by the standard layout rule, the
+.n boundary point of the cylinder will end up on top of the .e point
+of the circle:
+
+~~~~~ pikchr
+    right; box; circle; down //; line; cylinder
+    dot color red at first circle.end
+    dot color green at first circle.start
+    text at 1cm right of last circle.e "Interrupted" ljust \
+      "I'll continue to this later" ljust
+~~~~~
