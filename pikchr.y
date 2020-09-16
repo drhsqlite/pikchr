@@ -4196,7 +4196,7 @@ static int pik_token_length(PToken *pToken){
           ){
             /* Dot followed by something that is a 2-D place value */
             pToken->eType = T_DOT_E;
-          }else if( pFound->eType==T_X || pFound->eType==T_Y ){
+          }else if( pFound && (pFound->eType==T_X || pFound->eType==T_Y) ){
             /* Dot followed by "x" or "y" */
             pToken->eType = T_DOT_XY;
           }else{
