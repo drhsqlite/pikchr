@@ -168,7 +168,7 @@ arrow <-> from A to B chop "from A to B chop" aligned above
 ## The "`same as` *object*" construct
 
 An ordinary "`same`" attribute works as in PIC - it copies the
-configuration of the previous object of the same class.  But Pikchr
+configuration of the previous object of the same class.  Pikchr
 is extended with the "`same as` *object*" clause, that copies the
 configuration from any other prior object, including objects of
 different types.
@@ -213,14 +213,14 @@ Subsequent code can refer to that circle as either "`N1`" or as "`Node1`".
 ## Support for C and C++ style comments
 
 Pikchr continues to support Bourne-shell style "#" comments.
-(That is to say, a comment is a "#" character an all following
-characters until end-of-line.)  But Pikchr also recognizes
-C and C++ style command:  "//" to end of line and "/*...*/".
+(That is to say, a comment is a "#" character and all following
+characters until end-of-line.)  Pikchr further recognizes
+C and C++ style comments:  "//" to end of line and "/*...*/".
 
 ## Variable names can start with "`$`" or "`@`"
 
-There are many built-in variable names keywords in the PIC and
-Pikchr language.  To help
+There are many built-in variable names and keywords in the PIC and
+Pikchr languages.  To help
 reduce the chance of a collision between an application-defined
 variable and a built-in variable name or keyword, Pikchr allows
 application-defined variable names to begin with "`$`" or "`@`".
@@ -232,7 +232,7 @@ built-in or user-defined variables, like this:
 
 >  *variable* **=** *expr*
 
-But Pikchr adds several new assignment operators:
+Pikchr adds several new assignment operators:
 
   *  +=
   *  -=
@@ -258,9 +258,9 @@ recognized by PIC:
 
 ## The "`text`" Object
 
-With PIC, you creates new text items by placing a string
+With PIC, you create new text items by placing a string
 literal as the first token in a statement.  Pikchr works the
-same way, but also allows you to use the class name "`text`"
+same way, and further allows you to use the class name "`text`"
 as the first token of the statement.
 
 ## New variables
@@ -286,7 +286,7 @@ reasons.  Other features are omitted for lack of utility.
 The "`sh`" command provided the script the ability to run arbitrary
 shell commands on the host computer.  Hence "`sh`" was just a built-in
 [RCE vulnerability][rce].  Having the ability to run arbitrary shell
-commands was a great innovation in a phototypestting control
+commands was a great innovation in a phototypesetting control
 system for Version-III Unix running on a PDP/11 in 1982, in a
 controlled-access facility.
 But such a feature is undesirable in modern web-facing applications
@@ -316,12 +316,12 @@ you.
 
 ### Pikchr omits the built-in "`sprintf()`" function
 
-The sprintf() function has well-known security concerns, and we
+The `sprintf()` function has well-known security concerns, and we
 do not want to make potential exploits accessible to attackers.
-Furthermore, the sprintf() is of little to no utility in a Pikchr
-script that lacks loops.  A secure version of sprintf() could be
+Furthermore, the `sprintf()` is of little to no utility in a Pikchr
+script that lacks loops.  A secure version of `sprintf()` could be
 added to Pikchr, but doing that would basically require recoding
-a security sprintf() from from scratch.  It is safer and easier
+a secure sprintf() from from scratch.  It is safer and easier
 to simply omit it.
 
 ### Pikchr omits "`{...}`" subblocks
