@@ -377,7 +377,7 @@ struct PClass {
   void (*xInit)(Pik*,PElem*);              /* Initializer */
   void (*xNumProp)(Pik*,PElem*,PToken*);   /* Value change notification */
   void (*xCheck)(Pik*,PElem*);             /* Checks to after parsing */
-  PPoint (*xChop)(PElem*,PPoint*);         /* Chopper */
+  PPoint (*xChop)(Pik*,PElem*,PPoint*);    /* Chopper */
   PPoint (*xOffset)(Pik*,PElem*,int);      /* Offset from .c to edge point */
   void (*xFit)(Pik*,PElem*,PNum w,PNum h); /* Size to fit text */
   void (*xRender)(Pik*,PElem*);            /* Render */
@@ -1064,7 +1064,7 @@ static PPoint boxOffset(Pik *p, PElem *pElem, int cp){
   }
   return pt;
 }
-static PPoint boxChop(PElem *pElem, PPoint *pPt){
+static PPoint boxChop(Pik *p, PElem *pElem, PPoint *pPt){
   PNum dx, dy;
   int cp = CP_C;
   PPoint chop = pElem->ptAt;
@@ -1097,7 +1097,7 @@ static PPoint boxChop(PElem *pElem, PPoint *pPt){
       cp = CP_S;
     }
   }
-  chop = pElem->type->xOffset(0,pElem,cp);
+  chop = pElem->type->xOffset(p,pElem,cp);
   chop.x += pElem->ptAt.x;
   chop.y += pElem->ptAt.y;
   return chop;
@@ -1183,7 +1183,7 @@ static void circleNumProp(Pik *p, PElem *pElem, PToken *pId){
       break;
   }
 }
-static PPoint circleChop(PElem *pElem, PPoint *pPt){
+static PPoint circleChop(Pik *p, PElem *pElem, PPoint *pPt){
   PPoint chop;
   PNum dx = pPt->x - pElem->ptAt.x;
   PNum dy = pPt->y - pElem->ptAt.y;
@@ -1308,7 +1308,7 @@ static void ellipseInit(Pik *p, PElem *pElem){
   pElem->w = pik_value(p, "ellipsewid",10,0);
   pElem->h = pik_value(p, "ellipseht",9,0);
 }
-static PPoint ellipseChop(PElem *pElem, PPoint *pPt){
+static PPoint ellipseChop(Pik *p, PElem *pElem, PPoint *pPt){
   PPoint chop;
   PNum s, dq, dist;
   PNum dx = pPt->x - pElem->ptAt.x;
@@ -3589,7 +3589,7 @@ static PElem *pik_find_chopper(PEList *pList, PPoint *pCenter){
 static void pik_autochop(Pik *p, PPoint *pFrom, PPoint *pTo){
   PElem *pElem = pik_find_chopper(p->list, pTo);
   if( pElem ){
-    *pTo = pElem->type->xChop(pElem, pFrom);
+    *pTo = pElem->type->xChop(p, pElem, pFrom);
   }
 }
 
