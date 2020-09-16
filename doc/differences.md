@@ -109,7 +109,7 @@ box color white fill blue "color white" "fill blue"
 
 ## The "`thickness`" attribute
 
-The new "`thinkness`" attribute specifies the stroke-width.  You can
+The new "`thickness`" attribute specifies the stroke-width.  You can
 also use attributes "`thick`" and "`thin`" to increase or decrease the
 stroke-width in increments.
 
