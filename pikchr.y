@@ -276,6 +276,7 @@ static int pik_token_eq(PToken *pToken, const char *z){
 #define A_FROM          0x0100
 #define A_CW            0x0200
 #define A_AT            0x0400
+#define A_TO            0x0800 /* one or more movement attributes */
 
 
 /* A single element */
@@ -342,8 +343,9 @@ struct Pik {
   PNum charHeight;             /* Character height */
   PNum wArrow;                 /* Width of arrowhead at the fat end */
   PNum hArrow;                 /* Ht of arrowhead - dist from tip to fat end */
-  int bLayoutVars;             /* True if cache is valid */
+  char bLayoutVars;            /* True if cache is valid */
   char thenFlag;           /* True if "then" seen */
+  char samePath;           /* aTPath copied by "same" */
   const char *zClass;      /* Class name for the <svg> */
   int wSVG, hSVG;          /* Width and height of the <svg> */
   /* Paths for lines are constructed here first, then transferred into
@@ -2716,6 +2718,17 @@ void pik_set_dashed(Pik *p, PToken *pId, PNum *pVal){
   }
 }
 
+/*
+** If the current path information came from a "same" or "same as"
+** reset it.
+*/
+static void pik_reset_samepath(Pik *p, PElem *pElem){
+  if( p->samePath ){
+    p->samePath = 0;
+    p->nTPath = 1;
+  }
+}
+
 
 /* Add a new term to the path for a line-oriented object by transferring
 ** the information in the ptTo field over onto the path and into ptFrom
@@ -2728,7 +2741,7 @@ static void pik_then(Pik *p, PToken *pToken, PElem *pElem){
     return;
   }
   n = p->nTPath - 1;
-  if( n<1 ){
+  if( n<1 && (pElem->mProp & A_FROM)==0 ){
     pik_error(p, pToken, "no prior path points");
     return;
   }
@@ -2766,6 +2779,7 @@ static void pik_add_direction(Pik *p, PToken *pDir, PRel *pVal){
     }
     return;
   }
+  pik_reset_samepath(p, pElem);
   n = p->nTPath - 1;
   if( p->thenFlag || p->mTPath==3 || n==0 ){
     n = pik_next_rpath(p, pDir);
@@ -2818,6 +2832,7 @@ static void pik_move_hdg(
     pik_error(p, pErr, "use with line-oriented objects only");
     return;
   }
+  pik_reset_samepath(p, pElem);
   do{
     n = pik_next_rpath(p, pErr);
   }while( n<1 );
@@ -2863,6 +2878,7 @@ static void pik_evenwith(Pik *p, PToken *pDir, PPoint *pPlace){
     pik_error(p, pDir, "use with line-oriented objects only");
     return;
   }
+  pik_reset_samepath(p, pElem);
   n = p->nTPath - 1;
   if( p->thenFlag || p->mTPath==3 || n==0 ){
     n = pik_next_rpath(p, pDir);
@@ -3378,9 +3394,12 @@ static void pik_same(Pik *p, PElem *pOther, PToken *pErrTok){
     }
     p->nTPath = pOther->nPath;
     p->mTPath = 3;
+    p->samePath = 1;
   }
-  pElem->w = pOther->w;
-  pElem->h = pOther->h;
+  if( !pElem->type->isLine ){
+    pElem->w = pOther->w;
+    pElem->h = pOther->h;
+  }
   pElem->rad = pOther->rad;
   pElem->sw = pOther->sw;
   pElem->dashed = pOther->dashed;
