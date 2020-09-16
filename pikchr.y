@@ -3384,7 +3384,7 @@ static void pik_same(Pik *p, PElem *pOther, PToken *pErrTok){
   pElem->rad = pOther->rad;
   pElem->sw = pOther->sw;
   pElem->dashed = pOther->dashed;
-  pElem->dotted = pOther->dashed;
+  pElem->dotted = pOther->dotted;
   pElem->fill = pOther->fill;
   pElem->color = pOther->color;
   pElem->cw = pOther->cw;
