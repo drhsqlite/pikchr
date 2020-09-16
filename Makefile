@@ -8,7 +8,7 @@ pikchr:	pikchr.c
 	$(CC) $(CFLAGS) -DPIKCHR_SHELL pikchr.c -o pikchr $(LIBS)
 
 pikchrfuzz:	pikchr.c
-	clang -g -O3 -fsanitize=fuzzer -o pikchrfuzz \
+	clang -g -O3 -fsanitize=fuzzer,undefined,address -o pikchrfuzz \
 	  -DPIKCHR_FUZZ pikchr.c $(LIBS)
 
 pikchr.c:	pikchr.y lempar.c lemon
