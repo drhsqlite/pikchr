@@ -28,14 +28,14 @@ management systems for the 2020s and beyond.
 PIC was designed to be embedded in [troff][troff] - an historically
 significant but now obsolete markup language developed at Bell Labs
 in the late 1970s and early 1980s.
-PIC could embed troff markup in the middle of
+PIC could include troff markup in the middle of
 a drawing, a capability omitted from Pikchr (obviously).
 
 [troff]: https://en.wikipedia.org/wiki/Troff
 
 ## New Object Types
 
-Pikchr supports serveral new object types that were unavailable
+Pikchr supports several new object types that were unavailable
 in PIC.
 
 ~~~ pikchr indent
@@ -150,7 +150,7 @@ move
 box "wid 75%" wid 75%
 ~~~
 
-## The "`chop`" attribute works very differently
+## The "`chop`" attribute works differently
 
 The "`chop`" attribute is completely redesigned.  It takes no
 argument and can only appear once.  If "`chop`" is specified on
@@ -167,7 +167,7 @@ arrow <-> from A to B chop "from A to B chop" aligned above
 
 ## The "`same as` *object*" construct
 
-The plain old "`same`" attribute is as in PIC - it copies the
+An ordinary "`same`" attribute works as in PIC - it copies the
 configuration of the previous object of the same class.  But Pikchr
 is extended with the "`same as` *object*" clause, that copies the
 configuration from any other prior object, including objects of
@@ -179,7 +179,7 @@ move
 file same as last box "file" "same as" "last box" rad filerad
 ~~~
 
-## New ways to discribe line paths
+## New ways to describe line paths
 
   *  **go** *distance* **heading** *compass-angle*
   *  **go** *distance* *compass-point*
@@ -188,89 +188,142 @@ file same as last box "file" "same as" "last box" rad filerad
 
 ## New syntax to describe positions
 
-  *  *distance* **above** *position*
-  *  *distance* **left of** *position*
+  *  *distance* **above**|**below** *position*
+  *  *distance* **left**|**right** **of** *position*
   *  *distance* **heading** *compass-angle* **from** *position*
   *  *nth* **vertex of** *line-object*
 
 
+## New ways to identify prior objects
 
-## Other miscellaneous new features
+Pikchr allows the keywords "`last`" or "`previous`" to refer to
+the immediately previous object without having to specify the
+type of that object.
 
-### New ways to identify prior objects
+Objects that contain a text that looks like a label (starts with
+an upper-case letter and contains only letters, digits, and underscores)
+can be used as a label for that object.  Thus if you say:
 
-  * **previous**
-  * **first**
-  * Name objects by their string labels
+~~~
+  N1: circle "Node1"
+~~~
 
-### Support for C and C++ style comments
+Subsequent code can refer to that circle as either "`N1`" or as "`Node1`".
 
-### Variable names can start with "`$`" or "`@`"
+## Support for C and C++ style comments
 
-### New assignment operators for variables
+Pikchr continues to support Bourne-shell style "#" comments.
+(That is to say, a comment is a "#" character an all following
+characters until end-of-line.)  But Pikchr also recognizes
+C and C++ style command:  "//" to end of line and "/*...*/".
+
+## Variable names can start with "`$`" or "`@`"
+
+There are many built-in variable names keywords in the PIC and
+Pikchr language.  To help
+reduce the chance of a collision between an application-defined
+variable and a built-in variable name or keyword, Pikchr allows
+application-defined variable names to begin with "`$`" or "`@`".
+
+## New assignment operators for variables
+
+Both Pikchr and PIC allow statements that assign values to
+built-in or user-defined variables, like this:
+
+>  *variable* **=** *expr*
+
+But Pikchr adds several new assignment operators:
 
   *  +=
   *  -=
   *  *=
   *  /=
 
-### "`invisible`" can optionally be spelled out
+The new operators are handy for scaling the value of an existing
+variable.  For example, to make the default radius of circles
+25% smaller:
 
-### Identify text objects with the keyword "`text`"
+~~~~
+   circlerad *= 0.75
+~~~~
 
-### New variables
+## New keyword aliases
+
+Pikchr allows certain aliases for keywords that are not
+recognized by PIC:
+
+  *  "`invisible`" &lrarr; "`invis`"
+  *  "`first`" &lrarr; "`1st`"
+  *  "`previous`" &lrarr; "`last`"
+
+## The "`text`" Object
+
+With PIC, you creates new text items by placing a string
+literal as the first token in a statement.  Pikchr works the
+same way, but also allows you to use the class name "`text`"
+as the first token of the statement.
+
+## New variables
 
   *  margin
   *  leftmargin
 
-## iscontinued Features
+Setting the "`margin`" variable to a distance adds that amount of
+extra whitespace around all four sides of the diagram.  The
+"`leftmargin`" variable adds whitespace to the left side of
+the diagram.  The "`margin`" and "`leftmargin`" variables
+are additive - the amount of whitespace on the left is the
+sum of both variables.
+
+
+## Discontinued Features
 
 Pikchr deliberately omits some features of legacy PIC for security
-reasons.  Other features are omitted for lack of utility
+reasons.  Other features are omitted for lack of utility.
 
-### Omit "`sh`" and "`copy`" statements.
+### Pikchr omits the "`sh`" and "`copy`" statements.
 
 The "`sh`" command provided the script the ability to run arbitrary
 shell commands on the host computer.  Hence "`sh`" was just a built-in
-[RCE vulnerability].  Having the ability to run arbitrary shell
-commands was a great idea when you were building a phototypestting
-system Bell Labs Version-III Unix running on a dedicated PDP/11 in
-1982.  But it has no place in modern web-facing applications.  We
-stay as far away from that stuff as we can.
+[RCE vulnerability][rce].  Having the ability to run arbitrary shell
+commands was a great innovation in a phototypestting control
+system for Version-III Unix running on a PDP/11 in 1982, in a
+controlled-access facility.
+But such a feature is undesirable in modern web-facing applications
+accessible to random passers-by on the internet.
 
 [rce]: https://en.wikipedia.org/wiki/Arbitrary_code_execution
 
 The "`copy`" command is similar.  It inserts the text of arbitrary
 files on the host computer into the middle of the PIC-script.
 
-### Omit "`for`" and "`if`" statements.
+### Pikchr omits "`for`" and "`if`" statements and macros.
 
 Pikchr omits all support for branching and looping.  Each Pikchr
-graphic object maps directly into a single graphic object in the
+statement maps directly into (at most) one graphic object in the
 output.  This is a choice made to enhance the security and safety
 of Pikchr (without branching or looping, there is less opportunity
 for mischief) and to keep the language simple and accessible.
 
+To be clear, we *could* in theory implement loops and branches and
+subroutines in Pikchr in a safe way.  But doing so would be extra
+complication, both in the implementation and in the mental model that
+is maintained by the user.  Hence, in order to keep thing simple
+we choose to omit those features.
 If you need machine-generated code, employ a separate script
 language like Python or TCL to generate the Pikchr script for
-you.  Then you can employ all the branching and looping you want.
-We just don't want to build that into a language that is openly
-accessible to random passers-by on the internet.
+you. 
 
-### Omit macros
-
-
-
-### Omit the built-in "`sprintf()`" function
+### Pikchr omits the built-in "`sprintf()`" function
 
 The sprintf() function has well-known security concerns, and we
 do not want to make potential exploits accessible to attackers.
-Futhermore, the sprintf() is of little to no utility in a Pikchr
+Furthermore, the sprintf() is of little to no utility in a Pikchr
 script that lacks loops.  A secure version of sprintf() could be
 added to Pikchr, but doing that would basically require recoding
 a security sprintf() from from scratch.  It is safer and easier
 to simply omit it.
 
-### Omit "`{...}`" subblocks
+### Pikchr omits "`{...}`" subblocks
 
 The "`[...]`" style subblocks are supported and they work just as well.
