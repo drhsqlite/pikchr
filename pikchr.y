@@ -4223,7 +4223,7 @@ static int pik_token_length(PToken *pToken){
           nDigit = 1;
           for(i=1; (c = z[i])>='0' && c<='9'; i++){ nDigit++; }
           if( i==1 && (c=='x' || c=='X') ){
-            for(i=3; (c = z[i])!=0 && isxdigit(c); i++){}
+            for(i=2; (c = z[i])!=0 && isxdigit(c); i++){}
             pToken->eType = T_NUMBER;
             return i;
           }
