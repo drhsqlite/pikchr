@@ -2538,11 +2538,25 @@ static void pik_elem_set_exit(Pik *p, PElem *pElem, int eDir){
   }
 }
 
-/* Change the direction of travel
+/* Change the layout direction.
 */
 static void pik_set_direction(Pik *p, int eDir){
   assert( ValidDir(eDir) );
   p->eDir = eDir;
+
+  /* It seems to make sense to reach back into the last object and
+  ** changes its exit point (its ".end") to correspond to the new
+  ** direction.  Things just seem to work better this way.  However,
+  ** legacy PIC does *not* do this.
+  **
+  ** The difference can be seen in a script like this:
+  **
+  **      arrow; circle; down; arrow
+  **
+  ** You can make pikchr render the above exactly like PIC
+  ** by deleting the following three lines.  But I (drh) think
+  ** it works better with those lines in place.
+  */
   if( p->list && p->list->n ){
     pik_elem_set_exit(p, p->list->a[p->list->n-1], eDir);
   }
