@@ -483,7 +483,7 @@ javascript enabled - just click on the diagram.)
 
 The circle is positioned so that its *center* is 2 centimeters to the
 right of the *center* of the box.  If what you really wanted is that the
-left (or west) side of the circle is 2 cm to the of the right (or east) side
+left (or west) side of the circle is 2 cm to the right (or east)
 of the box, then just say so:
 
 ~~~~~
@@ -644,7 +644,7 @@ the circle.
 Pikchr works like PIC with on important change.  When the "down" statement
 is evaluated, Pikchr also moves the ".end" of the previous object
 to a new location that is approprate for the new direction.  So, in other
-words, the down command move the .end of the circle from .e to .s.
+words, the down command moves the .end of the circle from .e to .s.
 You can see this by setting a red dot at the .end of
 the circle *after* the "down" command:
 
@@ -654,7 +654,7 @@ the circle *after* the "down" command:
 ~~~~~
 
 Or, we can "`print`" the coordinates of the .end of the circle before
-and after the "down" command as see that they shift:
+and after the "down" command to see that they shift:
 
 ~~~~~ pikchr
     right; box; C1: circle
