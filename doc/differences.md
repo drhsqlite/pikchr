@@ -167,8 +167,8 @@ arrow <-> from A to B chop "from A to B chop" aligned above
 
 ## The "`same as` *object*" construct
 
-The plain old "`same`" attribute was as in PIC - it copies the
-configuration of the previous object of the same time.  But Pikchr
+The plain old "`same`" attribute is as in PIC - it copies the
+configuration of the previous object of the same class.  But Pikchr
 is extended with the "`same as` *object*" clause, that copies the
 configuration from any other prior object, including objects of
 different types.
