@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O0 -g -Wall
+CFLAGS = -O0 -g -Wall -Wextra
 LIBS = -lm
 
 all:	pikchr
