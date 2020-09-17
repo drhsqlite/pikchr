@@ -1,7 +1,5 @@
 # Pikchr User Manual
 
- <!--markdown-paragraph-numbers-->
-
 # Introduction
 
 This is a guide to generating diagrams using Pikchr
@@ -30,7 +28,7 @@ script and press the Preview button:
 
 If you do this right, the output should appear as:
 
-~~~~~ pikchr center
+~~~~~ pikchr indent
      line; box "Hello," "World!"; arrow
 ~~~~~
 
@@ -86,7 +84,7 @@ So, a Pikchr script is just a list of statements.  But what is a statement?
 becomes part of the diagram.  The first token of the statement is the
 object class-name.  The following classes are currently supported:
 
-~~~~~ pikchr center
+~~~~~ pikchr indent
 box "box"
 circle "circle" at 1 right of previous
 ellipse "ellipse" at 1 right of previous
@@ -126,8 +124,8 @@ we see that that script contains three object descriptions:
 By default, objects are stacked beside each other from left to right.
 The Pikchr layout engine keeps track of the "layout direction" which
 can be one of "right", "down", "left", or "up".  The layout direction
-defaults to "right".  But you can change it using a statement which
-consists of just the name of the new direction.  So, for example,
+defaults to "right", but you can change it using a statement which
+consists of just the name of the new direction.  So,
 if we insert the "down" statement in front of our test script, like
 this:
 
@@ -140,7 +138,7 @@ this:
 
 Then the objects are stacked moving downward:
 
-~~~~~ pikchr center
+~~~~~ pikchr indent
     down
     line
     box  "Hello,"  "World!"
@@ -149,7 +147,7 @@ Then the objects are stacked moving downward:
 
 Or, you can change the layout direction to "left":
 
-~~~~~ pikchr center
+~~~~~ pikchr indent
     left
     line
     box  "Hello,"  "World!"
@@ -158,7 +156,7 @@ Or, you can change the layout direction to "left":
 
 Or to "up":
 
-~~~~~ pikchr center
+~~~~~ pikchr indent
     up
     line
     box  "Hello,"  "World!"
@@ -176,7 +174,7 @@ For example:
 
 Yields:
 
-~~~~~ pikchr center
+~~~~~ pikchr indent
     box; circle; cylinder
 ~~~~~
 
@@ -187,10 +185,10 @@ The special "move" object exists for that purpose.  Consider:
     box; move; circle; move; cylinder
 ~~~~~
 
-This script creates the same three block objects but also inserts some "moves"
-to add whitespace between them:
+This script creates the same three block objects but with 
+whitespace in between them:
 
-~~~~~ pikchr center
+~~~~~ pikchr indent
     box; move; circle; move; cylinder
 ~~~~~
 
@@ -225,7 +223,7 @@ cylinder.  The complete script might look something like this:
 This script results in the following diagram:
 
 
-~~~~~ pikchr center
+~~~~~ pikchr indent
     box; move; circle; move; cylinder
     arrow from first box.s \
           down 1cm \
@@ -256,7 +254,7 @@ the use of "1st" instead of "first".)  But what is the ".s" part?
 Every block object has eight points on its perimeter that are named
 for compass points.   Like this:
 
-~~~~~ pikchr center
+~~~~~ pikchr indent
 A: box
 dot color red at A.nw ".nw " rjust above
 dot same at A.w ".w " rjust
@@ -298,8 +296,8 @@ arrow at the ".s" corner of the box.
 The next phrase on the "arrow" statement is "`down 1cm`".  As you
 might guess, this phrase causes the arrow to move downward from its
 previous position (its starting point) by 1 centimeter.  This phrase
-highlights a key enhancement of Pikchr over legacy-PIC.  Legacy-PIC
-did everything in inches only.  No units were allowed.  Pikchr allows
+highlights a key enhancement of Pikchr over legacy-PIC.  PIC does (or did)
+everything in inches only.  No units were allowed.  Pikchr allows
 you to attach units to measurements, as in this case where it is
 "1cm".  Internally, Pikchr still keeps track of everything in inches
 (for compatibility with PIC).  The "1cm" token is really just an
@@ -344,7 +342,7 @@ is written in such a way that the script-writer does not have
 to do a lot of distance calculation.  The layout compensates
 automatically.
 
-For example, so suppose you come back to this script later and
+For example, suppose you come back to this script later and
 decide you need to insert an ellipse in between the circle and
 the cylinder.  This is easily accomplished:
 
@@ -363,7 +361,7 @@ cylinder is not based on coordinates or absolute distances and
 so it does not have to change at all.  Pikchr will
 compensate automatically:
 
-~~~~~ pikchr center
+~~~~~ pikchr indent
     box; move; circle; move; ellipse; move; cylinder
     arrow from first box.s \
           down 1cm \
@@ -371,7 +369,7 @@ compensate automatically:
           then to first cylinder.s
 ~~~~~
 
-Both Legacy-PIC and Pikchr allow you to specify hard-coded coordinates
+Both PIC and Pikchr allow you to specify hard-coded coordinates
 and distances when laying out your diagram.  But you are encouraged
 to avoid that approach.  Instead, place each new object you create
 relative to the position of prior objects.
@@ -383,20 +381,20 @@ in no time.
 
 # Single-Pass Design
 
-Both Pikchr and legacy-PIC operate on a single-pass design.  Objects
+Both Pikchr and PIC operate on a single-pass design.  Objects
 can refer to other objects that occur before them in the script, but not
 to objects that occur later in the script.  Any computations that go
 into placing an object occur as the object definition is parsed.  As soon
 as the newline or semicolon that terminates the object definition is
 reached, the size, location, and characteristics of the object are
 fixed and cannot subsequently be altered.  (One exception:  sub-objects that
-are part of a container (discussed later) are placed relative to the
+are part of a `[]`-container (discussed later) are placed relative to the
 origin of the container.  Their shape and locations relative to each
 other are fixed, but their final absolute position is not fixed until
-their container itself is fixed.)
+the `[]`-container itself is fixed.)
 
 The single-pass approach contributes to the conceptual simplicity of
-Pikchr (and legacy-PIC).  There is no "solver" that has to work through
+Pikchr (and PIC).  There is no "solver" that has to work through
 forward and backward layout constraints to find a solution.  This
 simplicity of design helps to keep Pikchr scripts easy to write and
 easy to understand.
@@ -408,7 +406,7 @@ to refer to particular objects.  There are many variations on this naming
 scheme:
 
   *  "`previous`" &larr; the previous object regardless of its class
-  *  "`last circle`" &larr; the recently created circle object
+  *  "`last circle`" &larr; the most recently created circle object
   *  "`3rd last oval`" &larr; the antipenultimate oval object
   *  "`17th ellipse`" &larr; the seventeenth ellipse object
   *  ... and so forth
@@ -417,7 +415,7 @@ This works, but it can be fragile.  If you go back later and insert a new
 object in the stream, it can mess up your counts.  Or, for that matter,
 you might just miscount.
 
-In a complex diagram, if often works better to assign symbolic names to
+In a complex diagram, it often works better to assign symbolic names to
 objects.  Do this by putting the object name and a colon ("`:`") immediately
 before the class-name in the object definition.  The object name must
 begin with a capital letter.  Afterwards, the object can be referred to
@@ -462,7 +460,7 @@ to position itself 2 cm to the right of the box:
 
 The resulting diagram is:
 
-~~~~~ pikchr center
+~~~~~ pikchr indent
   B1: box
       circle at 2cm right of B1
 
@@ -497,7 +495,7 @@ point of the object to be the reference for positioning.  The Pikchr
 script above is saying "make the C1.w point be 2 cm right of B1.e".
 And we have:
 
-~~~~~ pikchr center
+~~~~~ pikchr indent
   B1: box
   C1: circle with .w at 2cm right of B1.e
 
@@ -575,7 +573,7 @@ we can show by putting a red dot at (0,0):
     dot color red at (0,0)
 ~~~~~
 
-~~~~~ pikchr
+~~~~~ pikchr indent
     right; box; circle; cylinder
     dot color red at (0,0)
 ~~~~~
@@ -590,7 +588,7 @@ at those points and rendering the result:
     dot color blue at 1st box.end
 ~~~~~
 
-~~~~~ pikchr
+~~~~~ pikchr indent
     right; box; circle; cylinder
     dot color green at 1st box.start
     dot color blue at 1st box.end
@@ -613,13 +611,13 @@ The change in behavior is deliberate, because we feel that the Pikchr
 approach is better.  On PIC, the diagram above would be rendered
 like this:
 
-~~~~~ pikchr
+~~~~~ pikchr indent
     right; box; circle; cylinder with .n at previous.e
 ~~~~~
 
 But on Pikchr the placement of the cylinder is different:
 
-~~~~~ pikchr
+~~~~~ pikchr indent
     right; box; circle; cylinder with .n at previous.s
 ~~~~~
 
@@ -629,7 +627,7 @@ the circle is the same as .e, because the layout direction is "right".
 If we omit the "down" and "cylinder" and draw a dot at the ".end" of
 circle to show where it is, we can see this:
 
-~~~~~ pikchr
+~~~~~ pikchr indent
     right; box; circle
     dot color red at last circle.end
 ~~~~~
@@ -641,14 +639,14 @@ its ".start" is at .n because the layout direction is now "down"
 and so the .n point of the cylinder is aligned to the .e point of
 the circle.
 
-Pikchr works like PIC with on important change.  When the "down" statement
+Pikchr works like PIC with one important change:  When the "down" statement
 is evaluated, Pikchr also moves the ".end" of the previous object
 to a new location that is approprate for the new direction.  So, in other
 words, the down command moves the .end of the circle from .e to .s.
 You can see this by setting a red dot at the .end of
 the circle *after* the "down" command:
 
-~~~~~ pikchr
+~~~~~ pikchr indent
     right; box; circle; down
     dot color red at first circle.end
 ~~~~~
@@ -656,7 +654,7 @@ the circle *after* the "down" command:
 Or, we can "`print`" the coordinates of the .end of the circle before
 and after the "down" command to see that they shift:
 
-~~~~~ pikchr
+~~~~~ pikchr indent
     right; box; C1: circle
     print "before: ", C1.end.x, ", ", C1.end.y
     down
