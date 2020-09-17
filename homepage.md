@@ -53,12 +53,13 @@ complete documentation available.
   *  [](/pikchrshow)
   *  [Wiki Sandbox](/wikiedit?name=Sandbox)
 
-## Pikchr Documentation (all documents are incomplete)
+## Pikchr Documentation (*under active development*)
 
   *  [Pikchr User Manual](./doc/userman.md)
   *  [Pikchr Language Grammar](./doc/grammar.md)
   *  [Differences From PIC](./doc/differences.md)
   *  [Invoking Pikchr From Markdown](./doc/usepikchr.md)
+  *  [How To Build Pikchr From Source](./doc/build.md)
 
 ## Copies Of Historical PIC Documentation
 

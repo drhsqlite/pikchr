@@ -139,14 +139,14 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * *expr* **%**
 
 ## *numeric-property*:  [&#9654;info](./numprop.md)
+  * **diameter**
+  * **ht**
+  * **height**
+  * **rad**
+  * **radius**
+  * **thickness**
   * **width**
   * **wid**
-  * **height**
-  * **ht**
-  * **radius**
-  * **rad**
-  * **diameter**
-  * **thickness**
 
 ## *text-attribute*:  [&#9654;info](./textattr.md)
   * **above**
@@ -337,15 +337,15 @@ A complete input file to Pikchr consists of a single *statement-list*.
 
 ## *dot-property*:
 
-  * **.wid**
-  * **.width**
+  * **.color**
+  * **.dashed**
+  * **.diameter**
+  * **.dotted**
+  * **.fill**
   * **.ht**
   * **.height**
   * **.rad**
   * **.radius**
-  * **.diameter**
   * **.thickness**
-  * **.dashed**
-  * **.dotted**
-  * **.color**
-  * **.fill**
+  * **.wid**
+  * **.width**
