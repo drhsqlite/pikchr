@@ -28,7 +28,7 @@ script and press the Preview button:
 
 If you do this right, the output should appear as:
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
      line; box "Hello," "World!"; arrow
 ~~~~~
 
@@ -38,6 +38,23 @@ separate browser window, so that you can try out scripts as you proceed
 through this tutoral.
 
 [embed]: ./usepikchr.md
+
+# Viewing Pikchr Script Source Code For This Document
+
+For this particular document, you can click on any of the diagrams
+rendered by Pikchr and the display will convert to showing you the
+original Pikchr source text.  Click again to go back to seeing the
+rendered diagram.
+
+The click-to-change-view behavior is a property of this one
+particular document and is not a general capability of Pikchr. On
+other documents containing Pikchr diagrams that are generated using Fossil
+you can use ctrl-click to toggle the view.  (That is, click on the
+diagram while holding down the Ctrl key.)  But that won't work if
+you are on a tablet or phone, since you don't have a Ctrl key to hold
+down there.  Other systems might not implement the view-swapping behavior
+at all.  This is a platform-depending feature that is one layer above
+Pikchr itself.
 
 # About Pikchr Scripts
 
@@ -84,7 +101,7 @@ So, a Pikchr script is just a list of statements.  But what is a statement?
 becomes part of the diagram.  The first token of the statement is the
 object class-name.  The following classes are currently supported:
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
 box "box"
 circle "circle" at 1 right of previous
 ellipse "ellipse" at 1 right of previous
@@ -138,7 +155,7 @@ this:
 
 Then the objects are stacked moving downward:
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
     down
     line
     box  "Hello,"  "World!"
@@ -147,7 +164,7 @@ Then the objects are stacked moving downward:
 
 Or, you can change the layout direction to "left":
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
     left
     line
     box  "Hello,"  "World!"
@@ -156,7 +173,7 @@ Or, you can change the layout direction to "left":
 
 Or to "up":
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
     up
     line
     box  "Hello,"  "World!"
@@ -174,7 +191,7 @@ For example:
 
 Yields:
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
     box; circle; cylinder
 ~~~~~
 
@@ -188,7 +205,7 @@ The special "move" object exists for that purpose.  Consider:
 This script creates the same three block objects but with 
 whitespace in between them:
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
     box; move; circle; move; cylinder
 ~~~~~
 
@@ -223,7 +240,7 @@ cylinder.  The complete script might look something like this:
 This script results in the following diagram:
 
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
     box; move; circle; move; cylinder
     arrow from first box.s \
           down 1cm \
@@ -254,7 +271,7 @@ the use of "1st" instead of "first".)  But what is the ".s" part?
 Every block object has eight points on its perimeter that are named
 for compass points.   Like this:
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
 A: box
 dot color red at A.nw ".nw " rjust above
 dot same at A.w ".w " rjust
@@ -361,7 +378,7 @@ cylinder is not based on coordinates or absolute distances and
 so it does not have to change at all.  Pikchr will
 compensate automatically:
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
     box; move; circle; move; ellipse; move; cylinder
     arrow from first box.s \
           down 1cm \
@@ -460,7 +477,7 @@ to position itself 2 cm to the right of the box:
 
 The resulting diagram is:
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
   B1: box
       circle at 2cm right of B1
 
@@ -495,7 +512,7 @@ point of the object to be the reference for positioning.  The Pikchr
 script above is saying "make the C1.w point be 2 cm right of B1.e".
 And we have:
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
   B1: box
   C1: circle with .w at 2cm right of B1.e
 
@@ -573,7 +590,7 @@ we can show by putting a red dot at (0,0):
     dot color red at (0,0)
 ~~~~~
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
     right; box; circle; cylinder
     dot color red at (0,0)
 ~~~~~
@@ -588,7 +605,7 @@ at those points and rendering the result:
     dot color blue at 1st box.end
 ~~~~~
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
     right; box; circle; cylinder
     dot color green at 1st box.start
     dot color blue at 1st box.end
@@ -611,13 +628,13 @@ The change in behavior is deliberate, because we feel that the Pikchr
 approach is better.  On PIC, the diagram above would be rendered
 like this:
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
     right; box; circle; cylinder with .n at previous.e
 ~~~~~
 
 But on Pikchr the placement of the cylinder is different:
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
     right; box; circle; cylinder with .n at previous.s
 ~~~~~
 
@@ -627,7 +644,7 @@ the circle is the same as .e, because the layout direction is "right".
 If we omit the "down" and "cylinder" and draw a dot at the ".end" of
 circle to show where it is, we can see this:
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
     right; box; circle
     dot color red at last circle.end
 ~~~~~
@@ -646,7 +663,7 @@ words, the down command moves the .end of the circle from .e to .s.
 You can see this by setting a red dot at the .end of
 the circle *after* the "down" command:
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
     right; box; circle; down
     dot color red at first circle.end
 ~~~~~
@@ -654,7 +671,7 @@ the circle *after* the "down" command:
 Or, we can "`print`" the coordinates of the .end of the circle before
 and after the "down" command to see that they shift:
 
-~~~~~ pikchr indent
+~~~~~ pikchr toggle indent
     right; box; C1: circle
     print "before: ", C1.end.x, ", ", C1.end.y
     down
