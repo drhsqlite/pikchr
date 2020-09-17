@@ -5,7 +5,7 @@
   *  Primary source file: "`pikchr.y`"
   *  Process "`pikchr.y`" using Lemon (sources provided in tree)
      to create "`pikchr.c`"
-  *  Compile "`pikchr.c`" into a object file, or add the
+  *  Compile "`pikchr.c`" into an object file, or add the
      "`-DPIKCHR_SHELL`" command-line option to generate a stand-alone
      executable.
 
@@ -38,7 +38,7 @@
 
 The source code for Pikchr is in the file named "`pikchr.y`".  As
 the ".y" suffix implies, this file is grammar specification intended
-as input to the yacc-like LALR(1) parser generated program
+as input to the yacc-like LALR(1) parser generator program
 "[Lemon][lemon]".  Even though "pikchr.y" is technically a Lemon
 grammar file, it consists of mostly C-code and only 6% grammar.
 
@@ -57,7 +57,7 @@ that reads Pikchr scripts and emits HTML with embedded SVG.  Or
 it can be integrated into a larger application which invokes the
 "`pikchr()`" C-API to do conversions from Pikchr to SVG.
 
-The Lemon tool is not widely depolyed, so the sources for 
+As the Lemon tool is not widely deployed, its sources for 
 Lemon are included in the Pikchr source tree for convenience.
 Compile the "`lemon.c`" source program into an executable using
 any ordinary C-compiler.
