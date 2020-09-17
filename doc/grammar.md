@@ -148,16 +148,17 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **diameter**
   * **thickness**
 
-## *text-attribute*:
+## *text-attribute*:  [&#9654;info](./textattr.md)
   * **above**
+  * **aligned**
   * **below**
+  * **big**
+  * **bold**
+  * **center**
+  * **italic**
   * **ljust**
   * **rjust**
-  * **bold**
-  * **italic**
-  * **big**
   * **small**
-  * **aligned**
 
 ## *path-element*:
   * **from** *position*
