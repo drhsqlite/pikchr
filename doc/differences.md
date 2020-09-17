@@ -215,7 +215,7 @@ Subsequent code can refer to that circle as either "`N1`" or as "`Node1`".
 Pikchr continues to support Bourne-shell style "#" comments.
 (That is to say, a comment is a "#" character and all following
 characters until end-of-line.)  Pikchr further recognizes
-C and C++ style comments:  "//" to end of line and "/*...*/".
+C and C++ style comments:  "//" to end of line and "/\*...\*/".
 
 ## Variable names can start with "`$`" or "`@`"
 

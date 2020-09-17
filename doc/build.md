@@ -37,7 +37,7 @@
 ## Details:
 
 The source code for Pikchr is in the file named "`pikchr.y`".  As
-the ".y" suffix implies, this file is grammar specification intended
+the ".y" suffix implies, this file is a grammar specification intended
 as input to the yacc-like LALR(1) parser generator program
 "[Lemon][lemon]".  Even though "pikchr.y" is technically a Lemon
 grammar file, it consists of mostly C-code and only 6% grammar.
