@@ -57,9 +57,9 @@ units designator on numeric literals so that distances can be easily
 expressed in other units.  For example, you can write "`2.3cm`" to
 mean 2.3 centimeters.  This is easier and more intuitive than writing
 something like
-"`2.3*2.54`".  Pikchr still does all of its calculations in inches,
+"`2.3/2.54`".  Pikchr still does all of its calculations in inches,
 internally.  The "cm" suffix is actually part of the numeric literal
-so that "`2.3cm`" is really just an alternative spelling for "`5.842`".
+so that "`2.3cm`" is really just an alternative spelling for "`0.905`".
 
 Units supported by Pikchr include:
 
