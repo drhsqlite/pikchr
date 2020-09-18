@@ -361,16 +361,6 @@ struct Pik {
 
 
 /*
-** Flag values for Pik.mFlags (to be picked up by makeheaders on systems
-** that use makeheaders.
-*/
-#undef INTERFACE
-#define INTERFACE 1
-#if INTERFACE
-#define PIKCHR_INCLUDE_SOURCE 0x0001  /* Include Pikchr src in SVG output */
-#endif /* INTERFACE */
-
-/*
 ** The behavior of an object class is defined by an instance of
 ** this structure. This is the "virtual method" table.
 */
@@ -3887,19 +3877,6 @@ static void pik_render(Pik *p, PEList *pEList){
     p->hSVG = (int)(p->rScale*h);
     pik_append_dis(p, " viewBox=\"0 0 ",w,"");
     pik_append_dis(p, " ",h,"\">\n");
-    if( (p->mFlags & PIKCHR_INCLUDE_SOURCE)!=0 ){
-      /* emit original pikchr source code as metadata */
-      /* FIXME: emit this only if a certain p->mFlags is set. */
-      pik_append(p, "<metadata>\n", 11);
-      pik_append(p, "<pikchr:pikchr xmlns:pikchr="
-         "\"https://pikchr.org/home/doc/trunk/doc/grammar.md\">\n",
-          -1);
-      pik_append(p, "<pikchr:src><![CDATA[", 21);
-      pik_append(p, p->zIn, (int)p->nIn);
-      pik_append(p, "]]></pikchr:src>\n", 17);
-      pik_append(p, "</pikchr:pikchr>\n", 17);
-      pik_append(p, "</metadata>\n", 12);
-    }
     pik_elist_render(p, pEList);
     pik_append(p,"</svg>\n", -1);
   }else{
@@ -4442,7 +4419,39 @@ int LLVMFuzzerTestOneInput(const uint8_t *aData, size_t nByte){
 #endif /* PIKCHR_FUZZ */
 
 #if defined(PIKCHR_SHELL)
-/* Texting interface
+/* Print a usage comment for the shell and exit. */
+static void usage(const char *argv0){
+  fprintf(stderr, "usage: %s [OPTIONS] FILE ...\n", argv0);
+  fprintf(stderr,
+    "Convert Pikchr input files into SVG.\n"
+    "Options:\n"
+    "   --svg-only       Omit raw SVG without the HTML wrapper\n"
+  );
+  exit(1);
+}
+
+/* Send text to standard output, but escape HTML markup */
+static void print_escape_html(const char *z){
+  int j;
+  char c;
+  while( z[0]!=0 ){
+    for(j=0; (c = z[j])!=0 && c!='<' && c!='>' && c!='&'; j++){}
+    if( j ) printf("%.*s", j, z);
+    z += j+1;
+    j = -1;
+    if( c=='<' ){
+      printf("&lt;");
+    }else if( c=='>' ){
+      printf("&gt;");
+    }else if( c=='&' ){
+      printf("&amp;");
+    }else if( c==0 ){
+      break;
+    }
+  }
+}
+
+/* Testing interface
 **
 ** Generate HTML on standard output that displays both the original
 ** input text and the rendered SVG for all files named on the command
@@ -4450,42 +4459,55 @@ int LLVMFuzzerTestOneInput(const uint8_t *aData, size_t nByte){
 */
 int main(int argc, char **argv){
   int i;
-  int bNoEcho = 0;         /* Do not show the text of the script */
-  int mPikchrFlags = 0;    /* Flags passed into pikchr() */
-  printf(
+  int bSvgOnly = 0;            /* Output SVG only.  No HTML wrapper */
+  const char *zHtmlHdr = 
     "<!DOCTYPE html>\n"
     "<html lang=\"en-US\">\n"
     "<head>\n<title>PIKCHR Test</title>\n"
+    "<style>\n"
+    "  .hidden {\n"
+    "     position: absolute !important;\n"
+    "     opacity: 0 !important;\n"
+    "     pointer-events: none !important;\n"
+    "     display: none !important;\n"
+    "  }\n"
+    "</style>\n"
+    "<script>\n"
+    "  function toggleHidden(id){\n"
+    "    for(var c of document.getElementById(id).children){\n"
+    "      c.classList.toggle('hidden');\n"
+    "    }\n"
+    "  }\n"
+    "</script>\n"
     "<meta charset=\"utf-8\">\n"
     "</head>\n"
     "<body>\n"
-  );
+  ;
+  if( argc<2 ) usage(argv[0]);
   for(i=1; i<argc; i++){
     FILE *in;
     size_t sz;
     char *zIn;
     char *zOut;
-    char *z, c;
-    int j;
     int w, h;
 
     if( argv[i][0]=='-' ){
       char *z = argv[i];
       z++;
       if( z[0]=='-' ) z++;
-      if( strcmp(z,"no-echo")==0 ){
-        bNoEcho = 1;
-      }else
-      if( strcmp(z,"include-source")==0 ){
-        mPikchrFlags |= PIKCHR_INCLUDE_SOURCE;
+      if( strcmp(z,"svg-only")==0 ){
+        if( zHtmlHdr==0 ){
+          fprintf(stderr, "the \"%s\" option must come first\n",argv[i]);
+          exit(1);
+        }
+        bSvgOnly = 1;
       }else
       {
         fprintf(stderr,"unknown option: \"%s\"\n", argv[i]);
-        exit(1);
+        usage(argv[0]);
       }
       continue;
     }
-    printf("<h1>File %s</h1>\n", argv[i]);
     in = fopen(argv[i], "rb");
     if( in==0 ){
       fprintf(stderr, "cannot open \"%s\" for reading\n", argv[i]);
@@ -4503,41 +4525,36 @@ int main(int argc, char **argv){
     sz = fread(zIn, 1, sz, in);
     fclose(in);
     zIn[sz] = 0;
-    if( !bNoEcho ){
-      printf("<p>Source text:</p>\n<blockquote><pre>\n");
-      z = zIn;
-      while( z[0]!=0 ){
-        for(j=0; (c = z[j])!=0 && c!='<' && c!='>' && c!='&'; j++){}
-        if( j ) printf("%.*s", j, z);
-        z += j+1;
-        j = -1;
-        if( c=='<' ){
-          printf("&lt;");
-        }else if( c=='>' ){
-          printf("&gt;");
-        }else if( c=='&' ){
-          printf("&amp;");
-        }else if( c==0 ){
-          break;
-        }
-      }
-      printf("</pre></blockquote>\n");
+    zOut = pikchr(zIn, "pikchr", 0, &w, &h);
+    if( zOut==0 ){
+      fprintf(stderr, "pikchr() returns NULL.  Out of memory?\n");
+      exit(1);
     }
-    zOut = pikchr(zIn, "pikchr", mPikchrFlags, &w, &h);
-    free(zIn);
-    if( zOut ){
+    if( bSvgOnly ){
+      printf("%s\n", zOut);
+    }else{
+      if( zHtmlHdr ){
+        printf("%s", zHtmlHdr);
+        zHtmlHdr = 0;
+      }
+      printf("<h1>File %s</h1>\n", argv[i]);
       if( w<0 ){
-        printf("<p>ERROR:</p>\n");
-      }else if( bNoEcho==0 ){
-        printf("<p>Output size: %d by %d</p>\n", w, h);
+        printf("<p>ERROR</p>\n%s\n", zOut);
+      }else{
+        printf("<div id=\"svg-%d\" onclick=\"toggleHidden('svg-%d')\">\n",i,i);
+        printf("<div style='border:3px solid lightgray;max-width:%dpx;'>\n",w);
+        printf("%s</div>\n", zOut);
+        printf("<pre class='hidden'>");
+        print_escape_html(zIn);
+        printf("</pre>\n</div>\n");
       }
-      printf("<div style='border:3px solid lightgray;max-width:%dpx'>\n"
-             "%s</div>\n",
-             w, zOut);
-      free(zOut);
     }
+    free(zOut);
+    free(zIn);
   }
-  printf("</body></html>\n");
+  if( !bSvgOnly ){
+    printf("</body></html>\n");
+  }
   return 0; 
 }
 #endif /* PIKCHR_SHELL */

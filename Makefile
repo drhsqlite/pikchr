@@ -18,7 +18,7 @@ lemon:	lemon.c
 	$(CC) $(CFLAGS) lemon.c -o lemon
 
 test:	pikchr
-	./pikchr --no-echo examples/* grammar/*.txt tests/*.txt >out.html
+	./pikchr examples/* grammar/*.txt tests/*.txt >out.html
 	open out.html
 
 clean:	
