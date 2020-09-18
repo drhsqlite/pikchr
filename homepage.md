@@ -48,8 +48,9 @@ complete documentation available.
 
 [3]: https://fossil-scm.org/fossil
 
-## Live On-Line Demos
+## Demos
 
+  *  [Example Pikchr Scripts](./doc/examples.md)
   *  [](/pikchrshow)
   *  [Wiki Sandbox](/wikiedit?name=Sandbox)
 
