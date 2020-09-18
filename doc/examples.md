@@ -313,14 +313,15 @@ From page 20:  Various minor tweaks
         arrow "character" "defns" right 150%
 CPU:    box "CPU" "(16-bit mini)"
         arrow <- from top of CPU up "input " rjust
-        arrow right from CPU.e
-CRT:    "   CRT" ljust wid 1px
+        move right from CPU.e
+CRT:    "   CRT" ljust
         line from CRT - 0,0.075 up 0.15 \
                 then right 0.5 \
                 then right 0.5 up 0.25 \
                 then down 0.5+0.15 \
                 then left 0.5 up 0.25 \
                 then left 0.5
+        arrow from CPU.e right until even with previous.start
 Paper:  CRT + 1.05,0.75
         arrow <- from Paper down 1.5
         " ...  paper" ljust at end of last arrow + 0, 0.25

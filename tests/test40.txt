@@ -6,3 +6,4 @@ print $one, $two
 $three -= 11
 $three /= 2
 print $three
+box "should be..." italic "3 9" bold "5.5" bold fit
