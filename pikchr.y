@@ -3852,11 +3852,9 @@ static void pik_compute_layout_settings(Pik *p){
   wArrow = 0.5*pik_value(p,"arrowwid",8,0);
   p->wArrow = wArrow/thickness;
   p->hArrow = pik_value(p,"arrowht",7,0)/thickness;
-  p->rScale = 144.0*pik_value(p,"scale",5,0);
-  if( p->rScale<5.0 ) p->rScale = 5.0;
   p->fontScale = pik_value(p,"fontscale",9,0);
   if( p->fontScale<=0.0 ) p->fontScale = 1.0;
-  p->fontScale *= p->rScale/144.0;
+  p->rScale = 144.0;
   p->charWidth = pik_value(p,"charwid",7,0)*p->fontScale;
   p->charHeight = pik_value(p,"charht",6,0)*p->fontScale;
   p->bLayoutVars = 1;
@@ -3873,6 +3871,7 @@ static void pik_render(Pik *p, PEList *pEList){
     PNum leftmargin; /* Extra bounding box area on the left */
     PNum w, h;       /* Drawing width and height */
     PNum wArrow;
+    PNum pikScale;   /* Value of the "scale" variable */
 
     /* Set up rendering parameters */
     pik_compute_layout_settings(p);
@@ -3906,6 +3905,14 @@ static void pik_render(Pik *p, PEList *pEList){
     h = p->bbox.ne.y - p->bbox.sw.y;
     p->wSVG = (int)(p->rScale*w);
     p->hSVG = (int)(p->rScale*h);
+    pikScale = pik_value(p,"scale",5,0);
+    if( pikScale<0.99 || pikScale>1.01 ){
+      p->wSVG *= pikScale;
+      p->hSVG *= pikScale;
+      pik_append_num(p, " width=\"", p->wSVG);
+      pik_append_num(p, "\" height=\"", p->hSVG);
+      pik_append(p, "\"", 1);
+    }
     pik_append_dis(p, " viewBox=\"0 0 ",w,"");
     pik_append_dis(p, " ",h,"\">\n");
     pik_elist_render(p, pEList);
