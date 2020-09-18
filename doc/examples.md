@@ -228,7 +228,7 @@ box invis wid 2*boxwid "ndtable:" with .e at Start.w
 -----
 
 From page 19:  The length of the line for "intermediate code" had to
-be lengthen so that the text would fit.
+be lengthened so that the text would fit.
 
 ~~~ pikchr toggle
         arrow "source" "code"
