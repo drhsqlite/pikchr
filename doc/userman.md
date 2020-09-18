@@ -22,7 +22,7 @@ this document (preferrably in a separate window).  Type in the following
 script and press the Preview button:
 <a id="firstdemo"></a>
 
-~~~~~
+~~~~~ pikchr source toggle indent
      line; box "Hello," "World!"; arrow
 ~~~~~
 
@@ -49,9 +49,10 @@ rendered diagram.
 The click-to-change-view behavior is a property of this one
 particular document and is not a general capability of Pikchr. On
 other documents containing Pikchr diagrams that are generated using Fossil
-you can use ctrl-click to toggle the view.  (That is, click on the
-diagram while holding down the Ctrl key.)  But that won't work if
-you are on a tablet or phone, since you don't have a Ctrl key to hold
+you can use ctrl-click (alt-click on Macs) to toggle the view.
+That is, click on the diagram while holding down the Ctrl key or the Alt key.
+This is not possible if
+you are on a tablet or phone, since you don't have a Ctrl or Alt key to hold
 down there.  Other systems might not implement the view-swapping behavior
 at all.  This is a platform-depending feature that is one layer above
 Pikchr itself.
@@ -72,7 +73,7 @@ The example script above could be rewritten with each statement on
 a separate line, and with comments describing what each statement is
 doing:
 
-~~~~~
+~~~~~ pikchr source toggle indent
     # The first component of the drawing is a line
     line
     // The second component is a box with text "Hello, World!"
@@ -85,7 +86,7 @@ Remember that new-lines separate statements.  If you have a long statement
 that needs to be split into multiple lines, escape the newline with
 a backslash character and the new-line will be treated as any other space:
 
-~~~~~
+~~~~~ pikchr source toggle indent
     line
     box \
        "Hello," \
@@ -146,7 +147,7 @@ consists of just the name of the new direction.  So,
 if we insert the "down" statement in front of our test script, like
 this:
 
-~~~~~
+~~~~~ pikchr source toggle indent
     down
     line
     box  "Hello,"  "World!"
@@ -185,7 +186,7 @@ block objects (boxes, circles, ovals, etc.), but this is not required.
 You can stack a bunch of block objects together.
 For example:
 
-~~~~~
+~~~~~ pikchr source toggle indent
     box; circle; cylinder
 ~~~~~
 
@@ -198,7 +199,7 @@ Yields:
 More often, you want to put space in between the block objects.
 The special "move" object exists for that purpose.  Consider:
 
-~~~~~
+~~~~~ pikchr source toggle indent
     box; move; circle; move; cylinder
 ~~~~~
 
@@ -213,7 +214,7 @@ Implementation note:  A "move" is really just an invisible "line".  So
 the following script generates the same output as the previous.
 ([Try it!](/pikchrshow?content=box;line%20invisible;circle;line%20invisible;cylinder))
 
-~~~~~
+~~~~~ pikchr source toggle indent
     box; line invisible; circle; line invisible; cylinder
 ~~~~~
 
@@ -229,7 +230,7 @@ and cylinder separated by some space.  Suppose we want to draw an arrow
 that goes downward out of the box, then right, then up into the
 cylinder.  The complete script might look something like this:
 
-~~~~~
+~~~~~ pikchr source toggle indent
     box; move; circle; move; cylinder
     arrow from first box.s \
           down 1cm \
@@ -363,7 +364,7 @@ For example, suppose you come back to this script later and
 decide you need to insert an ellipse in between the circle and
 the cylinder.  This is easily accomplished:
 
-~~~~~
+~~~~~ pikchr source toggle indent
     box; move; circle; move; ellipse; move; cylinder
     arrow from first box.s \
           down 1cm \
@@ -440,7 +441,7 @@ by that name.
 
 Consider how this simplifies our previous example:
 
-~~~~~
+~~~~~ pikchr source toggle indent
     B1:  box; move;
          circle; move;
          ellipse; move;
@@ -470,7 +471,7 @@ Let's say you have box and you want to position a circle 2 centimeters to the
 right of that box.  You simply use an "`at`" attribute on the circle to tell it
 to position itself 2 cm to the right of the box:
 
-~~~~~
+~~~~~ pikchr source toggle indent
   B1: box
       circle at 2cm right of B1
 ~~~~~
@@ -501,7 +502,7 @@ right of the *center* of the box.  If what you really wanted is that the
 left (or west) side of the circle is 2 cm to the right (or east)
 of the box, then just say so:
 
-~~~~~
+~~~~~ pikchr source toggle indent
   B1: box
   C1: circle with .w at 2cm right of B1.e
 ~~~~~
@@ -572,7 +573,7 @@ layout direction that is current when the object is created.
 Recall the earlier example that consisted of three objects stacked
 together:
 
-~~~~~
+~~~~~ pikchr source toggle indent
     right; box; circle; cylinder
 ~~~~~
 
@@ -585,7 +586,7 @@ positioned, we can better understand what is going on.  The box is
 the first object.  It gets positioned with its center at (0,0), which
 we can show by putting a red dot at (0,0):
 
-~~~~~
+~~~~~ pikchr source toggle indent
     right; box; circle; cylinder
     dot color red at (0,0)
 ~~~~~
@@ -599,7 +600,7 @@ Because the layout direction is "right", the start and end of the box
 are the .w and .e boundary points.  Prove this by putting more colored dots
 at those points and rendering the result:
 
-~~~~~
+~~~~~ pikchr source toggle indent
     right; box; circle; cylinder
     dot color green at 1st box.start
     dot color blue at 1st box.end
@@ -619,7 +620,7 @@ of the .end of the box.
 Now consider what happens if we change the layout direction after the
 circle is created but before the cylinder is created:
 
-~~~~~
+~~~~~ pikchr source toggle indent
     right; box; circle; down; cylinder
 ~~~~~
 
