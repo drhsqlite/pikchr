@@ -13,10 +13,10 @@ a practical and accessible tutorial on using Pikchr.
 
 # Running Pikchr Scripts
 
-The design goal of Pikchr is to enabled embedded line diagrams in Markdown or other
+The design goal of Pikchr is to enable embedded line diagrams in Markdown or other
 simple markup languages.  The details on how to embedded Pikchr in Markdown is
 [covered separately][embed].  For the purpose of this tutorial, we will only write
-pure Pikchr scripts without the surrounding markup.  To experiement
+pure Pikchr scripts without the surrounding markup.  To experiment
 with Pikchr, visit the [](/pikchrshow) page on the website hosting
 this document (preferrably in a separate window).  Type in the following
 script and press the Preview button:
