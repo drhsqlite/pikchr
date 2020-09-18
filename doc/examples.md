@@ -112,7 +112,7 @@ arrow from X9 to last box.w
 
 # The main rule that goes straight through from start to finish
 #
-box "object-definition" italic fit width 70% at 11/16 way between X0 and X9
+box "object-definition" italic fit at 11/16 way between X0 and X9
 arrow to X9
 arrow from X0 to last box.w
 
@@ -135,7 +135,7 @@ line up $r*0.45 right $r*0.45 then right
 arrow right $r from X0 then down 2.5*$r then right $r
 oval " VARIABLE " fit
 arrow 70%
-box "assignment-operator" italic fit width 80%
+box "assignment-operator" italic fit
 arrow 70%
 box "expr" italic fit
 line right until even with X9 - ($r,0) \

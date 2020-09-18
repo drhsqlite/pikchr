@@ -2146,9 +2146,10 @@ static void pik_append_txt(Pik *p, PElem *pElem, PBox *pBox){
     if( pBox!=0 ){
       /* If pBox is not NULL, do not draw any <text>.  Instead, just expand
       ** pBox to include the text */
-      PNum cw = pik_text_length(t)*p->charWidth*xtraFontScale;
+      PNum cw = pik_text_length(t)*p->charWidth*xtraFontScale*0.01;
       PNum ch = p->charHeight*0.5*xtraFontScale;
       PNum x0, y0, x1, y1;  /* Boundary of text relative to pElem->ptAt */
+      if( t->eCode & TP_BOLD ) cw *= 1.1;
       if( t->eCode & TP_RJUST ){
         x0 = nx;
         y0 = y-ch;
@@ -3060,26 +3061,159 @@ static int pik_text_position(int iPrev, PToken *pFlag){
   return iRes;
 }
 
-/* Return an estimate of the actual number of displayed characters
-** in a character string.
+/*
+** Table of scale-factor estimates for variable-width characters.
+** Actual character widths vary by font.  These numbers are only
+** guesses.  And this table only provides data for ASCII.
+**
+** 100 means normal width.
+*/
+static const unsigned char awChar[] = {
+  /* Skip initial 32 control characters */
+  /* ' ' */  45,
+  /* '!' */  55,
+  /* '"' */  62,
+  /* '#' */  115,
+  /* '$' */  90,
+  /* '%' */  132,
+  /* '&' */  125,
+  /* '\''*/  40,
+
+  /* '(' */  55,
+  /* ')' */  55,
+  /* '*' */  71,
+  /* '+' */  115,
+  /* ',' */  45,
+  /* '-' */  48,
+  /* '.' */  45,
+  /* '/' */  50,
+
+  /* '0' */  91,
+  /* '1' */  91,
+  /* '2' */  91,
+  /* '3' */  91,
+  /* '4' */  91,
+  /* '5' */  91,
+  /* '6' */  91,
+  /* '7' */  91,
+
+  /* '8' */  91,
+  /* '9' */  91,
+  /* ':' */  50,
+  /* ';' */  50,
+  /* '<' */ 120,
+  /* '=' */ 120,
+  /* '>' */ 120,
+  /* '?' */  78,
+
+  /* '@' */ 142,
+  /* 'A' */ 102,
+  /* 'B' */ 105,
+  /* 'C' */ 110,
+  /* 'D' */ 115,
+  /* 'E' */ 105,
+  /* 'F' */  98,
+  /* 'G' */ 105,
+
+  /* 'H' */ 125,
+  /* 'I' */  58,
+  /* 'J' */  58,
+  /* 'K' */ 107,
+  /* 'L' */  95,
+  /* 'M' */ 145,
+  /* 'N' */ 125,
+  /* 'O' */ 115,
+
+  /* 'P' */  95,
+  /* 'Q' */ 115,
+  /* 'R' */ 107,
+  /* 'S' */  95,
+  /* 'T' */  97,
+  /* 'U' */ 118,
+  /* 'V' */ 102,
+  /* 'W' */ 150,
+
+  /* 'X' */ 100,
+  /* 'Y' */  93,
+  /* 'Z' */ 100,
+  /* '[' */  58,
+  /* '\\'*/  50,
+  /* ']' */  58,
+  /* '^' */ 119,
+  /* '_' */  72,
+
+  /* '`' */  72,
+  /* 'a' */  86,
+  /* 'b' */  92,
+  /* 'c' */  80,
+  /* 'd' */  92,
+  /* 'e' */  85,
+  /* 'f' */  52,
+  /* 'g' */  92,
+
+  /* 'h' */  92,
+  /* 'i' */  47,
+  /* 'j' */  47,
+  /* 'k' */  88,
+  /* 'l' */  48,
+  /* 'm' */ 135,
+  /* 'n' */  92,
+  /* 'o' */  86,
+
+  /* 'p' */  92,
+  /* 'q' */  92,
+  /* 'r' */  69,
+  /* 's' */  75,
+  /* 't' */  58,
+  /* 'u' */  92,
+  /* 'v' */  80,
+  /* 'w' */ 121,
+
+  /* 'x' */  81,
+  /* 'y' */  80,
+  /* 'z' */  76,
+  /* '{' */  91,
+  /* '|'*/   49,
+  /* '}' */  91,
+  /* '~' */ 118,
+};
+
+/* Return an estimate of the width of the displayed characters
+** in a character string.  The returned value is 100 times the
+** average character width.
 **
 ** Omit "\" used to escape characters.  And count entities like
 ** "&lt;" as a single character.  Multi-byte UTF8 characters count
 ** as a single character.
+**
+** Attempt to scale the answer by the actual characters seen.  Wide
+** characters count more than narrow characters.  But the widths are
+** only guesses.
 */
 static int pik_text_length(const PToken *pToken){
   int n = pToken->n;
   const char *z = pToken->z;
   int cnt, j;
   for(j=1, cnt=0; j<n-1; j++){
-    if( (z[j] & 0xc0)==0xc0 ) continue;
-    cnt++;
-    if( z[j]=='\\' && z[j+1]!='&' ){
-      j++;
-    }else if( z[j]=='&' ){
+    char c = z[j];
+    if( c=='\\' && z[j+1]!='&' ){
+      c = z[++j];
+    }else if( c=='&' ){
       int k;
       for(k=j+1; k<j+7 && z[k]!=0 && z[k]!=';'; k++){}
       if( z[k]==';' ) j = k;
+      cnt += 150;
+      continue;
+    }
+    if( (c & 0xc0)==0xc0 ){
+      while( j+1<n-1 && (z[j+1]&0xc0)==0x80 ){ j++; }
+      cnt += 100;
+      continue;
+    }
+    if( c>=0x20 && c<=0x7e ){
+      cnt += awChar[c-0x20];
+    }else{
+      cnt += 100;
     }
   }
   return cnt;
@@ -3101,8 +3235,8 @@ static int pik_text_length(const PToken *pToken){
 */
 static void pik_size_to_fit(Pik *p, PToken *pFit){
   PElem *pElem;
-  int w = 0, h = 0;
-  int i;
+  PNum w, h;
+  PBox bbox;
   if( p->nErr ) return;
   pElem = p->cur;
 
@@ -3111,37 +3245,12 @@ static void pik_size_to_fit(Pik *p, PToken *pFit){
     return;
   }
   if( pElem->type->xFit==0 ) return;
-  if( (pElem->mProp & A_HEIGHT)==0 ){
-    int hasCenter = 0;
-    int hasSingleStack = 0;
-    int hasDoubleStack = 0;
-    pik_txt_vertical_layout(pElem);
-    for(i=0; i<pElem->nTxt; i++){
-      if( pElem->aTxt[i].eCode & TP_CENTER ){
-        hasCenter = 1;
-      }else if( pElem->aTxt[i].eCode & (TP_ABOVE2|TP_BELOW2) ){
-        hasDoubleStack = 1;
-      }else if( pElem->aTxt[i].eCode & (TP_ABOVE|TP_BELOW) ){
-        hasSingleStack = 1;
-      }
-    }
-    h = hasCenter + hasSingleStack*2 + hasDoubleStack*2;
-  }
-  if( (pElem->mProp & A_WIDTH)==0 ){
-    for(i=0; i<pElem->nTxt; i++){
-      int cnt = pik_text_length(&pElem->aTxt[i]);
-      if( pElem->type->eJust==0 
-       && (pElem->aTxt[i].eCode & TP_JMASK)!=0
-      ){
-         cnt *= 2;
-      }
-      if( cnt>w ) w = cnt;
-    }
-  }
-  if( h>0 || w>0 ){
-    pik_compute_layout_settings(p);
-    pElem->type->xFit(p, pElem, w*p->charWidth, h*p->charHeight);
-  }
+  pik_bbox_init(&bbox);
+  pik_compute_layout_settings(p);
+  pik_append_txt(p, pElem, &bbox);
+  w = (bbox.ne.x - bbox.sw.x) + p->charWidth;
+  h = (bbox.ne.y - bbox.sw.y) + 0.5*p->charHeight;
+  pElem->type->xFit(p, pElem, w, h);
 }
 
 /* Set a local variable name to "val".
