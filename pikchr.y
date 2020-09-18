@@ -2130,8 +2130,9 @@ static void pik_append_txt(Pik *p, PElem *pElem, PBox *pBox){
   for(i=0; i<n; i++){
     PToken *t = &aTxt[i];
     PNum xtraFontScale = 1.0;
-    orig_y = y = pElem->ptAt.y;
-    PNum nx = x;
+    orig_y = pElem->ptAt.y;
+    PNum nx = 0;
+    y = 0;
     if( t->eCode & TP_ABOVE2 ) y += dy2 + 3*dy;
     if( t->eCode & TP_ABOVE  ) y += dy2 + dy;
     if( t->eCode & TP_BELOW  ) y -= dy2 + dy;
@@ -2147,18 +2148,46 @@ static void pik_append_txt(Pik *p, PElem *pElem, PBox *pBox){
       ** pBox to include the text */
       PNum cw = pik_text_length(t)*p->charWidth*xtraFontScale;
       PNum ch = p->charHeight*0.5*xtraFontScale;
+      PNum x0, y0, x1, y1;  /* Boundary of text relative to pElem->ptAt */
       if( t->eCode & TP_RJUST ){
-        pik_bbox_add_xy(pBox, nx, y-ch);
-        pik_bbox_add_xy(pBox, nx-cw, y+ch);
+        x0 = nx;
+        y0 = y-ch;
+        x1 = nx-cw;
+        y1 = y+ch;
       }else if( t->eCode & TP_LJUST ){
-        pik_bbox_add_xy(pBox, nx, y-ch);
-        pik_bbox_add_xy(pBox, nx+cw, y+ch);
+        x0 = nx;
+        y0 = y-ch;
+        x1 = nx+cw;
+        y1 = y+ch;
       }else{
-        pik_bbox_add_xy(pBox, nx+cw/2, y+ch);
-        pik_bbox_add_xy(pBox, nx-cw/2, y-ch);
+        x0 = nx+cw/2;
+        y0 = y+ch;
+        x1 = nx-cw/2;
+        y1 = y-ch;
       }
+      if( (t->eCode & TP_ALIGN)!=0 && pElem->nPath>=2 ){
+        int n = pElem->nPath;
+        PNum dx = pElem->aPath[n-1].x - pElem->aPath[0].x;
+        PNum dy = pElem->aPath[n-1].y - pElem->aPath[0].y;
+        if( dx!=0 || dy!=0 ){
+          PNum dist = hypot(dx,dy);
+          PNum t;
+          dx /= dist;
+          dy /= dist;
+          t = dx*x0 - dy*y0;
+          y0 = dy*x0 - dx*y0;
+          x0 = t;
+          t = dx*x1 - dy*y1;
+          y1 = dy*x1 - dx*y1;
+          x1 = t;
+        }
+      }
+      pik_bbox_add_xy(pBox, x+x0, orig_y+y0);
+      pik_bbox_add_xy(pBox, x+x1, orig_y+y1);
       continue;
     }
+    nx += x;
+    y += orig_y;
 
     pik_append_x(p, "<text x=\"", nx, "\"");
     pik_append_y(p, " y=\"", y, "\"");
@@ -2187,10 +2216,12 @@ static void pik_append_txt(Pik *p, PElem *pElem, PBox *pBox){
       int n = pElem->nPath;
       PNum dx = pElem->aPath[n-1].x - pElem->aPath[0].x;
       PNum dy = pElem->aPath[n-1].y - pElem->aPath[0].y;
-      PNum ang = atan2(dy,dx)*-180/M_PI;
-      pik_append_num(p, " transform=\"rotate(", ang);
-      pik_append_xy(p, " ", x, orig_y);
-      pik_append(p,")\"",2);
+      if( dx!=0 || dy!=0 ){
+        PNum ang = atan2(dy,dx)*-180/M_PI;
+        pik_append_num(p, " transform=\"rotate(", ang);
+        pik_append_xy(p, " ", x, orig_y);
+        pik_append(p,")\"",2);
+      }
     }
     pik_append(p," dominant-baseline=\"central\">",-1);
     z = t->z+1;
