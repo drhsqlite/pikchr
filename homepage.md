@@ -52,9 +52,8 @@ complete documentation available.
 
   *  [Example Pikchr Scripts](./doc/examples.md)
   *  [](/pikchrshow)
-  *  [Wiki Sandbox](/wikiedit?name=Sandbox)
 
-## Pikchr Documentation (*under active development*)
+## Pikchr Documentation (*still under development*)
 
   *  [Pikchr User Manual](./doc/userman.md)
   *  [Pikchr Language Grammar](./doc/grammar.md)
