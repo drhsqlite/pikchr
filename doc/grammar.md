@@ -53,6 +53,23 @@ The following special token classes are recognized:
      additional color names of "None" and "Off" are also recognized and
      have a value of -1.
 
+There are many non-terminals in the grammar, but a few or more important.
+If you are new to the Pikchr language, begin by focusing on these
+six:
+
+  *  *statement* &rarr;  A Pikchr script is just a list of statements.
+
+  *  *attribute* &rarr;  Each graphic object is configured with zero or
+     more attributes.
+
+  *  *object* &rarr;  A reference to a prior graphic object
+
+  *  *place* &rarr;  A specific point associated with an *object*.
+
+  *  *position* &rarr;  Any (2-D) point in space.  An (x,y) pair.
+
+  *  *expr* &rarr;  A scalar expression.
+
 
 A complete input file to Pikchr consists of a single *statement-list*.
 
