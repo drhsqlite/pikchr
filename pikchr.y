@@ -3825,7 +3825,11 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
     pElem->ptExit = pElem->aPath[pElem->nPath-1];
 
     /* Compute the center of the line based on the bounding box over
-    ** the vertexes */
+    ** the vertexes.  This is a difference from PIC.  In Pikchr, the
+    ** center of a line is the center of its bounding box. In PIC, the
+    ** center of a line is halfway between its .start and .end.  For
+    ** straight lines, this is the same point, but for multi-segment
+    ** lines the result is usually diferent */
     for(i=0; i<pElem->nPath; i++){
       pik_bbox_add_xy(&pElem->bbox, pElem->aPath[i].x, pElem->aPath[i].y);
     }
@@ -3840,11 +3844,9 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
     /* If this is a polygon (if it has the "close" attribute), then
     ** adjust the exit point */
     if( pElem->bClose ){
-      /* "closed" lines work like block objects */
+      /* For "closed" lines, the .end is one of the .e, .s, .w, or .n
+      ** points of the bounding box, as with block objects. */
       pik_elem_set_exit(pElem, pElem->inDir);
-    }else{
-      /* For an open line, the "center" is half way between
-      ** the .start and the .end */
     }
   }else{
     PNum w2 = pElem->w/2.0;
