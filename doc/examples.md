@@ -225,6 +225,73 @@ D3: circle same as B3 at B3-(0,2*$laneh) "3"
 ~~~
 
 
+## Graphs
+
+Rebase compared to merge from [Rebase Considered Harmful][rch]:
+
+[rch]: https://fossil-scm.org/fossil/doc/trunk/www/rebaseharm.md
+
+~~~ pikchr toggle
+scale = 0.8
+
+All: [
+circle "C0" fit fill white
+arrow right 50%
+$arrowlen = previous.wid
+circle same "C1"
+arrow same
+circle same "C2"
+arrow same
+circle same "C4"
+arrow same
+circle same "C6"
+circle same "C3" at dist(C2,C4) heading 30 from C2
+arrow right 50%
+circle same "C5"
+arrow from C2 to C3 chop
+C3P: circle same "C3'" at dist(C4,C6) heading 30 from C6
+arrow right 50% from C3P.e
+C5P: circle same "C5'"
+arrow from C6 to C3P chop
+
+box height C3.y-C2.y \
+    width dist(C5P.e,C0.w)+1.5*C1.rad \
+    with .w at 0.5*$arrowlen west of C0.w \
+    behind C0 \
+    fill 0xc6e2ff color 0xaac5df
+box same width previous.e.x - C2.w.x \
+    with .se at previous.ne \
+    fill 0x9accfc
+
+circle "C0" fit fill white at 3.5cm south of C0
+arrow right 50%
+circle same "C1"
+arrow same
+circle same "C2"
+arrow same
+circle same "C4"
+arrow same
+circle same "C6"
+circle same "C3" at dist(C2,C4) heading 30 from C2
+arrow right 50%
+circle same "C5"
+arrow same
+circle same "C7"
+arrow from C2 to C3 chop
+arrow from C6 to C7 chop
+
+box height C3.y-C2.y \
+    width dist(C7.e,C0.w)+1.5*C1.radius \
+    with .w at 0.5*$arrowlen west of C0.w \
+    behind C0 \
+    fill 0xc6e2ff color 0xaac5df
+box same width previous.e.x - C2.w.x \
+    with .se at previous.ne \
+    fill 0x9accfc
+]
+
+"Rebase vs. Merge" big big bold with .s at 3mm north of All.n
+~~~
 
 ## PIC Examples From The [Brian W. Kernighan paper][bwk]
 

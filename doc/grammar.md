@@ -329,6 +329,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
   *  **+** *expr*
   *  **abs (** *expr* **)**
   *  **cos (** *expr* **)**
+  *  **dist (** *position* **,** *position* **)**
   *  **int (** *expr* **)**
   *  **max (** *expr* **,** *expr* **)**
   *  **min (** *expr* **,** *expr* **)**

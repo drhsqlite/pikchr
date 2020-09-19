@@ -445,6 +445,7 @@ static void pik_compute_layout_settings(Pik*);
 static void pik_behind(Pik*,PElem*);
 static PElem *pik_assert(Pik*,PNum,PToken*,PNum);
 static PElem *pik_place_assert(Pik*,PPoint*,PToken*,PPoint*);
+static PNum pik_dist(PPoint*,PPoint*);
 
 
 } // end %include
@@ -721,6 +722,7 @@ expr(A) ::= NUMBER(N).                            {A=pik_atof(&N);}
 expr(A) ::= ID(N).                                {A=pik_get_var(p,&N);}
 expr(A) ::= FUNC1(F) LP expr(X) RP.               {A = pik_func(p,&F,X,0.0);}
 expr(A) ::= FUNC2(F) LP expr(X) COMMA expr(Y) RP. {A = pik_func(p,&F,X,Y);}
+expr(A) ::= DIST LP position(X) COMMA position(Y) RP. {A = pik_dist(&X,&Y);}
 expr(A) ::= place2(B) DOT_XY X.                   {A = B.x;}
 expr(A) ::= place2(B) DOT_XY Y.                   {A = B.y;}
 expr(A) ::= object(B) DOT_L numproperty(P).       {A=pik_property_of(B,&P);}
@@ -2372,6 +2374,16 @@ PNum pik_atof(PToken *num){
   return ans;
 }
 
+/*
+** Compute the distance between two points
+*/
+static PNum pik_dist(PPoint *pA, PPoint *pB){
+  PNum dx, dy;
+  dx = pB->x - pA->x;
+  dy = pB->y - pA->y;
+  return hypot(dx,dy);
+}
+
 /* Return true if a bounding box is empty.
 */
 static int pik_bbox_isempty(PBox *p){
@@ -3553,6 +3565,7 @@ static void pik_same(Pik *p, PElem *pOther, PToken *pErrTok){
   pElem->bChop = pOther->bChop;
   pElem->inDir = pOther->inDir;
   pElem->outDir = pOther->outDir;
+  pElem->iLayer = pOther->iLayer;
 }
 
 
@@ -4074,6 +4087,7 @@ static const PikWord pik_keywords[] = {
   { "cw",         2,   T_CW,        0,         0        },
   { "dashed",     6,   T_DASHED,    0,         0        },
   { "diameter",   8,   T_DIAMETER,  0,         0        },
+  { "dist",       4,   T_DIST,      0,         0        },
   { "dotted",     6,   T_DOTTED,    0,         0        },
   { "down",       4,   T_DOWN,      DIR_DOWN,  0        },
   { "e",          1,   T_EDGEPT,    0,         CP_E     },
