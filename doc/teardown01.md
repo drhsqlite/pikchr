@@ -94,7 +94,7 @@ a sequence of nodes, C1, C2, C4, and C6, connected by arrows and
 moving to the right.  The default layout direction for the graph is
 "right" so everything is placed automatically.
 
-## Lines 14 through 17 - the nodes of the first branch
+## Line 14 - drawing the first node of the first branch
 
 We want the C3-C5 branch to be above and slightly to the right of
 the C2 node.  For a pleasing appearance, it seems best to make the
@@ -115,7 +115,6 @@ angle between C2-C4 and C2-C3, thus establishing C2, C3, and C4 as
 the vertexes of an equilateral triangle.
 
 ~~~ pikchr toggle
-scale = 0.8
 linewid *= 0.5
 circle "C0" fit
 circlerad = previous.radius
@@ -148,6 +147,8 @@ X2: line thin color gray from circlerad+1mm heading 300 from C2 \
 line thin color gray <-> from X2 to X1 "distance" aligned above small \
     "C2 to C4" aligned below small
 ~~~
+
+## Lines 15 through 17 - completing the first branch
 
 Lines 15 and 16 add the arrow and C5 node.
 
