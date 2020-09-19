@@ -45,7 +45,7 @@ Click on the diagram to see the Pikchr code.
 /* 31 */ "feature branch" above at last box.n
 ~~~
 
-Hint:  Scrape the Pikchr source text and past it into the
+Hint:  Copy the Pikchr source text and paste it into the
 [](/pikchrshow) page in a separate browser window or tab so that
 you can make minor changes and see the effect of those changes
 as we work through the text.
@@ -71,7 +71,7 @@ arrows become twice as long, which makes the graph more spread out and
 harder to read.  Shortening the arrows is an aesthetic improvement.
 
 Even though they appear first in the script, lines like these
-are typically added at the end, in order to clean up a diagram after
+are typically added at the end of writing, in order to clean up a diagram after
 the basic structure is established.  Do not feel like you need
 to start out by setting a bunch of variables.  Write the object
 definitions first, and then perhaps go back and tweak the appearance
@@ -199,7 +199,7 @@ leftmost end of the graph.
 
 Normally, Pikchr draws elements in the order that they appear in the
 graph.  So, normally, this new background color box would paint
-over top of boxes that come before.  That would obscure the graph nodes.
+on top of the objects that come before.  That would obscure the graph nodes.
 To prevent this, the "`behind C0`" on line 25 tells Pikchr to paint 
 this box before it paints the C0 circle, so that the background color
 box occurs in the background rather than on top of the graph.
@@ -277,7 +277,7 @@ example script as follows:
   4.  Move the "feature branch" and "trunk" labels to the left ends
       of their respective boxes, rather than centering them.
 
-  5.  Add another branch on above the "feature branch" that adds
+  5.  Add another branch above the "feature branch" that adds
       nodes "C9", "C10", and "C11" that fork off from "C5'".  You
       will probably need to find a new place to put the "feature branch"
       label in order to get it out of the way.

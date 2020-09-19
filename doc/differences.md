@@ -278,13 +278,13 @@ as the first token of the statement.
   *  topmargin
 
 If the "fontscale" variable exists and is not 1.0, then the point-size
-of fonts is increased or descreased by multiplying by fontscale.
+of fonts is increased or descreased by multiplying by the fontscale.
 This variable can be used to increase or decrease the fonts in a
 diagram relative to all the other elements.
 
 The "charht" and "charwid" variables should contain an estimate for
 the average height and width of a character.  This information is used
-when trying to estimate the size of text.  Because Pikchr does not access
+when trying to estimate the size of text.  Because Pikchr has no access
 to the rendering engine, it cannot precisely determine the bounding box
 for text strings.  It tries to make a guess, and takes into account that
 some letters (like "w") are wider than others (like "i").  But Pikchr
@@ -306,7 +306,7 @@ space on all sides except the left, you could write:
 ~~~
 
 The "thickness", "color", and "fill" variables determine the default
-value for the "thinkness", "color", and "fill attributes on all objects.
+value for the "thickness", "color", and "fill attributes on all objects.
 Because the attribute name and the variable name are the same, the
 variable name can only be accessed from inside of parentheses, to avoid
 parsing ambiguities.  For example, to set the thickness of a box to
@@ -330,7 +330,7 @@ name appears on the left-hand size of an assignment.  You still do:
 The behavior of the "`arc`" object is underspecified in the original
 [BWK paper on PIC][bwk].  Nobody is sure exactly what "arc" is suppose
 to do. Furthermore, arcs seem to be seldom used.
-Splines and lines with a radius at corners are a better mechanisms
+Splines and lines with a radius at corners are better mechanisms
 for drawing curvy lines in a diagram.  For these reasons, and to
 keep the implementation simple, Pikchr does not actually draw an
 arc for the "`arc`" object.  Instead it draws a quadratic Bézier
@@ -339,7 +339,7 @@ taken.
 
 The 30&deg; dimensional "arc" in the drawing below 
 (taken from [a tutorial analysis of a Pikchr script](./teardown01.md))
-is really a spline.  It is seems close enough to an true
+is really a spline.  It is  close enough to an true
 arc for the purposes of Pikchr.  Can you tell the difference?
 
 ~~~ pikchr
