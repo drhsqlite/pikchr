@@ -325,6 +325,57 @@ name appears on the left-hand size of an assignment.  You still do:
      thickness *= 1.5
 ~~~~
 
+## The "`arc`" object does not actually draw an arc.
+
+The behavior of the "`arc`" object is underspecified in the original
+[BWK paper on PIC][bwk].  Nobody is sure exactly what "arc" is suppose
+to do. Furthermore, arcs seem to be seldom used.
+Splines and lines with a radius at corners are a better mechanisms
+for drawing curvy lines in a diagram.  For these reasons, and to
+keep the implementation simple, Pikchr does not actually draw an
+arc for the "`arc`" object.  Instead it draws a quadratic Bézier
+curve across *approximately* the same path that a true arc would have
+taken.
+
+The 30&deg; dimensional "arc" in the drawing below 
+(taken from [a tutorial analysis of a Pikchr script](./teardown01.md))
+is really a spline.  It is seems close enough to an true
+arc for the purposes of Pikchr.  Can you tell the difference?
+
+~~~ pikchr
+scale = 0.8
+linewid *= 0.5
+circle "C0" fit
+circlerad = previous.radius
+arrow
+circle "C1"
+arrow
+circle "C2"
+arrow
+circle "C4"
+arrow
+circle "C6"
+circle "C3" at dist(C2,C4) heading 30 from C2
+
+d1 = dist(C2,C3.ne)+2mm
+line thin color gray from d1 heading 30 from C2 \
+   to d1+1cm heading 30 from C2
+line thin color gray from d1 heading 0 from C2 \
+   to d1+1cm heading 0 from C2
+spline thin color gray <-> \
+   from d1+8mm heading 0 from C2 \
+   to d1+8mm heading 10 from C2 \
+   to d1+8mm heading 20 from C2 \
+   to d1+8mm heading 30 from C2 \
+   "30&deg;" aligned above small
+
+X1: line thin color gray from circlerad+1mm heading 300 from C3 \
+        to circlerad+6mm heading 300 from C3
+X2: line thin color gray from circlerad+1mm heading 300 from C2 \
+        to circlerad+6mm heading 300 from C2
+line thin color gray <-> from X2 to X1 "distance" aligned above small \
+    "C2 to C4" aligned below small
+~~~
 
 ## Discontinued Features
 

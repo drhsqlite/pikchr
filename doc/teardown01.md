@@ -114,6 +114,41 @@ from north.  A heading of 30 degrees means that there is a 60-degree
 angle between C2-C4 and C2-C3, thus establishing C2, C3, and C4 as
 the vertexes of an equilateral triangle.
 
+~~~ pikchr toggle
+scale = 0.8
+linewid *= 0.5
+circle "C0" fit
+circlerad = previous.radius
+arrow
+circle "C1"
+arrow
+circle "C2"
+arrow
+circle "C4"
+arrow
+circle "C6"
+circle "C3" at dist(C2,C4) heading 30 from C2
+
+d1 = dist(C2,C3.ne)+2mm
+line thin color gray from d1 heading 30 from C2 \
+   to d1+1cm heading 30 from C2
+line thin color gray from d1 heading 0 from C2 \
+   to d1+1cm heading 0 from C2
+spline thin color gray <-> \
+   from d1+8mm heading 0 from C2 \
+   to d1+8mm heading 10 from C2 \
+   to d1+8mm heading 20 from C2 \
+   to d1+8mm heading 30 from C2 \
+   "30&deg;" aligned above small
+
+X1: line thin color gray from circlerad+1mm heading 300 from C3 \
+        to circlerad+6mm heading 300 from C3
+X2: line thin color gray from circlerad+1mm heading 300 from C2 \
+        to circlerad+6mm heading 300 from C2
+line thin color gray <-> from X2 to X1 "distance" aligned above small \
+    "C2 to C4" aligned below small
+~~~
+
 Lines 15 and 16 add the arrow and C5 node.
 
 The arrow from C2 to C3 is drawn by line 17.  The "`chop`" attribute
