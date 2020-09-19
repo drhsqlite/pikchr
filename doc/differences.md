@@ -265,15 +265,65 @@ as the first token of the statement.
 
 ## New variables
 
-  *  margin
+  *  bottommargin
+  *  charht
+  *  charwid
+  *  color
+  *  fill
+  *  fontscale
   *  leftmargin
+  *  margin
+  *  rightmargin
+  *  thickness
+  *  topmargin
+
+If the "fontscale" variable exists and is not 1.0, then the point-size
+of fonts is increased or descreased by multiplying by fontscale.
+This variable can be used to increase or decrease the fonts in a
+diagram relative to all the other elements.
+
+The "charht" and "charwid" variables should contain an estimate for
+the average height and width of a character.  This information is used
+when trying to estimate the size of text.  Because Pikchr does not access
+to the rendering engine, it cannot precisely determine the bounding box
+for text strings.  It tries to make a guess, and takes into account that
+some letters (like "w") are wider than others (like "i").  But Pikchr
+can only guess at the actual size of text strings.  Usually this guess
+is close enough.  Some scripts might need to compensate, however, by
+adding leading or trailing spaces to the text strings, or by adjusting
+the values for "charht" and "charwid".
 
 Setting the "`margin`" variable to a distance adds that amount of
-extra whitespace around all four sides of the diagram.  The
-"`leftmargin`" variable adds whitespace to the left side of
-the diagram.  The "`margin`" and "`leftmargin`" variables
-are additive - the amount of whitespace on the left is the
-sum of both variables.
+extra whitespace around all four sides of the diagram.  The other
+four margin variables ("rightmargin", "bottommargin", "leftmargin",
+and "topmargin") add extra whitespace to that one side.  The two
+methods are additive.  For example, to add one centimeter of extra
+space on all sides except the left, you could write:
+
+~~~
+     margin = 1cm;
+     leftmargin = -1cm;
+~~~
+
+The "thickness", "color", and "fill" variables determine the default
+value for the "thinkness", "color", and "fill attributes on all objects.
+Because the attribute name and the variable name are the same, the
+variable name can only be accessed from inside of parentheses, to avoid
+parsing ambiguities.  For example, to set the thickness of a box to
+be twice the default thickness:
+
+~~~~
+     box thickness 2*(thickness)
+     ###             ^^^^^^^^^^^---- must be inside (...)
+~~~~
+
+The extra parentheses around variables "thickness", "color", and "fill"
+are only required when the values are being read, not when the variable
+name appears on the left-hand size of an assignment.  You still do:
+
+~~~~
+     thickness *= 1.5
+~~~~
 
 
 ## Discontinued Features
