@@ -1,0 +1,247 @@
+# Tutorial Analysis Of A Pikchr Diagram
+
+Let's look closely at an example Pikchr diagram to better understand
+how they work.  For this analysis, we will use a diagram that depicts
+a rebase operation in a version control system.  The original diagram
+is found in the
+[Rebase Considered Harmful][rch] document of the Fossil documentation.
+The version shown here is modified slightly from the original, for example by
+adding line number comments.
+Click on the diagram to see the Pikchr code.
+
+[rch]: https://fossil-scm.org/fossil/doc/trunk/www/rebaseharm.md
+
+~~~ pikchr toggle
+/* 01 */ scale = 0.8
+/* 02 */ fill = white
+/* 03 */ linewid *= 0.5
+/* 04 */ circle "C0" fit
+/* 05 */ circlerad = previous.radius
+/* 06 */ arrow
+/* 07 */ circle "C1"
+/* 08 */ arrow
+/* 09 */ circle "C2"
+/* 10 */ arrow
+/* 11 */ circle "C4"
+/* 12 */ arrow
+/* 13 */ circle "C6"
+/* 14 */ circle "C3" at dist(C2,C4) heading 30 from C2
+/* 15 */ arrow
+/* 16 */ circle "C5"
+/* 17 */ arrow from C2 to C3 chop
+/* 18 */ C3P: circle "C3'" at dist(C4,C6) heading 30 from C6
+/* 19 */ arrow right from C3P.e
+/* 20 */ C5P: circle "C5'"
+/* 21 */ arrow from C6 to C3P chop
+/* 22 */ box height C3.y-C2.y \
+/* 23 */     width (C5P.e.x-C0.w.x)+linewid \
+/* 24 */     with .w at 0.5*linewid west of C0.w \
+/* 25 */     behind C0 \
+/* 26 */     fill 0xc6e2ff thin color gray
+/* 27 */ box same width previous.e.x - C2.w.x \
+/* 28 */     with .se at previous.ne \
+/* 29 */     fill 0x9accfc
+/* 30 */ "trunk" below at 2nd last box.s
+/* 31 */ "feature branch" above at last box.n
+~~~
+
+Hint:  Scrape the Pikchr source text and past it into the
+[](/pikchrshow) page in a separate browser window or tab so that
+you can make minor changes and see the effect of those changes
+as we work through the text.
+
+## Lines 01 through 03 - modifying object size defaults
+
+The script begins by setting some global property variables.  The
+"`scale = 0.8`" line simply makes the whole diagram a little smaller
+so that it fits better within its host document.  Try commenting out
+that line (by adding a "`#`" or "`//`") and seeing the difference.
+
+The "`fill = white`" line causes all objects on the graph to have a
+default background fill color of white.  Without this line, the objects are
+not filled at all, and so the background colors (to be inserted on lines 22
+through 29) show through.  The result is still legible, but less pleasing.
+Try commenting out line 02 to see what happens.  We could have
+added a "`fill white`" attribute on every circle in the diagram instead,
+but it seems easier just to set the default fill color once.
+
+The "`linewid *= 0.5`" on line 03 shortens the default length of lines
+and arrows by 50%.  Try commenting out that line.  You will see that the
+arrows become twice as long, which makes the graph more spread out and
+harder to read.  Shortening the arrows is an aesthetic improvement.
+
+Even though they appear first in the script, lines like these
+are typically added at the end, in order to clean up a diagram after
+the basic structure is established.  Do not feel like you need
+to start out by setting a bunch of variables.  Write the object
+definitions first, and then perhaps go back and tweak the appearance
+by adjusting some variable settings.
+
+## Lines 04 and 05 - establishing the prototype node circle
+
+Line 04 creates a circle sized to fit its label "C0".  We want
+all the circles in this diagram to be the same size, so after sizing
+the first one to fit the text, line 05 sets the new default circle radius
+for all subsequent circles to be same as the first circle.  This
+saves us from having to add a "fit" on every line.  And it means that
+all of the circles will be of a uniform size, even if they contain
+varying amounts of text.
+
+## Lines 06 through 13 - the bottom row of nodes
+
+After the initial node has been established, lines 06 through 13 create
+a sequence of nodes, C1, C2, C4, and C6, connected by arrows and
+moving to the right.  The default layout direction for the graph is
+"right" so everything is placed automatically.
+
+## Lines 14 through 17 - the nodes of the first branch
+
+We want the C3-C5 branch to be above and slightly to the right of
+the C2 node.  For a pleasing appearance, it seems best to make the
+distance from C2 to C3 be the same as the distance from C2 to C4.
+This is accomplished by setting the location of C3 using
+a clause of the form:
+
+  *  *distance* **heading** *angle* **from** *basis*
+
+The *basis* is C2.  The *distance* is the same as the distance from C2
+to C4, and so we use the expression "`dist(C2,C4)`".  Notice here that
+we are able to refer to the nodes using their text annotations because
+the text annotations have the form of a valid object label - they begin
+with a capital letter and consists of alphanumerics and underscores.
+The *angle* is a compass heading - 0 to 360 degrees clockwise from
+from north.  A heading of 30 degrees means that there is a 60-degree
+angle between C2-C4 and C2-C3, thus establishing C2, C3, and C4 as
+the vertexes of an equilateral triangle.
+
+Lines 15 and 16 add the arrow and C5 node.
+
+The arrow from C2 to C3 is drawn by line 17.  The "`chop`" attribute
+causes the arrow to begin and end on node boundaries.  If you remove
+the "`chop`" (try it!) the arrow will go between the centers of the two
+nodes.
+
+## Lines 18 through 21 - nodes of the second branch
+
+Lines 18 through 21 are mostly a repeat of lines 14 through 17.
+The differences are (1) the branch is connected to C6 instead of C2
+and (2) the nodes of the branch have text attributes "C3'" and "C5'"
+Because the addition of the "`'`" characters, text attributes are no longer
+valid object label names and we cannot use them to refer to objects
+any longer.  Therefore, the nodes of this second branch are given
+explicit labels "C3P" and "C5P".  Do not be bashful about adding
+labels to objects.  The use of labels often makes the script much
+easier to read and maintain.
+
+# Lines 22 through 26 - background color for trunk
+
+Lines 22 through 26 implement a single box object that provides background
+color for the trunk.  Note the use of backslash ("`\`") to continue the
+definition of this object across multiple lines.  It is not required to
+break up the definition of the box across muliple lines.  Splitting the
+object definition to multiple lines merely is merely an aid to human
+understanding.  Pikchr does not care.
+
+Some tricky calculations are involved here.  We need to figure out
+an appropriate width and height for the box so that it encloses the
+sequence of circles and arrows that represent the trunk, with a
+comfortable margin, and we have to position the box so that the circles
+and arrows are approximately centered.  The height is "`C3.y-C2.y`".
+That is the equivalent of the distance between the bottom and second
+row.  In this way, the division between the bottom and top row can
+occur right in the middle of the two, and the margins above and below
+the bottom row will be the same.  The width is sufficient to span the
+entire row, plus one extra "linewid" for margin, to be evenly divided
+between both ends.
+
+Line 24 positions the background color box.  That line says that the
+extreme western end of the background color box should be half a linewid
+to the west of the extreme western end of the first node of the graph.
+Recall that we allowed for one linewid of margin to be split between
+both ends, so the western side is half that margin to the left of the
+leftmost end of the graph.
+
+Normally, Pikchr draws elements in the order that they appear in the
+graph.  So, normally, this new background color box would paint
+over top of boxes that come before.  That would obscure the graph nodes.
+To prevent this, the "`behind C0`" on line 25 tells Pikchr to paint 
+this box before it paints the C0 circle, so that the background color
+box occurs in the background rather than on top of the graph.
+Try commenting out the "`behind C0`" and see what happens!
+
+Finally, line 26 changes the fill color for the box to a light shade
+of blue, and makes the border line thin with color gray.
+
+# Lines 27 through 29 - background color for the branches
+
+Lines 27 through 29 create a second box to provide background color
+to the upper branches.  The second box definition begins with the
+keyword "`same`".  The "`same`" means that all of the settings to
+the new box are initialized to values from the previous box.  That
+means we don't have to set the height, or set "`behind C0`" or
+"`thin`" or "`color gray`".  All those attributes are inherited.
+The second box only has to change the width (because it is shorter)
+and adjust the background color, and set the position.
+
+We want the right edge of both background boxes to align.  And we
+want the branch background to begin at a little to the left of C3.
+The left edge of C2 seems like a reasonable starting point, so we
+set the width to "`previous.e.x - C2.w.x`" on line 27.  The "`previous`"
+refers to the previous background color box, of course.  Be careful
+that you do not insert any new objects in between the two boxes,
+and thus mess up the "`previous`".  Perhaps it would be better
+to label the prior color box and refer to it by name, like this:
+
+~~~~
+         ...
+/* 22 */ BG1: box height C3.y-C2.y \
+/* 23 */     width (C5P.e.x-C0.w.x)+linewid \
+/* 24 */     with .w at 0.5*linewid west of C0.w \
+/* 25 */     behind C0 \
+/* 26 */     fill 0xc6e2ff thin color gray
+/* 27 */ box same as BG1 width BG1.e.x - C2.w.x \
+/* 28 */     with .se at BG1.ne \
+/* 29 */     fill 0x9accfc
+         ...
+~~~~
+
+
+Line 28 positions the second box.  The southeast (.se) corner of
+the second box is set to align with the northeast (.ne) corner of
+the previous box.  This causes the two boxes to be flush right
+and stacked directly on top of each other.
+
+Line 29 adjusts the background color to a darker shade of blue.
+
+# Lines 30 and 31 - labeling the branches
+
+Lines 30 and 31 create a pair of text objects to identify the two
+branches depicted in the diagram.  
+
+# Overview
+
+A 31-line Pikchr script might look intimidating at first glance.  But
+as we see here, it is really quite simple.  No coordinates are involved,
+nor any hard-coded distances.  Everything is laid out and sized relative
+to other elements and to the system defaults.  This makes the diagram
+portable and adjustments easy.
+
+# Exercises
+
+Practice your Pikchr-script writing skills by modifying the
+example script as follows:
+
+  1.  Add a new "C7" node to the right of "C6"
+
+  2.  Add "C8" to the right of "C7".  This one is harder because it
+      will involve expanding the background color boxes.
+
+  3.  Move the "feature branch" and "trunk" labels to the left ends
+      of their respective boxes, rather than centering them.
+
+  4.  Add another branch on above the "feature branch" that adds
+      nodes "C9", "C10", and "C11" that fork off from "C5'".  You
+      will probably need to find a new place to put the "feature branch"
+      label in order to get it out of the way.
+
+  5.  Add a dashed line showing "C5'" being merged back into trunk.

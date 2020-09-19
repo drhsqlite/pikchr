@@ -56,6 +56,7 @@ complete documentation available.
 ## Pikchr Documentation (*still under development*)
 
   *  [Pikchr User Manual](./doc/userman.md)
+  *  [An Example Of How A Pikchr Script Is Written](./doc/teardown01.md)
   *  [Pikchr Language Grammar](./doc/grammar.md)
   *  [Differences From PIC](./doc/differences.md)
   *  [Invoking Pikchr From Markdown](./doc/usepikchr.md)

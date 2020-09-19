@@ -227,65 +227,68 @@ D3: circle same as B3 at B3-(0,2*$laneh) "3"
 
 ## Graphs
 
-Rebase compared to merge from [Rebase Considered Harmful][rch]:
+Version control graph adapted from [Rebase Considered Harmful][rch].
+Commentary on the Pikchr source text to the first of these two 
+graphs is provided in a [separate tutorial](./teardown01.md).
 
 [rch]: https://fossil-scm.org/fossil/doc/trunk/www/rebaseharm.md
 
 ~~~ pikchr toggle
 scale = 0.8
-
-circle "C0" fit fill white
-arrow right 50%
-$arrowlen = previous.wid
-circle same "C1"
-arrow same
-circle same "C2"
-arrow same
-circle same "C4"
-arrow same
-circle same "C6"
-circle same "C3" at dist(C2,C4) heading 30 from C2
-arrow right 50%
-circle same "C5"
+fill = white
+linewid *= 0.5
+circle "C0" fit
+circlerad = previous.radius
+arrow
+circle "C1"
+arrow
+circle "C2"
+arrow
+circle "C4"
+arrow
+circle "C6"
+circle "C3" at dist(C2,C4) heading 30 from C2
+arrow
+circle "C5"
 arrow from C2 to C3 chop
-C3P: circle same "C3'" at dist(C4,C6) heading 30 from C6
-arrow right 50% from C3P.e
-C5P: circle same "C5'"
+C3P: circle "C3'" at dist(C4,C6) heading 30 from C6
+arrow right from C3P.e
+C5P: circle "C5'"
 arrow from C6 to C3P chop
 
 box height C3.y-C2.y \
-    width dist(C5P.e,C0.w)+1.5*C1.rad \
-    with .w at 0.5*$arrowlen west of C0.w \
+    width (C5P.e.x-C0.w.x)+linewid \
+    with .w at 0.5*linewid west of C0.w \
     behind C0 \
-    fill 0xc6e2ff color 0xaac5df
+    fill 0xc6e2ff thin color gray
 box same width previous.e.x - C2.w.x \
     with .se at previous.ne \
     fill 0x9accfc
 "trunk" below at 2nd last box.s
 "feature branch" above at last box.n
 
-circle "C0" fit fill white at 3.7cm south of C0
-arrow right 50%
-circle same "C1"
-arrow same
-circle same "C2"
-arrow same
-circle same "C4"
-arrow same
-circle same "C6"
-circle same "C3" at dist(C2,C4) heading 30 from C2
-arrow right 50%
-circle same "C5"
-arrow same
-circle same "C7"
+circle "C0" at 3.7cm south of C0
+arrow
+circle "C1"
+arrow
+circle "C2"
+arrow
+circle "C4"
+arrow
+circle "C6"
+circle "C3" at dist(C2,C4) heading 30 from C2
+arrow
+circle "C5"
+arrow
+circle "C7"
 arrow from C2 to C3 chop
 arrow from C6 to C7 chop
 
 box height C3.y-C2.y \
-    width dist(C7.e,C0.w)+1.5*C1.radius \
-    with .w at 0.5*$arrowlen west of C0.w \
+    width (C7.e.x-C0.w.x)+1.5*C1.radius \
+    with .w at 0.5*linewid west of C0.w \
     behind C0 \
-    fill 0xc6e2ff color 0xaac5df
+    fill 0xc6e2ff thin color gray
 box same width previous.e.x - C2.w.x \
     with .se at previous.ne \
     fill 0x9accfc
