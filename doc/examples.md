@@ -234,7 +234,6 @@ Rebase compared to merge from [Rebase Considered Harmful][rch]:
 ~~~ pikchr toggle
 scale = 0.8
 
-All: [
 circle "C0" fit fill white
 arrow right 50%
 $arrowlen = previous.wid
@@ -262,8 +261,10 @@ box height C3.y-C2.y \
 box same width previous.e.x - C2.w.x \
     with .se at previous.ne \
     fill 0x9accfc
+"trunk" below at 2nd last box.s
+"feature branch" above at last box.n
 
-circle "C0" fit fill white at 3.5cm south of C0
+circle "C0" fit fill white at 3.7cm south of C0
 arrow right 50%
 circle same "C1"
 arrow same
@@ -288,9 +289,8 @@ box height C3.y-C2.y \
 box same width previous.e.x - C2.w.x \
     with .se at previous.ne \
     fill 0x9accfc
-]
-
-"Rebase vs. Merge" big big bold with .s at 3mm north of All.n
+"trunk" below at 2nd last box.s
+"feature branch" above at last box.n
 ~~~
 
 ## PIC Examples From The [Brian W. Kernighan paper][bwk]
