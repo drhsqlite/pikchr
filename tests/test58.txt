@@ -5,9 +5,12 @@ circle "C0" fit fill white
 arrow right 50%
 $arrowlen = previous.wid
 circle same "C1"
-arrow same
+A1: arrow same thickness 0.5*(thickness)
+#                        ^^^^^^^^^^^^^^^
+# demonstrate access to the "thickness" variable by
+# enclosing it in parentheses
 circle same "C2"
-arrow same
+arrow same as 1st arrow
 circle same "C4"
 arrow same
 circle same "C6"
@@ -28,6 +31,12 @@ box height C3.y-C2.y \
 box same width previous.e.x - C2.w.x \
     with .se at previous.ne \
     fill 0x9accfc
+
+spline <- thin from 1mm south of A1.center down .8cm then right .5cm color gray
+"  0.5*(thickness)" ljust small at previous.end
+dot at previous.c
+assert( A1.thickness == 1st arrow.thickness/2 )
+right
 
 circle "C0" fit fill white at 3.5cm south of C0
 arrow right 50%
