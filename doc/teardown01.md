@@ -269,15 +269,20 @@ example script as follows:
 
   1.  Add a new "C7" node to the right of "C6"
 
-  2.  Add "C8" to the right of "C7".  This one is harder because it
+  2.  Put the feature branch below the trunk rather than above it.
+
+  3.  Add "C8" to the right of "C7".  This one is harder because it
       will involve expanding the background color boxes.
 
-  3.  Move the "feature branch" and "trunk" labels to the left ends
+  4.  Move the "feature branch" and "trunk" labels to the left ends
       of their respective boxes, rather than centering them.
 
-  4.  Add another branch on above the "feature branch" that adds
+  5.  Add another branch on above the "feature branch" that adds
       nodes "C9", "C10", and "C11" that fork off from "C5'".  You
       will probably need to find a new place to put the "feature branch"
       label in order to get it out of the way.
 
-  5.  Add a dashed line showing "C5'" being merged back into trunk.
+  6.  Add a new node and dashed line from "C5'" that illustrates "C5'"
+      being merged back into trunk.
+
+  7.  Rotate the graph so that it goes bottom-up rather than left-to-right.
