@@ -3991,7 +3991,6 @@ static void pik_render(Pik *p, PEList *pEList){
   if( p->nErr==0 ){
     PNum thickness;  /* Stroke width */
     PNum margin;     /* Extra bounding box margin */
-    PNum leftmargin; /* Extra bounding box area on the left */
     PNum w, h;       /* Drawing width and height */
     PNum wArrow;
     PNum pikScale;   /* Value of the "scale" variable */
@@ -4002,7 +4001,6 @@ static void pik_render(Pik *p, PEList *pEList){
     if( thickness<=0.01 ) thickness = 0.01;
     margin = pik_value(p,"margin",6,0);
     margin += thickness;
-    leftmargin = pik_value(p,"leftmargin",10,0);
     wArrow = p->wArrow*thickness;
 
     /* Compute a bounding box over all objects so that we can know
@@ -4012,10 +4010,10 @@ static void pik_render(Pik *p, PEList *pEList){
 
     /* Expand the bounding box slightly to account for line thickness
     ** and the optional "margin = EXPR" setting. */
-    p->bbox.ne.x += margin;
-    p->bbox.ne.y += margin;
-    p->bbox.sw.x -= margin + leftmargin;
-    p->bbox.sw.y -= margin;
+    p->bbox.ne.x += margin + pik_value(p,"rightmargin",11,0);
+    p->bbox.ne.y += margin + pik_value(p,"topmargin",9,0);
+    p->bbox.sw.x -= margin + pik_value(p,"leftmargin",10,0);
+    p->bbox.sw.y -= margin + pik_value(p,"bottommargin",12,0);
 
     /* Output the SVG */
     pik_append(p, "<svg",4);
