@@ -718,6 +718,7 @@ expr(A) ::= expr(X) SLASH(E) expr(Y).             {
 expr(A) ::= MINUS expr(X). [UMINUS]               {A=-X;}
 expr(A) ::= PLUS expr(X). [UMINUS]                {A=X;}
 expr(A) ::= LP expr(X) RP.                        {A=X;}
+expr(A) ::= LP FILL|COLOR|THICKNESS(X) RP.        {A=pik_get_var(p,&X);}
 expr(A) ::= NUMBER(N).                            {A=pik_atof(&N);}
 expr(A) ::= ID(N).                                {A=pik_get_var(p,&N);}
 expr(A) ::= FUNC1(F) LP expr(X) RP.               {A = pik_func(p,&F,X,0.0);}
