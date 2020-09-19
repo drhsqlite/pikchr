@@ -53,7 +53,7 @@ The following special token classes are recognized:
      additional color names of "None" and "Off" are also recognized and
      have a value of -1.
 
-There are many non-terminals in the grammar, but a few or more important.
+There are many non-terminals in the grammar, but a few are more important.
 If you are new to the Pikchr language, begin by focusing on these
 six:
 
@@ -62,7 +62,7 @@ six:
   *  *attribute* &rarr;  Each graphic object is configured with zero or
      more attributes.
 
-  *  *object* &rarr;  A reference to a prior graphic object
+  *  *object* &rarr;  A reference to a prior graphic object.
 
   *  *place* &rarr;  A specific point associated with an *object*.
 
