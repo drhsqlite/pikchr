@@ -4587,6 +4587,7 @@ static void usage(const char *argv0){
   fprintf(stderr,
     "Convert Pikchr input files into SVG.\n"
     "Options:\n"
+    "   --dont-stop      Process all files even if earlier files have errors\n"
     "   --svg-only       Omit raw SVG without the HTML wrapper\n"
   );
   exit(1);
@@ -4622,6 +4623,7 @@ static void print_escape_html(const char *z){
 int main(int argc, char **argv){
   int i;
   int bSvgOnly = 0;            /* Output SVG only.  No HTML wrapper */
+  int bDontStop = 0;           /* Continue in spite of errors */
   const char *zHtmlHdr = 
     "<!DOCTYPE html>\n"
     "<html lang=\"en-US\">\n"
@@ -4657,6 +4659,9 @@ int main(int argc, char **argv){
       char *z = argv[i];
       z++;
       if( z[0]=='-' ) z++;
+      if( strcmp(z,"dont-stop")==0 ){
+        bDontStop = 1;
+      }else
       if( strcmp(z,"svg-only")==0 ){
         if( zHtmlHdr==0 ){
           fprintf(stderr, "the \"%s\" option must come first\n",argv[i]);
@@ -4690,9 +4695,8 @@ int main(int argc, char **argv){
     zOut = pikchr(zIn, "pikchr", 0, &w, &h);
     if( zOut==0 ){
       fprintf(stderr, "pikchr() returns NULL.  Out of memory?\n");
-      exit(1);
-    }
-    if( bSvgOnly ){
+      if( !bDontStop ) exit(1);
+    }else if( bSvgOnly ){
       printf("%s\n", zOut);
     }else{
       if( zHtmlHdr ){
