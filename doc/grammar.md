@@ -125,8 +125,8 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **text**
 
 ## *attribute*:
-  * *path-element*
-  * *location-attribute*
+  * *path-element*                [&#9654;info](./pathattr.md)
+  * *location-attribute*          [&#9654;info](./locobj.md)
   * STRING *text-attribute*\*
   * **same**
   * **same as** *object*
@@ -177,11 +177,11 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **rjust**
   * **small**
 
-## *path-element*:
+## *path-element*:   [&#9654;info](./pathattr.md)
   * **from** *position*
   * **then**? **to** *position*
   * **then**? **go**? *direction* *distance*?
-  * **then**? **go**? *direction* **until**? **even with** *place*
+  * **then**? **go**? *direction* **until**? **even with** *position*
   * (**then**|**go**) *distance*? **heading** *compass-angle*
   * (**then**|**go**) *distance*? *compass-direction*
   * **close**
@@ -209,7 +209,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **west**
   * **nw**
 
-## *location-attribute*:
+## *location-attribute*: [&#9654;info](./locattr.md)
   * **at** *position*
   * **with** *edgename* **at** *position*
   * **with** *dot-edgename* **at** *position*
