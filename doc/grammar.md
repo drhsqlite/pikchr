@@ -180,13 +180,13 @@ A complete input file to Pikchr consists of a single *statement-list*.
 ## *path-element*:   [&#9654;info](./pathattr.md)
   * **from** *position*
   * **then**? **to** *position*
-  * **then**? **go**? *direction* *distance*?
+  * **then**? **go**? *direction* *line-length*?
   * **then**? **go**? *direction* **until**? **even with** *position*
-  * (**then**|**go**) *distance*? **heading** *compass-angle*
-  * (**then**|**go**) *distance*? *compass-direction*
+  * (**then**|**go**) *line-length*? **heading** *compass-angle*
+  * (**then**|**go**) *line-length*? *compass-direction*
   * **close**
 
-## *distance*:
+## *line-length*:  [&#9654;info](./linelen.md)
 
   * *expr*
   * *expr* **%**
@@ -214,7 +214,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **with** *edgename* **at** *position*
   * **with** *dot-edgename* **at** *position*
 
-## *position*:
+## *position*:  [&#9654;info](./position.md)
 
   *  *expr* **,** *expr*
   *  *place*
@@ -231,6 +231,9 @@ A complete input file to Pikchr consists of a single *statement-list*.
   *  *distance* *which-way-from* *position*
 
 ## *fraction*:
+  *  *expr*
+
+## *distance*
   *  *expr*
 
 ## *which-way-from*:
@@ -253,7 +256,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
   *  **nw of**
   *  **heading** *compass-angle* **from**
 
-## *place*:
+## *place*:      [&#9654;info](./place.md)
 
   *  *object*
   *  *object* *dot-edgename*
