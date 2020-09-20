@@ -15,7 +15,7 @@ There are seven forms:
   *  (**then**|**go**) *distance*? *compass-direction*
   *  **close**
 
-The "`from`" attribute is used to assign the the starting location
+The "`from`" attribute is used to assign the starting location
 of the line object (its ".start" value).  The other six forms
 (collectively called "to" forms) assign
 intermediate vertexes or the end point (.end).   If the "`from`"
@@ -62,7 +62,7 @@ spline -> from 1.5cm heading 0 from A1.start \
 ~~~
 
 If two separate movements are desired, one 4cm right and another 3cm up,
-then "right" and "up" subphrases must be separated by the "`then`" keyword:
+then the "right" and "up" subphrases must be separated by the "`then`" keyword:
 
   *  ... **right 4cm then up 3cm** ...
 
