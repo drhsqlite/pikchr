@@ -83,7 +83,7 @@ arrow thin color gray from X3 to X4 "3cm" aligned above
 The "until even with" clause is a Pikchr extension (it does not exist
 in PIC) that makes it easier to specify paths that follow a
 "Manhattan geometry" (lines are axis-aligned) or that negotiate around
-obsticles.  The phrase:
+obstacles.  The phrase:
 
 >  go *direction* until even with *position*
 
@@ -96,20 +96,20 @@ the X coordinate matches the X coordinate of *position*.
 
 For example, suppose in the diagram below that we want to draw an arrow 
 that begins on Origin.s and ends on Destination.s but goes around
-the Obsticle oval, clearing it by at least one centimeter.
+the Obstacle oval, clearing it by at least one centimeter.
 
 ~~~ pikchr toggle
 box "Origin"
-Obsticle: oval ht 300% wid 30% with .n at linewid right of Origin.ne;
-box "Destination" with .nw at linewid right of Obsticle.n
-line invis from 1st oval.s to 1st oval.n "Obsticle" aligned
+Obstacle: oval ht 300% wid 30% with .n at linewid right of Origin.ne;
+box "Destination" with .nw at linewid right of Obstacle.n
+line invis from 1st oval.s to 1st oval.n "Obstacle" aligned
 ~~~
 
 The arrow might look like this:
 
 ~~~
    arrow from Origin.s \
-      down until even with 1cm below Obsticle.s \
+      down until even with 1cm below Obstacle.s \
       then right until even with Destination.s \
       then to Destination.s
 ~~~
@@ -118,38 +118,38 @@ And we have (annotations added):
 
 ~~~ pikchr toggle
 box "Origin"
-Obsticle: oval ht 300% wid 30% with .n at linewid right of Origin.ne;
-box "Destination" with .nw at linewid right of Obsticle.n
-line invis from 1st oval.s to 1st oval.n "Obsticle" aligned
+Obstacle: oval ht 300% wid 30% with .n at linewid right of Origin.ne;
+box "Destination" with .nw at linewid right of Obstacle.n
+line invis from 1st oval.s to 1st oval.n "Obstacle" aligned
 X: \
    arrow from Origin.s \
-      down until even with 1cm below Obsticle.s \
+      down until even with 1cm below Obstacle.s \
       then right until even with Destination.s \
       then to Destination.s
 
 line invis color gray from X.start to 2nd vertex of X \
     "down until even with" aligned small \
-    "1cm below Obsticle.s" aligned small
+    "1cm below Obstacle.s" aligned small
 line invis color gray from 2nd vertex of X to 3rd vertex of X \
     "right until even with Destination.s" aligned small above
 line invis color gray from 3nd vertex of X to 4rd vertex of X \
     "to Destination.s" aligned small above
 
 # Evidence that the alternative arrow is equivalent:
-assert( 2nd vertex of X == (Origin.s, 1cm below Obsticle.s) )
-assert( 3nd vertex of X == (Destination.s, 1cm below Obsticle.s) )
+assert( 2nd vertex of X == (Origin.s, 1cm below Obstacle.s) )
+assert( 3nd vertex of X == (Destination.s, 1cm below Obstacle.s) )
 ~~~
 
 The "**(** *position* **,** *position* **)**" syntax can be used
 in a similar way.  The "**(** *position* **,** *position* **)**"
 syntax means a point whose X coordinate is taken from the first
 position and whose Y coordinate is taken from the second position.
-So the line around the obsticle could have been written like this:
+So the line around the obstacle could have been written like this:
 
 ~~~ 
    arrow from Origin.s \
-     to (Origin.s, 1cm below Obsticle.s) \
-     then to (Destination.s, 1cm below Obsticle.s) \
+     to (Origin.s, 1cm below Obstacle.s) \
+     then to (Destination.s, 1cm below Obstacle.s) \
      then to Destination.s
 ~~~
 
