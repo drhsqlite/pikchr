@@ -126,7 +126,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
 
 ## *attribute*:
   * *path-element*                [&#9654;info](./pathattr.md)
-  * *location-attribute*          [&#9654;info](./locobj.md)
+  * *location-attribute*          [&#9654;info](./locattr.md)
   * STRING *text-attribute*\*
   * **same**
   * **same as** *object*
