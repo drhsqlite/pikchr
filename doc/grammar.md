@@ -127,7 +127,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
 ## *attribute*:
   * *path-element*                [&#9654;info](./pathattr.md)
   * *location-attribute*          [&#9654;info](./locattr.md)
-  * STRING *text-attribute*\*
+  * STRING *text-attribute*\*     [&#9654;info](./annotate.md)
   * **same**
   * **same as** *object*
   * *numeric-property* *new-property-value*
@@ -135,18 +135,17 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **dotted** *expr*?
   * **color** *color-expr*
   * **fill** *color-expr*
-  * **behind** *object*
+  * **behind** *object*      [&#9654;info](./behind.md)
   * **cw**
   * **ccw**
   * **&lt;-**
   * **-&gt;**
   * **&lt;-&gt;**
-  * **invis**
-  * **invisible**
-  * **thick**
-  * **thin**
+  * **invis**|**invisible**  [&#9654;info](./invis.md)
+  * **thick**                [&#9654;info](./thickthin.md)
+  * **thin**                 [&#9654;info](./thickthin.md)
   * **chop**
-  * **fit**
+  * **fit**                  [&#9654;info](./fit.md)
 
 ## *color-expr*: [&#9654;info](./colorexpr.md)
   * *expr*
@@ -191,7 +190,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * *expr*
   * *expr* **%**
 
-## *compass-angle*:
+## *compass-angle*:   [&#9654;info](./compassangle.md)
 
   * *expr*
 
