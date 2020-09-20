@@ -718,8 +718,9 @@ static YYACTIONTYPE yy_reduce(
   (void)yyLookahead;
   (void)yyLookaheadToken;
   yymsp = yypParser->yytos;
+  assert( yyruleno<(int)(sizeof(yyRuleName)/sizeof(yyRuleName[0])) );
 #ifndef NDEBUG
-  if( yyTraceFILE && yyruleno<(int)(sizeof(yyRuleName)/sizeof(yyRuleName[0])) ){
+  if( yyTraceFILE ){
     yysize = yyRuleInfoNRhs[yyruleno];
     if( yysize ){
       fprintf(yyTraceFILE, "%sReduce %d [%s]%s, pop back to state %d.\n",
