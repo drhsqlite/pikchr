@@ -296,6 +296,42 @@ box same width previous.e.x - C2.w.x \
 "feature branch" above at last box.n
 ~~~
 
+## Impossible Trident
+
+Contributed by Kees Nuyt
+
+~~~ pikchr toggle
+# Impossible trident pikchr script
+# https://en.wikipedia.org/wiki/Impossible_trident
+# pikchr script by Kees Nuyt, license Creative Commons BY-NC-SA 
+# https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+scale = 1.0
+eh = 0.5cm
+ew = 0.2cm
+ed = 2 * eh
+er = 0.4cm
+lws = 4.0cm
+lwm = lws + er
+lwl = lwm + er
+
+ellipse height eh width ew
+L1: line width lwl from last ellipse.n
+line width lwm from last ellipse.s
+LV: line height eh down
+
+move right er down ed from last ellipse.n
+ellipse height eh width ew
+L3: line width lws right from last ellipse.n to LV.end then down eh right ew
+line width lwm right from last ellipse.s then to LV.start
+
+move right er down ed from last ellipse.n
+ellipse height eh width ew
+line width lwl right from last ellipse.n then to L1.end
+line width lwl right from last ellipse.s then up eh
+~~~
+
+
 ## PIC Examples From The [Brian W. Kernighan paper][bwk]
 
 [bwk]: /uv/pic.pdf
@@ -350,7 +386,7 @@ box invis wid 2*boxwid "ndtable:" with .e at Start.w
 
 -----
 
-From page 19:  The length of the line for "intermediate code" had to
+From page 19:  The "intermediate code" line had to
 be lengthened so that the text would fit.
 
 ~~~ pikchr toggle
