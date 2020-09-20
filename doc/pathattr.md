@@ -157,4 +157,27 @@ However, we believe the "`until even with`" notation is easier.
 
 ## The "`close`" subclause
 
-*TBD*
+The "`close`" attribute closes a multi-segment path so that it
+forms a polygon.  When "`close`" is used, the "`.end`" point of the
+object is no longer the last vertex in the path but is instead
+one of "`.e`", "`.s`", "`.w`", or "`.n`" according to the current
+layout direction, as it would be for a block object.
+
+The following diagram illustrates this behavior.  The "`.end`" of
+each line is tagged with a red dot.  The line that uses "`close`"
+has its end at the "`.e`" point of the bounding box since the
+layout direction is "right".  The line without "`close`" has its
+"`.end`" at the last vertex of the line.
+
+~~~ pikchr toggle
+line right 2cm then down .5cm then up 1cm right 1cm \
+   then up 1cm left 1cm then down .5cm then left 2cm \
+   close "with 'close'"
+dot color red at last line.end
+
+move to 2.5cm south of last line.start
+line right 2cm then down .5cm then up 1cm right 1cm \
+   then up 1cm left 1cm then down .5cm then left 2cm \
+   then down 1cm "without 'close'"
+dot color red at last line.end
+~~~
