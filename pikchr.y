@@ -444,7 +444,7 @@ static PToken pik_next_semantic_token(PToken *pThis);
 static void pik_compute_layout_settings(Pik*);
 static void pik_behind(Pik*,PElem*);
 static PElem *pik_assert(Pik*,PNum,PToken*,PNum);
-static PElem *pik_place_assert(Pik*,PPoint*,PToken*,PPoint*);
+static PElem *pik_position_assert(Pik*,PPoint*,PToken*,PPoint*);
 static PNum pik_dist(PPoint*,PPoint*);
 
 
@@ -525,8 +525,8 @@ element(A) ::= print prlist.  {pik_append(p,"<br>\n",5); A=0;}
 // debugging use only.  If the equality comparison of the assert() fails
 // then an error message is generated.
 element(A) ::= ASSERT LP expr(X) EQ(OP) expr(Y) RP.  {A=pik_assert(p,X,&OP,Y);}
-element(A) ::= ASSERT LP place(X) EQ(OP) place(Y) RP.  
-                                             {A=pik_place_assert(p,&X,&OP,&Y);}
+element(A) ::= ASSERT LP position(X) EQ(OP) position(Y) RP.  
+                                          {A=pik_position_assert(p,&X,&OP,&Y);}
 
 lvalue(A) ::= ID(A).
 lvalue(A) ::= FILL(A).
@@ -2301,7 +2301,7 @@ static PElem *pik_assert(Pik *p, PNum e1, PToken *pEq, PNum e2){
 /*
 ** Process an "assert( place1 == place2 )" statement.  Always return NULL.
 */
-static PElem *pik_place_assert(Pik *p, PPoint *e1, PToken *pEq, PPoint *e2){
+static PElem *pik_position_assert(Pik *p, PPoint *e1, PToken *pEq, PPoint *e2){
   char zE1[100], zE2[100], zMsg[210];
 
   /* Convert the numbers to strings using %g for comparison.  This

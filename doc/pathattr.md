@@ -15,7 +15,7 @@ There are seven forms:
   *  (**then**|**go**) *distance*? *compass-direction*
   *  **close**
 
-The "`from`" attribute is used to assign the starting location
+The "`from`" attribute is used to assign the the starting location
 of the line object (its ".start" value).  The other six forms
 (collectively called "to" forms) assign
 intermediate vertexes or the end point (.end).   If the "`from`"
@@ -62,7 +62,7 @@ spline -> from 1.5cm heading 0 from A1.start \
 ~~~
 
 If two separate movements are desired, one 4cm right and another 3cm up,
-the "right" and "up" subphrases must be separated by the "`then`" keyword:
+then "right" and "up" subphrases must be separated by the "`then`" keyword:
 
   *  ... **right 4cm then up 3cm** ...
 
@@ -80,7 +80,80 @@ arrow thin color gray from X3 to X4 "3cm" aligned above
 
 ## The "`until even with`" subclause
 
-*TBD*
+The "until even with" clause is a Pikchr extension (it does not exist
+in PIC) that makes it easier to specify paths that follow a
+"Manhattan geometry" (lines are axis-aligned) or that negotiate around
+obsticles.  The phrase:
+
+>  go *direction* until even with *position*
+
+Means to continue the line in the specified *direction* until the
+coordinate being changed matches the corresponding coordinate in
+*position* If the line is going up or down, then it continues until
+the Y coordinate matches the Y coordinate of *position*.  If the line
+is going left or right, then it continues until
+the X coordinate matches the X coordinate of *position*.
+
+For example, suppose in the diagram below that we want to draw an arrow 
+that begins on Origin.s and ends on Destination.s but goes around
+the Obsticle oval, clearing it by at least one centimeter.
+
+~~~ pikchr toggle
+box "Origin"
+Obsticle: oval ht 300% wid 30% with .n at linewid right of Origin.ne;
+box "Destination" with .nw at linewid right of Obsticle.n
+line invis from 1st oval.s to 1st oval.n "Obsticle" aligned
+~~~
+
+The arrow might look like this:
+
+~~~
+   arrow from Origin.s \
+      down until even with 1cm below Obsticle.s \
+      then right until even with Destination.s \
+      then to Destination.s
+~~~
+
+And we have (annotations added):
+
+~~~ pikchr toggle
+box "Origin"
+Obsticle: oval ht 300% wid 30% with .n at linewid right of Origin.ne;
+box "Destination" with .nw at linewid right of Obsticle.n
+line invis from 1st oval.s to 1st oval.n "Obsticle" aligned
+X: \
+   arrow from Origin.s \
+      down until even with 1cm below Obsticle.s \
+      then right until even with Destination.s \
+      then to Destination.s
+
+line invis color gray from X.start to 2nd vertex of X \
+    "down until even with" aligned small \
+    "1cm below Obsticle.s" aligned small
+line invis color gray from 2nd vertex of X to 3rd vertex of X \
+    "right until even with Destination.s" aligned small above
+line invis color gray from 3nd vertex of X to 4rd vertex of X \
+    "to Destination.s" aligned small above
+
+# Evidence that the alternative arrow is equivalent:
+assert( 2nd vertex of X == (Origin.s, 1cm below Obsticle.s) )
+assert( 3nd vertex of X == (Destination.s, 1cm below Obsticle.s) )
+~~~
+
+The "**(** *position* **,** *position* **)**" syntax can be used
+in a similar way.  The "**(** *position* **,** *position* **)**"
+syntax means a point whose X coordinate is taken from the first
+position and whose Y coordinate is taken from the second position.
+So the line around the obsticle could have been written like this:
+
+~~~ 
+   arrow from Origin.s \
+     to (Origin.s, 1cm below Obsticle.s) \
+     then to (Destination.s, 1cm below Obsticle.s) \
+     then to Destination.s
+~~~
+
+However, we believe the "`until even with`" notation is easier.
 
 ## The "`close`" subclause
 
