@@ -9,7 +9,7 @@ any X,Y coordinate on the drawing.  This page is about *place*.
   *  *edgename* **of** *object*
   *  ORDINAL **vertex of** *object*
 
-EVery object has at least 9 places.  Line objects have additional
+Every object has at least 9 places.  Line objects have additional
 places for each internal vertex.   Most places are on the boundary
 of the object, though ".center" or ".c" is in the middle.  The
 ".start" and ".end" places might be in the interior of the object
@@ -19,7 +19,7 @@ Places usually have multiple names.
 There are 22 different place names to refer to the 9 potentially
 distinct places.
 
-For a block object when the layout direction is "right", we have:
+For a block object, when the layout direction is "right", we have:
 
 ~~~ pikchr
 B: box thick thick color blue
@@ -68,7 +68,7 @@ circle "&lambda;" fit at 2.5cm heading 250 from B
 ~~~
 
 The diagram above is for a box with square corners.  The non-center
-places for other block objects are always on the boundry of the
+places for other block objects are always on the boundary of the
 object.  Thus for an ellipse:
 
 ~~~ pikchr

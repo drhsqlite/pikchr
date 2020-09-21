@@ -3,7 +3,7 @@
 Pikchr is (currently) implemented in C.
 
   *  It uses no external libraries other than the standard C library and
-     the standard math library (for sin() and cos()).
+     the standard math library (for sin(), cos(), and some others).
   *  It is completely contained in a single source code file:
      [`pikchr.c`](/file/pikchr.c)
   *  It uses a single C-language interface routine: `pikchr()`
@@ -27,13 +27,13 @@ There is a single interface function:
   );
 ~~~~
 
-To convert Pikchr into SVG text ready to insert into the HTML output
+To convert Pikchr into SVG text ready to be inserted into the HTML output
 stream, simply invoke the pikchr() function, passing the source text
 as the first argument.  The SVG output text is returned, and the desired
 width and height of that text is written into the *pnWidth and *pnHeight
 variables.
 
-If the input Pikchr text contains errors, the a negative number is
+If the input Pikchr text contains errors, a negative number is
 written into *pnWidth and the returned text is an error message ready
 to be dropped into "`<pre>...</pre>`".  Any "`<`" or "`>`" or
 "`&`" characters in the error message text have already been escaped,
@@ -46,17 +46,17 @@ possible (though unlikely) for pikchr() to return a NULL pointer, for
 example if it hits a `malloc()` failure.
 
 If the zClass parameter is not NULL, then it is an extra class name
-(or names) that get inserted into the "`<svg>`" element of the returned
+(or names) that is inserted into the "`<svg>`" element of the returned
 string.  The mFlags parameter is currently unused.  Leave it at zero.
 
 ## Example use of pikchr()
 
 The "`pikchr.c`" source file itself contains an example use of the
-pikchr() function.  If pikchr.c is compiled with the -DPIKCHR_SHELL
+pikchr() function.  If "`pikchr.c`" is compiled with the `-DPIKCHR_SHELL`
 compile-time option, it will include a `main()` that reads all the
 files named as arguments, runs each through pikchr() and outputs
 the result embedded in HTML.  So if you want an example, look at the
-"main()" function at the bottom of the pikchr.c source file.
+"main()" function at the bottom of the "`pikchr.c`" source file.
 
 ## Performance considerations
 
@@ -86,7 +86,7 @@ a subdirectory, which we will call "fz".  Then run:
    fuzz fz
 ~~~~
 
-We have run this for hundreds of millions of tests already.  But you
+We have run this for hundreds of millions of tests already.  You
 are welcomed to run more.
 
 

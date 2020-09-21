@@ -3,7 +3,7 @@
 The "**behind** *object*" attribute causes the object currently under
 construction to be drawn before the referenced *object*.  
 
-Pikchr normally grows objects in the order that they appear in the
+Pikchr normally draws objects in the order that they appear in the
 input script.  However, the "`behind`" attribute can be used to alter
 the drawing order so that boxes used to implement background colors
 or borders can be drawn before the objects they enclose, even though

@@ -37,7 +37,7 @@ Pikchr diagrams can appear in:
   *  Check-in comments
   *  Anywhere else that Markdown or similar markup languages are used
 
-Pikchr diagrams are easy to generated.  The language is simple.
+Pikchr diagrams are easy to generate.  The language is simple.
 There is lots of documentation and examples on-line (links below).
 Anyone who is comfortable using Markdown should be able to pick up Pikchr
 with minimal extra effort.

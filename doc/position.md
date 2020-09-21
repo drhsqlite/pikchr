@@ -18,11 +18,11 @@ but not every *position* is a *place*.  This page is about *position*.
   *  *fraction* **<** *position* **,** *position* **>**
   *  *distance* *which-way-from* *position*
 
-## Absolute verus Place-relative Positions
+## Absolute versus Place-relative Positions
 
 One form of a position is an (X,Y) coordinate pair.  This works, but
 its use is discouraged.  It is better to use positions that are 
-either a *[place](./place.md)* or is derived from one or more places.
+either a *[place](./place.md)* or are derived from one or more places.
 
 ## The "**(** *position* **,** *position* **)**" Form
 
@@ -49,12 +49,12 @@ All of these syntactic forms of position are the same:
 The last form is the most cryptic, but it is also the most compact
 and hence ends up being the most often used.
 
-In all cases *fraction* is an expression that evalutes to between 0.0
+In all cases *fraction* is an expression that usually evaluates to between 0.0
 and 1.0.  The resulting position is that fraction along a line that
 connects the first *position* to the second *position*.
 
 The *fraction* can be less than 0.0 or greater than 1.0, in which case
-the point is on the extended line that connections the two positions.
+the point is on the extended line that connects the two positions.
 
 ~~~ pikchr
 P1: dot; text "P1" with .s at 2mm above P1
