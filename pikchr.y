@@ -201,6 +201,7 @@ static const PNum pik_hdg_angle[] = {
 struct PPoint {
   PNum x, y;             /* X and Y coordinates */
 };
+static const PPoint cZeroPoint = {0.0,0.0};
 
 /* A bounding box */
 struct PBox {
@@ -1013,7 +1014,7 @@ static void boxInit(Pik *p, PElem *pElem){
 /* Return offset from the center of the box to the compass point 
 ** given by parameter cp */
 static PPoint boxOffset(Pik *p, PElem *pElem, int cp){
-  PPoint pt;
+  PPoint pt = cZeroPoint;
   PNum w2 = 0.5*pElem->w;
   PNum h2 = 0.5*pElem->h;
   PNum rad = pElem->rad;
@@ -1025,9 +1026,8 @@ static PPoint boxOffset(Pik *p, PElem *pElem, int cp){
     if( rad>h2 ) rad = h2;
     rx = 0.29289321881345252392*rad;
   }
-  pt.x = pt.y = 0.0;
   switch( cp ){
-    case CP_C:   pt.x = 0.0;      pt.y = 0.0;    break;
+    case CP_C:                                   break;
     case CP_N:   pt.x = 0.0;      pt.y = h2;     break;
     case CP_NE:  pt.x = w2-rx;    pt.y = h2-rx;  break;
     case CP_E:   pt.x = w2;       pt.y = 0.0;    break;
@@ -1036,6 +1036,7 @@ static PPoint boxOffset(Pik *p, PElem *pElem, int cp){
     case CP_SW:  pt.x = rx-w2;    pt.y = rx-h2;  break;
     case CP_W:   pt.x = -w2;      pt.y = 0.0;    break;
     case CP_NW:  pt.x = rx-w2;    pt.y = h2-rx;  break;
+    default:     assert(0);
   }
   UNUSED_PARAMETER(p);
   return pt;
@@ -1229,12 +1230,12 @@ static void cylinderRender(Pik *p, PElem *pElem){
   pik_append_txt(p, pElem, 0);
 }
 static PPoint cylinderOffset(Pik *p, PElem *pElem, int cp){
-  PPoint pt;
+  PPoint pt = cZeroPoint;
   PNum w2 = pElem->w*0.5;
   PNum h1 = pElem->h*0.5;
   PNum h2 = h1 - pElem->rad;
   switch( cp ){
-    case CP_C:   pt.x = 0.0;   pt.y = 0.0;    break;
+    case CP_C:                                break;
     case CP_N:   pt.x = 0.0;   pt.y = h1;     break;
     case CP_NE:  pt.x = w2;    pt.y = h2;     break;
     case CP_E:   pt.x = w2;    pt.y = 0.0;    break;
@@ -1243,6 +1244,7 @@ static PPoint cylinderOffset(Pik *p, PElem *pElem, int cp){
     case CP_SW:  pt.x = -w2;   pt.y = -h2;    break;
     case CP_W:   pt.x = -w2;   pt.y = 0.0;    break;
     case CP_NW:  pt.x = -w2;   pt.y = h2;     break;
+    default:     assert(0);
   }
   UNUSED_PARAMETER(p);
   return pt;
@@ -1272,12 +1274,10 @@ static void dotCheck(Pik *p, PElem *pElem){
   UNUSED_PARAMETER(p);
 }
 static PPoint dotOffset(Pik *p, PElem *pElem, int cp){
-  PPoint zero;
-  zero.x = zero.y = 0;
   UNUSED_PARAMETER(p);
   UNUSED_PARAMETER(pElem);
   UNUSED_PARAMETER(cp);
-  return zero;
+  return cZeroPoint;
 }
 static void dotRender(Pik *p, PElem *pElem){
   PNum r = pElem->rad;
@@ -1316,13 +1316,13 @@ static PPoint ellipseChop(Pik *p, PElem *pElem, PPoint *pPt){
   return chop;
 }
 static PPoint ellipseOffset(Pik *p, PElem *pElem, int cp){
-  PPoint pt;
+  PPoint pt = cZeroPoint;
   PNum w = pElem->w*0.5;
   PNum w2 = w*0.70710678118654747608;
   PNum h = pElem->h*0.5;
   PNum h2 = h*0.70710678118654747608;
   switch( cp ){
-    case CP_C:   pt.x = 0.0;   pt.y = 0.0;    break;
+    case CP_C:                                break;
     case CP_N:   pt.x = 0.0;   pt.y = h;      break;
     case CP_NE:  pt.x = w2;    pt.y = h2;     break;
     case CP_E:   pt.x = w;     pt.y = 0.0;    break;
@@ -1360,7 +1360,7 @@ static void fileInit(Pik *p, PElem *pElem){
 /* Return offset from the center of the file to the compass point 
 ** given by parameter cp */
 static PPoint fileOffset(Pik *p, PElem *pElem, int cp){
-  PPoint pt;
+  PPoint pt = cZeroPoint;
   PNum w2 = 0.5*pElem->w;
   PNum h2 = 0.5*pElem->h;
   PNum rx = pElem->rad;
@@ -1370,7 +1370,7 @@ static PPoint fileOffset(Pik *p, PElem *pElem, int cp){
   pt.x = pt.y = 0.0;
   rx *= 0.5;
   switch( cp ){
-    case CP_C:   pt.x = 0.0;      pt.y = 0.0;    break;
+    case CP_C:                                   break;
     case CP_N:   pt.x = 0.0;      pt.y = h2;     break;
     case CP_NE:  pt.x = w2-rx;    pt.y = h2-rx;  break;
     case CP_E:   pt.x = w2;       pt.y = 0.0;    break;
@@ -1379,6 +1379,7 @@ static PPoint fileOffset(Pik *p, PElem *pElem, int cp){
     case CP_SW:  pt.x = -w2;      pt.y = -h2;    break;
     case CP_W:   pt.x = -w2;      pt.y = 0.0;    break;
     case CP_NW:  pt.x = -w2;      pt.y = h2;     break;
+    default:     assert(0);
   }
   UNUSED_PARAMETER(p);
   return pt;
@@ -3577,10 +3578,8 @@ static void pik_same(Pik *p, PElem *pOther, PToken *pErrTok){
 ** described by pEdge.
 */
 static PPoint pik_place_of_elem(Pik *p, PElem *pElem, PToken *pEdge){
-  PPoint pt;
+  PPoint pt = cZeroPoint;
   const PClass *pClass;
-  pt.x = 0.0;
-  pt.y = 0.0;
   if( pElem==0 ) return pt;
   if( pEdge==0 ){
     return pElem->ptAt;
