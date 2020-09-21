@@ -4,7 +4,8 @@ Pikchr is (currently) implemented in C.
 
   *  It uses no external libraries other than the standard C library and
      the standard math library (for sin() and cos()).
-  *  It is completely contained in a single source code file: `pikchr.c`
+  *  It is completely contained in a single source code file:
+     [`pikchr.c`](/file/pikchr.c)
   *  It uses a single C-language interface routine: `pikchr()`
 
 Any existing Markdown or other wiki rendering engine that can invoke
