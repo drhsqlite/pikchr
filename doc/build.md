@@ -8,8 +8,13 @@
   *  Compile "`pikchr.c`" into an object file, or add the
      "`-DPIKCHR_SHELL`" command-line option to generate a stand-alone
      executable.
+  *  A pre-processed "[`pikchr.c`][src]" source file is stored in the
+     source tree for the convenience of integrators who do not want to
+     figure out how to build and run Lemon.
 
-~~~ pikchr center
+[src]: /file/pikchr.c
+
+~~~ pikchr
             filewid *= 1.2
   Src:      file "pikchr.y"; move
   LemonSrc: file "lemon.c"; move
@@ -32,6 +37,17 @@
   CC2:      oval "C-Compiler" ht 50%
             arrow
   Out:      file "pikchr.o" "or" "pikchr.exe" wid 110%
+            spline <- from 1mm west of Src.w go 60% heading 250 \
+               then go 40% heading 45 then go 60% heading 250 \
+               thin color gray
+            box invis "Canonical" ljust small "Source code" ljust small fit \
+               with .e at end of last spline width 90%
+            spline <- from 1mm west of PikSrc.w go 60% heading 250 \
+               then go 40% heading 45 then go 60% heading 250 \
+               thin color gray
+            box invis "Proprocessed" ljust small \
+              "C-code" ljust small "also in-tree" ljust small fit \
+               with .e at end of last spline width 90%
 ~~~
 
 ## Details:
@@ -70,10 +86,7 @@ in the Pikchr source repository for convenience.
 
 ## Preprocessed Sources Available For Download.
 
-If you don't want to go to the trouble of compiling Lemon and then
-running the "`pikchr.y`" source file through Lemon to generate
-the "`pikchr.c`" C-code, you can download a pre-built copy
-of "`pikchr.c`" directly from the
-[Fossil source repository][piksrc].
-
-[piksrc]: https://fossil-scm.org/home/file/src/pikchr.c
+As a convenience to integrators, the pre-processed "`pikchr.c`" C-code
+file is normally checked into the Pikchr source tree.  Hence, to build
+Pikchr into another system, just grab a copy of that one file and add
+it to the project.
