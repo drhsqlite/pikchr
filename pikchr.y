@@ -2528,6 +2528,7 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
   p->thenFlag = 0;
   if( p->list==0 || p->list->n==0 ){
     pNew->ptAt.x = pNew->ptAt.y = 0.0;
+    pNew->eWith = CP_C;
   }else{
     PElem *pPrior = p->list->a[p->list->n-1];
     pNew->ptAt = pPrior->ptExit;
@@ -2540,7 +2541,6 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
   }
   p->aTPath[0] = pNew->ptAt;
   pNew->with = pNew->ptAt;
-  pNew->eWith = CP_C;
   pNew->outDir = pNew->inDir = p->eDir;
   pNew->iLayer = (int)pik_value(p, "layer", 5, &miss);
   if( miss ) pNew->iLayer = 1000;
