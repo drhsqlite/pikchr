@@ -76,7 +76,8 @@ use code taken from the internet or other external sources.  All of the Pikchr
 source code is released under a [zero-clause BSD license][0BSD].  After being
 processed using [Lemon][lemon], the Pikchr source code is a single
 file of C89 named "`pikchr.c`".  These features
-are designed to make Pikchr easy to integrate into other systems.
+are designed to make Pikchr [easy to integrate into other systems][integ].
 
 [0BSD]: https://spdx.org/licenses/0BSD.html
 [lemon]: https://www.sqlite.org/lemon.html
+[integ]: doc/integrate.md
