@@ -1,0 +1,4 @@
+# A, B horizontal, coincident
+A: line color blue  thick from (8,7) to (28,7)
+B: line color green thick from (14,7) to (21,7)
+dot color red at intersect(A,B)

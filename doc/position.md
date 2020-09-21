@@ -17,6 +17,7 @@ but not every *position* is a *place*.  This page is about *position*.
   *  *fraction* **between** *position* **and** *position*
   *  *fraction* **<** *position* **,** *position* **>**
   *  *distance* *which-way-from* *position*
+  *  **intersect** **(** *object* **,** *object* **)**
 
 ## Absolute versus Place-relative Positions
 
@@ -75,3 +76,29 @@ position using this format.  Some examples:
   *  1cm below Obstacle.s
   *  0.5*linewid left of C0.w
   *  dist(C2,C3) heading 30 from C2
+
+## The "**intersect** **(** *object* **,** *object* **)**" Form
+
+This form returns the position where the two line objects intersect.
+It cannot be used with non-line classes.
+
+The "line"s going into the calculation are taken from the "`.start`"
+and "`.end`" points of the objects.
+For straight lines this coincides with the visible line.
+This is not true anymore when the line has more than one path segment.
+
+~~~ pikchr
+# triangulation
+A: arrow from (0,0)    to (1,-0.2) "Reading 1" aligned above
+B: arrow from (-0.5,2) to (1,0.3)  "Reading 2" aligned below
+line dashed from A.end to 2   between A.start and A.end
+line dashed from B.end to 1.5 between B.start and B.end
+circle color red at intersect(A,B) thick rad 0.1
+text with .w at previous.ne "The treasure is here"
+~~~
+
+The function will throw errors when
+
+  - Invoked with non-line objects
+  - The two lines are parallel, i.e. do not intersect.
+  - The two lines coincide, i.e. the set of intersections is infinite.

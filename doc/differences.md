@@ -377,6 +377,17 @@ line thin color gray <-> from X2 to X1 "distance" aligned above small \
     "C2 to C4" aligned below small
 ~~~
 
+## New functions
+
+Pikchr introduces several new functions supporting advanced geometry
+calculations:
+
+  - "`dist(A,B)`" returns the distance between the specified
+    positions.
+
+  - "`intersect(A,B)`" returns the position where the specified line
+    objects intersect.
+
 ## Discontinued Features
 
 Pikchr deliberately omits some features of legacy PIC for security

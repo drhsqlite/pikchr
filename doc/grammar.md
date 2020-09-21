@@ -228,6 +228,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
   *  *fraction* **between** *position* **and** *position*
   *  *fraction* **<** *position* **,** *position* **>**
   *  *distance* *which-way-from* *position*
+  *  **intersect** **(** *object* **,** *object* **)**
 
 ## *fraction*:
   *  *expr*

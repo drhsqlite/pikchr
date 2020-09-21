@@ -1,0 +1,4 @@
+# A, B skaeve intersecting
+A: line color blue  thick from (0.3,0.2) to (0.9,0.4)
+B: line color green thick from (0.4,0.5) to (0.7,0.2)
+dot color red at intersect(A,B)

@@ -424,6 +424,7 @@ static short int pik_nth_value(Pik*,PToken*);
 static PElem *pik_find_nth(Pik*,PElem*,PToken*);
 static PElem *pik_find_byname(Pik*,PElem*,PToken*);
 static PPoint pik_place_of_elem(Pik*,PElem*,PToken*);
+static PPoint pik_place_of_elem_edge(Pik*,PElem*,unsigned int);
 static int pik_bbox_isempty(PBox*);
 static void pik_bbox_init(PBox*);
 static void pik_bbox_addbox(PBox*,PBox*);
@@ -438,6 +439,7 @@ static PNum pik_func(Pik*,PToken*,PNum,PNum);
 static PPoint pik_position_between(PNum x, PPoint p1, PPoint p2);
 static PPoint pik_position_at_angle(PNum dist, PNum r, PPoint pt);
 static PPoint pik_position_at_hdg(PNum dist, PToken *pD, PPoint pt);
+static PPoint pik_position_at_intersection(Pik*,PElem*,PElem*);
 static void pik_same(Pik *p, PElem*, PToken*);
 static PPoint pik_nth_vertex(Pik *p, PToken *pNth, PToken *pErr, PElem *pElem);
 static PToken pik_next_semantic_token(PToken *pThis);
@@ -667,6 +669,8 @@ position(A) ::= expr(D) ON HEADING expr(G) FROM position(P).
                                         {A = pik_position_at_angle(D,G,P);}
 position(A) ::= expr(D) HEADING expr(G) FROM position(P).
                                         {A = pik_position_at_angle(D,G,P);}
+position(A) ::= INTERSECT LP object(B) COMMA object(C) RP.
+                                        {A = pik_position_at_intersection(p, B,C);}
 
 between ::= WAY BETWEEN.
 between ::= BETWEEN.
@@ -3597,6 +3601,33 @@ static PPoint pik_place_of_elem(Pik *p, PElem *pElem, PToken *pEdge){
   }
 }
 
+/* Return a "Place" associated with element pElem.  If pEdge is 0
+** return the center of the object.  Otherwise, return the corner
+** described by pEdge. This is a variant pf the previous function,
+** taking an edge id, instead of a token.
+*
+** The current user queries only T_START and T_END. We could simplify
+** it to handle only these cases. On the other hand, as is it could be
+** used to simplify the original function taking a token.
+*/
+static PPoint pik_place_of_elem_edge(Pik *p, PElem *pElem, unsigned int pEdge){
+  PPoint pt;
+  const PClass *pClass;
+  assert( pElem != NULL );
+  pClass = pElem->type;
+  if( pEdge==T_EDGEPT || (pEdge>0 && pEdge<CP_END) ){
+    pt = pClass->xOffset(p, pElem, pEdge);
+    pt.x += pElem->ptAt.x;
+    pt.y += pElem->ptAt.y;
+    return pt;
+  }
+  if( pEdge==T_START ){
+    return pElem->ptEnter;
+  }else{
+    return pElem->ptExit;
+  }
+}
+
 /* Do a linear interpolation of two positions.
 */
 static PPoint pik_position_between(PNum x, PPoint p1, PPoint p2){
@@ -3622,6 +3653,46 @@ static PPoint pik_position_at_angle(PNum dist, PNum r, PPoint pt){
 */
 static PPoint pik_position_at_hdg(PNum dist, PToken *pD, PPoint pt){
   return pik_position_at_angle(dist, pik_hdg_angle[pD->eEdge], pt);
+}
+
+/* Compute the position at which the lines A.start-A.end and B.start-B.end intersect.
+** Generates errors when
+** - Encountering non-line objects (no proper line to follow)
+** - The lines are parallel        (zero intersections)
+** - The lines are coincident      (infinite intersections)
+**
+** References:
+** - http://wiki.tcl.tk/12070 (Kevin Kenny)
+** - http://local.wasp.uwa.edu.au/~pbourke/geometry/lineline2d/
+*/
+static PPoint pik_position_at_intersection(Pik *p, PElem *lineA, PElem *lineB){
+  PPoint a_start, a_end, b_start, b_end;
+  PNum d, na;
+  PPoint zero;
+  zero.x = zero.y = 0;
+  if( !lineA->type->isLine || !lineB->type->isLine ){
+    pik_error(p, 0, "use with line-oriented objects only");
+    return zero;
+  }
+  a_start = pik_place_of_elem_edge(p, lineA, T_START);
+  a_end   = pik_place_of_elem_edge(p, lineA, T_END);
+  b_start = pik_place_of_elem_edge(p, lineB, T_START);
+  b_end   = pik_place_of_elem_edge(p, lineB, T_END);
+  d       = (b_end.y - b_start.y) * (a_end.x - a_start.x) -
+            (b_end.x - b_start.x) * (a_end.y - a_start.y);
+  na      = (b_end.x - b_start.x) * (a_start.y - b_start.y) -
+            (b_end.y - b_start.y) * (a_start.x - b_start.x);
+  /* http://local.wasp.uwa.edu.au/~pbourke/geometry/lineline2d/ */
+  if (d == 0) {
+    if (na == 0) {
+      pik_error(p, 0, "the lines are coincident, infinite intersection");
+      return zero;
+    } else {
+      pik_error(p, 0, "the lines are parallel, no intersection");
+      return zero;
+    }
+  }
+  return pik_position_between(na/d, a_start, a_end);
 }
 
 /* Return the coordinates for the n-th vertex of a line.
@@ -4103,6 +4174,7 @@ static const PikWord pik_keywords[] = {
   { "ht",         2,   T_HEIGHT,    0,         0        },
   { "in",         2,   T_IN,        0,         0        },
   { "int",        3,   T_FUNC1,     FN_INT,    0        },
+  { "intersect",  9,   T_INTERSECT, 0,         0        },
   { "invis",      5,   T_INVIS,     0,         0        },
   { "invisible",  9,   T_INVIS,     0,         0        },
   { "italic",     6,   T_ITALIC,    0,         0        },

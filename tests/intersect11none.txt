@@ -1,0 +1,4 @@
+# A, B skaeve parallel
+A: line color blue  thick from (3,2) to (9,4)
+B: line color green thick from (3,12) to (9,14)
+dot color red at intersect(A,B)

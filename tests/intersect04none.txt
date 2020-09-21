@@ -1,0 +1,4 @@
+# A, B vertical, parallel
+A: line color blue  thick from (7,8) to (7,28)
+B: line color green thick from (8,14) to (8,21)
+dot color red at intersect(A,B)

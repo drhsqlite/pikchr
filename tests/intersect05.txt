@@ -1,0 +1,4 @@
+# A horizontal
+A: line color blue  thick from (0.2,0.3) to (1.0,0.3)
+B: line color green thick from (0.4,0.5) to (0.7,0.2)
+dot color red at intersect(A,B)
