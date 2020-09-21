@@ -4426,7 +4426,7 @@ static void pik_append(Pik *p, const char *zText, int n){
 /*
 ** Append text to zOut with HTML characters escaped.
 **
-**   *  The space character is changed into non-breaking space (U+0080)
+**   *  The space character is changed into non-breaking space (U+00a0)
 **      if mFlags has the 0x01 bit set. This is needed when outputting
 **      text to preserve leading and trailing whitespace.  Turns out we
 **      cannot use &nbsp; as that is an HTML-ism and is not valid in XML.
