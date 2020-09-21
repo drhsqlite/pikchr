@@ -3893,6 +3893,7 @@ static PPoint ellipseOffset(Pik *p, PElem *pElem, int cp){
     case CP_SW:  pt.x = -w2;   pt.y = -h2;    break;
     case CP_W:   pt.x = -w;    pt.y = 0.0;    break;
     case CP_NW:  pt.x = -w2;   pt.y = h2;     break;
+    default:     assert(0);
   }
   UNUSED_PARAMETER(p);
   return pt;
@@ -5100,6 +5101,7 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
   }
   p->aTPath[0] = pNew->ptAt;
   pNew->with = pNew->ptAt;
+  pNew->eWith = CP_C;
   pNew->outDir = pNew->inDir = p->eDir;
   pNew->iLayer = (int)pik_value(p, "layer", 5, &miss);
   if( miss ) pNew->iLayer = 1000;
@@ -7285,4 +7287,4 @@ int main(int argc, char **argv){
 }
 #endif /* PIKCHR_SHELL */
 
-#line 7313 "pikchr.c"
+#line 7315 "pikchr.c"
