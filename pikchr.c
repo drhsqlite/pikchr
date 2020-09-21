@@ -6579,7 +6579,7 @@ static void pik_render(Pik *p, PEList *pEList){
     p->bbox.sw.y -= margin + pik_value(p,"bottommargin",12,0);
 
     /* Output the SVG */
-    pik_append(p, "<svg",4);
+    pik_append(p, "<svg xmlns='http://www.w3.org/2000/svg'",-1);
     if( p->zClass ){
       pik_append(p, " class=\"", -1);
       pik_append(p, p->zClass, -1);
