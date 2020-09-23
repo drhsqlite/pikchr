@@ -3,7 +3,7 @@
 ## Embedded Pikchr In Markdown
 
 To include a Pikchr diagram in the middle of a Markdown document
-in Fossil, simple place the Pikchr script in a [fenced code block][fcb]
+in [Fossil][fossil], simple place the Pikchr script in a [fenced code block][fcb]
 that has a class of "pikchr".  Like this:
 
 ~~~~~
@@ -26,9 +26,14 @@ The result appears as follows:
 arrow; box "Hello!"; arrow
 ```
 
+
+[fcb]: https://spec.commonmark.org/0.29/#fenced-code-blocks
+
+## Image Placement and Source Code Toggle Options
+
 By default, the Pikchr-generated image appears left-justifed.  If you
 would prefer that the picture be centered, put the keyword "center"
-after class tag.  Thus:
+after the class tag.  Thus:
 
 ~~~~~
    ``` pikchr center
@@ -42,7 +47,44 @@ Results in the following:
 arrow; box "Hello" "again"; arrow <-
 ```
 
-[fcb]: https://spec.commonmark.org/0.29/#fenced-code-blocks
+Pikchrs embedded in Fossil documents can be toggled between their SVG
+and raw source code forms using the `ctrl` key and left mouse button,
+noting that (A) "ctrl" is actually environment-dependent and might be
+"alt" or the Mac-specific "Command" key, and (B) this feature requires
+that JavaScript is activated. If the source code should also be
+revealed by a simple click, add the word "toggle" after the `pikchr`
+class tag, as in this click-toggleable example:
+
+``` pikchr center toggle
+arrow ->; box "Click to" "toggle"; arrow <-
+```
+
+Notice that the source code is displayed left-aligned by default. It can
+be configured to display in the same approximate position as the image
+by adding the "source-inline" modifier:
+
+``` pikchr center toggle source-inline
+arrow ->; box "Click to" "toggle" "(centered)"; arrow <-
+```
+
+The full list of such modifiers, in alphabetical order:
+
+- `center`: center-aligns the image. The default is left-aligned.
+- `float-left` and `float-right`: "float" the image to the
+  left resp. right, such that other content will flow around them.
+- `indent`: left-aligns the pikchr, indented by some CSS-specified
+  amount.
+- `source`: defaults to source code view instead of SVG view.
+- `source-inline`: places the source code view, when revealed, at
+  approximately the same position as the SVG, instead of left-aligned.
+  The source's size may vary wildly from the image's, so this
+  placement is in the same *relative* position, rather than a precise
+  fit.
+- `toggle`: indicates that a single click/tap is required to toggle
+  between SVG and source code views. This is primarily intended to be
+  used in documents which are about learning how to write pikchr
+  code. For consistency, `ctrl`-click also works on pikchrs tagged
+  with this modifier.
 
 ## Embedded Pikchr In Fossil Wiki
 
@@ -71,6 +113,10 @@ Will result in a display like this:
 ~~~ pikchr center
 arrow; ellipse "Hi, Y'all"; arrow
 ~~~
+
+Fossil's `verbatim` format supports the same range of modifiers as the
+Markdown format, as described above: simply add each modifier in the
+`type` attribute after the word `pikchr`.
 
 [fossil]: https://fossil-scm.org/home
 [fossilwiki]: /wiki_rules
