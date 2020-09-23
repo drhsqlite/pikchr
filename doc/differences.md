@@ -306,7 +306,7 @@ space on all sides except the left, you could write:
 ~~~
 
 The "thickness", "color", and "fill" variables determine the default
-value for the "thickness", "color", and "fill attributes on all objects.
+value for the "thickness", "color", and "fill" attributes on all objects.
 Because the attribute name and the variable name are the same, the
 variable name can only be accessed from inside of parentheses, to avoid
 parsing ambiguities.  For example, to set the thickness of a box to

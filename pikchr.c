@@ -372,7 +372,7 @@ struct PClass {
   char eJust;                            /* Use box-style text justification */
   void (*xInit)(Pik*,PElem*);              /* Initializer */
   void (*xNumProp)(Pik*,PElem*,PToken*);   /* Value change notification */
-  void (*xCheck)(Pik*,PElem*);             /* Checks to after parsing */
+  void (*xCheck)(Pik*,PElem*);             /* Checks to do after parsing */
   PPoint (*xChop)(Pik*,PElem*,PPoint*);    /* Chopper */
   PPoint (*xOffset)(Pik*,PElem*,int);      /* Offset from .c to edge point */
   void (*xFit)(Pik*,PElem*,PNum w,PNum h); /* Size to fit text */
