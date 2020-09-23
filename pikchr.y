@@ -2230,8 +2230,13 @@ static void pik_append_txt(Pik *p, PElem *pElem, PBox *pBox){
       }
     }
     pik_append(p," dominant-baseline=\"central\">",-1);
-    z = t->z+1;
-    nz = t->n-2;
+    if( t->n>=2 && t->z[0]=='"' ){
+      z = t->z+1;
+      nz = t->n-2;
+    }else{
+      z = t->z;
+      nz = t->n;
+    }
     while( nz>0 ){
       int j;
       for(j=0; j<nz && z[j]!='\\'; j++){}
@@ -3911,7 +3916,9 @@ void pik_elist_render(Pik *p, PEList *pEList){
   int iNextLayer = 0;
   int iThisLayer;
   int bMoreToDo;
+  int miss = 0;
   int mDebug = (int)pik_value(p, "debug", 5, 0);
+  PNum colorLabel;
   do{
     bMoreToDo = 0;
     iThisLayer = iNextLayer;
@@ -3936,6 +3943,29 @@ void pik_elist_render(Pik *p, PEList *pEList){
       }
     }
   }while( bMoreToDo );
+
+  /* If the color_debug_label value is defined, then go through
+  ** and paint a dot at every label location */
+  colorLabel = pik_value(p, "debug_label_color", 17, &miss);
+  if( miss==0 && colorLabel>=0.0 ){
+    PElem dot;
+    memset(&dot, 0, sizeof(dot));
+    dot.type = &noopClass;
+    dot.rad = 0.015;
+    dot.sw = 0.015;
+    dot.fill = colorLabel;
+    dot.color = colorLabel;
+    dot.nTxt = 1;
+    dot.aTxt[0].eCode = TP_ABOVE;
+    for(i=0; i<pEList->n; i++){
+      PElem *pElem = pEList->a[i];
+      if( pElem->zName==0 ) continue;
+      dot.ptAt = pElem->ptAt;
+      dot.aTxt[0].z = pElem->zName;
+      dot.aTxt[0].n = (int)strlen(pElem->zName);
+      dotRender(p, &dot);
+    }
+  }
 }
 
 /* Add all elements of the list pEList to the bounding box
