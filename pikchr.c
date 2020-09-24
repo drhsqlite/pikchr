@@ -7141,6 +7141,9 @@ char *pikchr(
     pik_parser(&sParse, 0, token);
   }
   pik_parserFinalize(&sParse);
+  if( s.zOut==0 && s.nErr==0 ){
+    pik_append(&s, "<!-- empty pikchr diagram -->\n", -1);
+  }
   while( s.pVar ){
     PVar *pNext = s.pVar->pNext;
     free(s.pVar);
@@ -7316,4 +7319,4 @@ int main(int argc, char **argv){
 }
 #endif /* PIKCHR_SHELL */
 
-#line 7344 "pikchr.c"
+#line 7347 "pikchr.c"
