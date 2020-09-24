@@ -5954,7 +5954,7 @@ static PNum pik_lookup_color(Pik *p, PToken *pId){
     }
   }
   if( p ) pik_error(p, pId, "not a known color name");
-  return -1.0;
+  return -99.0;
 }
 
 /* Get the value of a variable.
