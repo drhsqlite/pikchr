@@ -5922,7 +5922,7 @@ static PNum pik_value(Pik *p, const char *z, int n, int *pMiss){
 ** color-names are not case sensitive.  So "DarkBlue" and "darkblue"
 ** and "DARKBLUE" all find the same value (139).
 **
-** If not found, return -1.0.  Also post an error if p!=NULL.
+** If not found, return -99.0.  Also post an error if p!=NULL.
 **
 ** Special color names "None" and "Off" return -1.0 without causing
 ** an error.
@@ -5972,7 +5972,7 @@ static PNum pik_get_var(Pik *p, PToken *pId){
   PNum v = pik_value(p, pId->z, pId->n, &miss);
   if( miss==0 ) return v;
   v = pik_lookup_color(0, pId);
-  if( v>=0.0 ) return v;
+  if( v>-90.0 ) return v;
   pik_error(p,pId,"no such variable");
   return 0.0;
 }
