@@ -4,27 +4,19 @@ linewid = 0.25
 
 # Start and end blocks
 #
-box "element" bold fit
+box "statement" bold fit
 line down 50% from last box.sw
-dot rad 250% color black
-X0: last.e + (0.3,0)
-arrow from last dot to X0
-move right 3.9in
-box wid 5% ht 25% fill black
-X9: last.w - (0.3,0)
-arrow from X9 to last box.w
+START: dot rad 250% color black
+X0: last.e
+move right 4.5in
+END: box wid 5% ht 25% fill black
+X9: last.w
 
-
-# The main rule that goes straight through from start to finish
-#
-box "object-definition" italic fit at 11/16 way between X0 and X9
-arrow to X9
-arrow from X0 to last box.w
 
 # The LABEL: rule
 #
 arrow right $r from X0 then down 1.25*$r then right $r
-oval " LABEL " fit
+oval "LABEL" fit
 arrow 50%
 oval "\":\"" fit
 arrow 200%
@@ -34,11 +26,17 @@ line right until even with X9 - ($r,0) \
   then up until even with X9 then to X9
 arrow from last oval.e right $r*0.5 then up $r*0.8 right $r*0.8
 line up $r*0.45 right $r*0.45 then right
+X2: previous.end
+
+# The main top-line rule
+arrow from START.e to linerad right of X2
+box "object-definition" fit
+arrow to X9
 
 # The VARIABLE = rule
 #
 arrow right $r from X0 then down 2.5*$r then right $r
-oval " VARIABLE " fit
+oval "VARIABLE" fit
 arrow 70%
 box "assignment-operator" italic fit
 arrow 70%
@@ -54,3 +52,27 @@ arrow
 box "print-args" italic fit
 line right until even with X9 - ($r,0) \
   then up until even with X9 then to X9
+
+# The ASSERT rule
+#
+arrow right $r from X0 then down 5.0*$r then right $r
+oval "\"assert\"" fit
+arrow 2*arrowht
+oval "\"(\"" fit
+A1: arrow right 2*linerad + arrowht
+box "position" fit
+arrow 2*arrowht
+oval "\"==\"" fit
+arrow 2*arrowht
+box "position" fit
+A2: arrow same as A1
+oval "\")\"" fit
+line right even with $r left of X9 then up until even with VARIABLE.n
+arrow from A1.start right linerad then down 1.25*$r then right linerad+arrowht
+box "expr" fit
+arrow 2*arrowht
+oval "\"==\"" fit
+arrow same
+box "expr" fit
+line right even with linerad right of A2.start \
+    then up even with A2 then right linerad
