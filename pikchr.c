@@ -7070,6 +7070,7 @@ static int pik_token_length(PToken *pToken, int bAllowCodeBlock){
           return i;
         }
         if( c=='e' || c=='E' ){
+          int iBefore = i;
           i++;
           c2 = z[i];
           if( c2=='+' || c2=='-' ){
@@ -7078,7 +7079,7 @@ static int pik_token_length(PToken *pToken, int bAllowCodeBlock){
           }
           if( c2<'0' || c>'9' ){
             /* This is not an exp */
-            i -= 2;
+            i = iBefore;
           }else{
             i++;
             isInt = 0;
@@ -7507,4 +7508,4 @@ int main(int argc, char **argv){
 }
 #endif /* PIKCHR_SHELL */
 
-#line 7535 "pikchr.c"
+#line 7536 "pikchr.c"
