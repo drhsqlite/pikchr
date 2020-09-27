@@ -371,7 +371,7 @@ struct Pik {
   PPoint aTPath[1000];     /* Path under construction */
   /* Error contexts */
   unsigned int nCtx;       /* Number of error contexts */
-  PToken aCtx[25];         /* Nested error contexts */
+  PToken aCtx[10];         /* Nested error contexts */
 };
 
 
