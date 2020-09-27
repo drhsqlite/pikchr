@@ -284,6 +284,7 @@ static int pik_token_eq(PToken *pToken, const char *z){
 #define A_CW            0x0200
 #define A_AT            0x0400
 #define A_TO            0x0800 /* one or more movement attributes */
+#define A_FIT           0x1000
 
 
 /* A single graphics object */
@@ -445,7 +446,7 @@ static void pik_bbox_add_xy(PBox*,PNum,PNum);
 static void pik_bbox_addellipse(PBox*,PNum x,PNum y,PNum rx,PNum ry);
 static void pik_add_txt(Pik*,PToken*,int);
 static int pik_text_length(const PToken *pToken);
-static void pik_size_to_fit(Pik*,PToken*);
+static void pik_size_to_fit(Pik*,PToken*,int);
 static int pik_text_position(int,PToken*);
 static PNum pik_property_of(PObj*,PToken*);
 static PNum pik_func(Pik*,PToken*,PNum,PNum);
@@ -616,7 +617,7 @@ attribute ::= WITH withclause.
 attribute ::= SAME(E).                          {pik_same(p,0,&E);}
 attribute ::= SAME(E) AS object(X).             {pik_same(p,X,&E);}
 attribute ::= STRING(T) textposition(P).        {pik_add_txt(p,&T,P);}
-attribute ::= FIT(E).                           {pik_size_to_fit(p,&E); }
+attribute ::= FIT(E).                           {pik_size_to_fit(p,&E,3); }
 attribute ::= BEHIND object(X).                 {pik_behind(p,X);}
 
 go ::= GO.
@@ -1192,7 +1193,7 @@ static void circleFit(Pik *p, PObj *pObj, PNum w, PNum h){
   PNum mx = 0.0;
   if( w>0 ) mx = w;
   if( h>mx ) mx = h;
-  if( (w*w + h*h) > mx*mx ){
+  if( w*h>0 && (w*w + h*h) > mx*mx ){
     mx = hypot(w,h);
   }
   if( mx>0.0 ){
@@ -1511,6 +1512,7 @@ static void ovalFit(Pik *p, PObj *pObj, PNum w, PNum h){
   if( w>0 ) pObj->w = w;
   if( h>0 ) pObj->h = h;
   if( pObj->w<pObj->h ) pObj->w = pObj->h;
+  pObj->rad = 0.5*(pObj->h<pObj->w?pObj->h:pObj->w);
 }
 
 
@@ -1599,7 +1601,7 @@ static PPoint textOffset(Pik *p, PObj *pObj, int cp){
   ** statements so that the bounding box tightly encloses the text,
   ** then get boxOffset() to do the offset computation.
   */
-  pik_size_to_fit(p, &pObj->errTok);
+  pik_size_to_fit(p, &pObj->errTok,3);
   return boxOffset(p, pObj, cp);
 }
 
@@ -1699,7 +1701,7 @@ static const PClass aClass[] = {
       /* xCheck */        0,
       /* xChop */         ellipseChop,
       /* xOffset */       ellipseOffset,
-      /* xFit */          0,
+      /* xFit */          boxFit,
       /* xRender */       ellipseRender
    },
    {  /* name */          "file",
@@ -3352,8 +3354,14 @@ static int pik_text_length(const PToken *pToken){
 **        "width 1in fit" might cause the height to change, but the
 **        width is now set.
 **    (5) This only works for attributes that have an xFit method.
+**
+** The eWhich parameter is:
+**
+**    1:   Fit horizontally only
+**    2:   Fit vertically only
+**    3:   Fit both ways
 */
-static void pik_size_to_fit(Pik *p, PToken *pFit){
+static void pik_size_to_fit(Pik *p, PToken *pFit, int eWhich){
   PObj *pObj;
   PNum w, h;
   PBox bbox;
@@ -3368,9 +3376,10 @@ static void pik_size_to_fit(Pik *p, PToken *pFit){
   pik_bbox_init(&bbox);
   pik_compute_layout_settings(p);
   pik_append_txt(p, pObj, &bbox);
-  w = (bbox.ne.x - bbox.sw.x) + p->charWidth;
-  h = (bbox.ne.y - bbox.sw.y) + 0.5*p->charHeight;
+  w = (eWhich & 1)!=0 ? (bbox.ne.x - bbox.sw.x) + p->charWidth : 0;
+  h = (eWhich & 2)!=0 ? (bbox.ne.y - bbox.sw.y) + 0.5*p->charHeight : 0;
   pObj->type->xFit(p, pObj, w, h);
+  pObj->mProp |= A_FIT;
 }
 
 /* Set a local variable name to "val".
@@ -3859,6 +3868,25 @@ static void pik_after_adding_attributes(Pik *p, PObj *pObj){
 
   /* Position block objects */
   if( pObj->type->isLine==0 ){
+    /* A height or width less than or equal to zero means "autofit".
+    ** Change the height or width to be big enough to contain the text,
+    */
+    if( pObj->h<=0.0 ){
+      if( pObj->nTxt==0 ){
+        pObj->h = 0.0;
+      }else if( pObj->w<=0.0 ){
+        pik_size_to_fit(p, &pObj->errTok, 3);
+      }else{
+        pik_size_to_fit(p, &pObj->errTok, 2);
+      }
+    }
+    if( pObj->w<=0.0 ){
+      if( pObj->nTxt==0 ){
+        pObj->w = 0.0;
+      }else{
+        pik_size_to_fit(p, &pObj->errTok, 1);
+      }
+    }
     ofst = pik_elem_offset(p, pObj, pObj->eWith);
     dx = (pObj->with.x - ofst.x) - pObj->ptAt.x;
     dy = (pObj->with.y - ofst.y) - pObj->ptAt.y;
