@@ -5695,6 +5695,7 @@ static void pik_behind(Pik *p, PObj *pOther){
 */
 static void pik_set_at(Pik *p, PToken *pEdge, PPoint *pAt, PToken *pErrTok){
   PObj *pObj;
+  static unsigned char eDirToCp[] = { CP_E, CP_S, CP_W, CP_N };
   if( p->nErr ) return;
   pObj = p->cur;
 
@@ -5708,6 +5709,10 @@ static void pik_set_at(Pik *p, PToken *pEdge, PPoint *pAt, PToken *pErrTok){
   }
   pObj->mProp |= A_AT;
   pObj->eWith = pEdge ? pEdge->eEdge : CP_C;
+  if( pObj->eWith>=CP_END ){
+    int dir = pObj->eWith==CP_END ? pObj->outDir : pObj->inDir;
+    pObj->eWith = eDirToCp[dir];
+  }
   pObj->with = *pAt;
 }
 
@@ -7565,4 +7570,4 @@ int main(int argc, char **argv){
 }
 #endif /* PIKCHR_SHELL */
 
-#line 7593 "pikchr.c"
+#line 7598 "pikchr.c"
