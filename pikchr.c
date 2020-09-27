@@ -4850,7 +4850,7 @@ static void pik_error_context(Pik *p, PToken *pErr, int nContext){
 
   iErrPt = (int)(pErr->z - p->sIn.z);
   iLineno = 1;
-  for(i=0; i<iErrPt-1; i++){
+  for(i=0; i<iErrPt; i++){
     if( p->sIn.z[i]=='\n' ){
       iLineno++;
     }
@@ -7252,7 +7252,7 @@ static unsigned int pik_parse_macro_args(
         return 0;
       }
       nArg++;
-      args[nArg].z = z+1;
+      args[nArg].z = z+i+1;
       iStart = i+1;
       depth = 0;
     }else if( z[i]=='(' || z[i]=='{' || z[i]=='[' ){
