@@ -69,43 +69,43 @@
 ** track its internal state.  The Pik structure lives for the duration
 ** of the pikchr() call.
 **
-** The input is a sequence of objects or "elements".  Each element is
-** parsed into a PElem object.  These are stored on an extensible array
-** called PEList.  All parameters to each PElem are computed as the
-** object is parsed.  (Hence, the parameters to a PElem may only refer
-** to prior elements.) Once the PElem is completely assembled, it is
-** added to the end of a PEList and never changes thereafter - except,
-** PElem objects that are part of a "[...]" block might have their
+** The input is a sequence of objects or "statements".  Each statement is
+** parsed into a PObj object.  These are stored on an extensible array
+** called PList.  All parameters to each PObj are computed as the
+** object is parsed.  (Hence, the parameters to a PObj may only refer
+** to prior statements.) Once the PObj is completely assembled, it is
+** added to the end of a PList and never changes thereafter - except,
+** PObj objects that are part of a "[...]" block might have their
 ** absolute position shifted when the outer [...] block is positioned.
-** But apart from this repositioning, PElem objects are unchanged once
-** they are added to the list. The order of elements on a PEList does
+** But apart from this repositioning, PObj objects are unchanged once
+** they are added to the list. The order of statements on a PList does
 ** not change.
 **
-** After all input has been parsed, the top-level PEList is walked to
+** After all input has been parsed, the top-level PList is walked to
 ** generate output.  Sub-lists resulting from [...] blocks are scanned
 ** as they are encountered.  All input must be collected and parsed ahead
-** of output generation because the size and position of elements must be
+** of output generation because the size and position of statements must be
 ** known in order to compute a bounding box on the output.
 **
-** Each PElem is on a "layer".  (The common case is that all PElem's are
+** Each PObj is on a "layer".  (The common case is that all PObj's are
 ** on a single layer, but multiple layers are possible.)  A separate pass
 ** is made through the list for each layer.
 **
-** After all output is generated, the Pik object and all the PEList
-** and PElem objects are deallocated and the generated output string is
+** After all output is generated, the Pik object and all the PList
+** and PObj objects are deallocated and the generated output string is
 ** returned.  Upon any error, the Pik.nErr flag is set, processing quickly
 ** stops, and the stack unwinds.  No attempt is made to continue reading
 ** input after an error.
 **
-** Most elements begin with a class name like "box" or "arrow" or "move".
-** There is a class named "text" which is used for elements that begin
+** Most statements begin with a class name like "box" or "arrow" or "move".
+** There is a class named "text" which is used for statements that begin
 ** with a string literal.  You can also specify the "text" class.
 ** A Sublist ("[...]") is a single object that contains a pointer to
-** its subelements, all gathered onto a separate PEList object.
+** its substatements, all gathered onto a separate PList object.
 **
 ** Variables go into PVar objects that form a linked list.
 **
-** Each PElem has zero or one names.  Input constructs that attempt
+** Each PObj has zero or one names.  Input constructs that attempt
 ** to assign a new name from an older name, for example:
 **
 **      Abc:  Abc + (0.5cm, 0)
@@ -132,9 +132,9 @@
 
 typedef struct Pik Pik;          /* Complete parsing context */
 typedef struct PToken PToken;    /* A single token */
-typedef struct PElem PElem;      /* A single diagram object or "element" */
-typedef struct PEList PEList;    /* A list of elements */
-typedef struct PClass PClass;    /* Description of elements types */
+typedef struct PObj PObj;      /* A single diagram object or "statement" */
+typedef struct PList PList;    /* A list of statements */
+typedef struct PClass PClass;    /* Description of statements types */
 typedef double PNum;             /* Numeric value */
 typedef struct PRel PRel;        /* Absolute or percentage value */
 typedef struct PPoint PPoint;    /* A position in 2-D space */
@@ -182,11 +182,11 @@ static const PNum pik_hdg_angle[] = {
 #define TP_LJUST   0x0001  /* left justify......          */
 #define TP_RJUST   0x0002  /*            ...Right justify */
 #define TP_JMASK   0x0003  /* Mask for justification bits */
-#define TP_ABOVE2  0x0004  /* Position text way above PElem.ptAt */
-#define TP_ABOVE   0x0008  /* Position text above PElem.ptAt */
+#define TP_ABOVE2  0x0004  /* Position text way above PObj.ptAt */
+#define TP_ABOVE   0x0008  /* Position text above PObj.ptAt */
 #define TP_CENTER  0x0010  /* On the line */
-#define TP_BELOW   0x0020  /* Position text below PElem.ptAt */
-#define TP_BELOW2  0x0040  /* Position text way below PElem.ptAt */
+#define TP_BELOW   0x0020  /* Position text below PObj.ptAt */
+#define TP_BELOW2  0x0040  /* Position text way below PObj.ptAt */
 #define TP_VMASK   0x007c  /* Mask for text positioning flags */
 #define TP_BIG     0x0100  /* Larger font */
 #define TP_SMALL   0x0200  /* Smaller font */
@@ -267,8 +267,8 @@ static int pik_token_eq(PToken *pToken, const char *z){
 #define IsUpDown(X)     (((X)&1)==1)
 #define IsLeftRight(X)  (((X)&1)==0)
 
-/* Bitmask for the various attributes for PElem.  These bits are
-** collected in PElem.mProp and PElem.mCalc to check for constraint
+/* Bitmask for the various attributes for PObj.  These bits are
+** collected in PObj.mProp and PObj.mCalc to check for constraint
 ** errors. */
 #define A_WIDTH         0x0001
 #define A_HEIGHT        0x0002
@@ -284,14 +284,14 @@ static int pik_token_eq(PToken *pToken, const char *z){
 #define A_TO            0x0800 /* one or more movement attributes */
 
 
-/* A single element */
-struct PElem {
-  const PClass *type;      /* Element type */
+/* A single graphics object */
+struct PObj {
+  const PClass *type;      /* Object type or class */
   PToken errTok;           /* Reference token for error messages */
   PPoint ptAt;             /* Reference point for the object */
   PPoint ptEnter, ptExit;  /* Entry and exit points */
-  PEList *pSublist;        /* Substructure for [...] elements */
-  char *zName;             /* Name assigned to this element */
+  PList *pSublist;         /* Substructure for [...] objects */
+  char *zName;             /* Name assigned to this statement */
   PNum w;                  /* "width" property */
   PNum h;                  /* "height" property */
   PNum rad;                /* "radius" property */
@@ -318,11 +318,11 @@ struct PElem {
   PBox bbox;               /* Bounding box */
 };
 
-/* A list of elements */
-struct PEList {
-  int n;          /* Number of elements in the list */
+/* A list of graphics objects */
+struct PList {
+  int n;          /* Number of statements in the list */
   int nAlloc;     /* Allocated slots in a[] */
-  PElem **a;      /* Pointers to individual elements */
+  PObj **a;       /* Pointers to individual objects */
 };
 
 /* Each call to the pikchr() subroutine uses an instance of the following
@@ -337,10 +337,10 @@ struct Pik {
   unsigned int nOutAlloc;  /* Space allocated to zOut[] */
   unsigned char eDir;      /* Current direction */
   unsigned int mFlags;     /* Flags passed to pikchr() */
-  PElem *cur;              /* Element under construction */
-  PEList *list;            /* Element list under construction */
+  PObj *cur;               /* Object under construction */
+  PList *list;             /* Object list under construction */
   PVar *pVar;              /* Application-defined variables */
-  PBox bbox;               /* Bounding box around all elements */
+  PBox bbox;               /* Bounding box around all statements */
                            /* Cache of layout values.  <=0.0 for unknown... */
   PNum rScale;                 /* Multiply to convert inches to pixels */
   PNum fontScale;              /* Scale fonts by this percent */
@@ -354,7 +354,7 @@ struct Pik {
   const char *zClass;      /* Class name for the <svg> */
   int wSVG, hSVG;          /* Width and height of the <svg> */
   /* Paths for lines are constructed here first, then transferred into
-  ** the PElem object at the end: */
+  ** the PObj object at the end: */
   int nTPath;              /* Number of entries on aTPath[] */
   int mTPath;              /* For last entry, 1: x set,  2: y set */
   PPoint aTPath[1000];     /* Path under construction */
@@ -369,13 +369,13 @@ struct PClass {
   const char *zName;                     /* Name of class */
   char isLine;                           /* True if a line class */
   char eJust;                            /* Use box-style text justification */
-  void (*xInit)(Pik*,PElem*);              /* Initializer */
-  void (*xNumProp)(Pik*,PElem*,PToken*);   /* Value change notification */
-  void (*xCheck)(Pik*,PElem*);             /* Checks to do after parsing */
-  PPoint (*xChop)(Pik*,PElem*,PPoint*);    /* Chopper */
-  PPoint (*xOffset)(Pik*,PElem*,int);      /* Offset from .c to edge point */
-  void (*xFit)(Pik*,PElem*,PNum w,PNum h); /* Size to fit text */
-  void (*xRender)(Pik*,PElem*);            /* Render */
+  void (*xInit)(Pik*,PObj*);              /* Initializer */
+  void (*xNumProp)(Pik*,PObj*,PToken*);   /* Value change notification */
+  void (*xCheck)(Pik*,PObj*);             /* Checks to do after parsing */
+  PPoint (*xChop)(Pik*,PObj*,PPoint*);    /* Chopper */
+  PPoint (*xOffset)(Pik*,PObj*,int);      /* Offset from .c to edge point */
+  void (*xFit)(Pik*,PObj*,PNum w,PNum h); /* Size to fit text */
+  void (*xRender)(Pik*,PObj*);            /* Render */
 };
 
 
@@ -390,41 +390,41 @@ static void pik_append_xy(Pik*,const char*,PNum,PNum);
 static void pik_append_dis(Pik*,const char*,PNum,const char*);
 static void pik_append_arc(Pik*,PNum,PNum,PNum,PNum);
 static void pik_append_clr(Pik*,const char*,PNum,const char*);
-static void pik_append_style(Pik*,PElem*,int);
-static void pik_append_txt(Pik*,PElem*, PBox*);
-static void pik_draw_arrowhead(Pik*,PPoint*pFrom,PPoint*pTo,PElem*);
+static void pik_append_style(Pik*,PObj*,int);
+static void pik_append_txt(Pik*,PObj*, PBox*);
+static void pik_draw_arrowhead(Pik*,PPoint*pFrom,PPoint*pTo,PObj*);
 static void pik_chop(PPoint*pFrom,PPoint*pTo,PNum);
 static void pik_error(Pik*,PToken*,const char*);
-static void pik_elist_free(Pik*,PEList*);
-static void pik_elem_free(Pik*,PElem*);
-static void pik_render(Pik*,PEList*);
-static PEList *pik_elist_append(Pik*,PEList*,PElem*);
-static PElem *pik_elem_new(Pik*,PToken*,PToken*,PEList*);
+static void pik_elist_free(Pik*,PList*);
+static void pik_elem_free(Pik*,PObj*);
+static void pik_render(Pik*,PList*);
+static PList *pik_elist_append(Pik*,PList*,PObj*);
+static PObj *pik_elem_new(Pik*,PToken*,PToken*,PList*);
 static void pik_set_direction(Pik*,int);
-static void pik_elem_setname(Pik*,PElem*,PToken*);
+static void pik_elem_setname(Pik*,PObj*,PToken*);
 static void pik_set_var(Pik*,PToken*,PNum,PToken*);
 static PNum pik_value(Pik*,const char*,int,int*);
 static PNum pik_lookup_color(Pik*,PToken*);
 static PNum pik_get_var(Pik*,PToken*);
 static PNum pik_atof(PToken*);
-static void pik_after_adding_attributes(Pik*,PElem*);
-static void pik_elem_move(PElem*,PNum dx, PNum dy);
-static void pik_elist_move(PEList*,PNum dx, PNum dy);
+static void pik_after_adding_attributes(Pik*,PObj*);
+static void pik_elem_move(PObj*,PNum dx, PNum dy);
+static void pik_elist_move(PList*,PNum dx, PNum dy);
 static void pik_set_numprop(Pik*,PToken*,PRel*);
 static void pik_set_clrprop(Pik*,PToken*,PNum);
 static void pik_set_dashed(Pik*,PToken*,PNum*);
-static void pik_then(Pik*,PToken*,PElem*);
+static void pik_then(Pik*,PToken*,PObj*);
 static void pik_add_direction(Pik*,PToken*,PRel*);
 static void pik_move_hdg(Pik*,PRel*,PToken*,PNum,PToken*,PToken*);
 static void pik_evenwith(Pik*,PToken*,PPoint*);
-static void pik_set_from(Pik*,PElem*,PToken*,PPoint*);
-static void pik_add_to(Pik*,PElem*,PToken*,PPoint*);
+static void pik_set_from(Pik*,PObj*,PToken*,PPoint*);
+static void pik_add_to(Pik*,PObj*,PToken*,PPoint*);
 static void pik_close_path(Pik*,PToken*);
 static void pik_set_at(Pik*,PToken*,PPoint*,PToken*);
 static short int pik_nth_value(Pik*,PToken*);
-static PElem *pik_find_nth(Pik*,PElem*,PToken*);
-static PElem *pik_find_byname(Pik*,PElem*,PToken*);
-static PPoint pik_place_of_elem(Pik*,PElem*,PToken*);
+static PObj *pik_find_nth(Pik*,PObj*,PToken*);
+static PObj *pik_find_byname(Pik*,PObj*,PToken*);
+static PPoint pik_place_of_elem(Pik*,PObj*,PToken*);
 static int pik_bbox_isempty(PBox*);
 static void pik_bbox_init(PBox*);
 static void pik_bbox_addbox(PBox*,PBox*);
@@ -434,18 +434,18 @@ static void pik_add_txt(Pik*,PToken*,int);
 static int pik_text_length(const PToken *pToken);
 static void pik_size_to_fit(Pik*,PToken*);
 static int pik_text_position(int,PToken*);
-static PNum pik_property_of(PElem*,PToken*);
+static PNum pik_property_of(PObj*,PToken*);
 static PNum pik_func(Pik*,PToken*,PNum,PNum);
 static PPoint pik_position_between(PNum x, PPoint p1, PPoint p2);
 static PPoint pik_position_at_angle(PNum dist, PNum r, PPoint pt);
 static PPoint pik_position_at_hdg(PNum dist, PToken *pD, PPoint pt);
-static void pik_same(Pik *p, PElem*, PToken*);
-static PPoint pik_nth_vertex(Pik *p, PToken *pNth, PToken *pErr, PElem *pElem);
+static void pik_same(Pik *p, PObj*, PToken*);
+static PPoint pik_nth_vertex(Pik *p, PToken *pNth, PToken *pErr, PObj *pObj);
 static PToken pik_next_semantic_token(PToken *pThis);
 static void pik_compute_layout_settings(Pik*);
-static void pik_behind(Pik*,PElem*);
-static PElem *pik_assert(Pik*,PNum,PToken*,PNum);
-static PElem *pik_position_assert(Pik*,PPoint*,PToken*,PPoint*);
+static void pik_behind(Pik*,PObj*);
+static PObj *pik_assert(Pik*,PNum,PToken*,PNum);
+static PObj *pik_position_assert(Pik*,PPoint*,PToken*,PPoint*);
 static PNum pik_dist(PPoint*,PPoint*);
 
 
@@ -464,13 +464,13 @@ static PNum pik_dist(PPoint*,PPoint*);
 %left STAR SLASH PERCENT.
 %right UMINUS.
 
-%type element_list {PEList*}
-%destructor element_list {pik_elist_free(p,$$);}
-%type element {PElem*}
-%destructor element {pik_elem_free(p,$$);}
-%type unnamed_element {PElem*}
-%destructor unnamed_element {pik_elem_free(p,$$);}
-%type basetype {PElem*}
+%type statement_list {PList*}
+%destructor statement_list {pik_elist_free(p,$$);}
+%type statement {PObj*}
+%destructor statement {pik_elem_free(p,$$);}
+%type unnamed_statement {PObj*}
+%destructor unnamed_statement {pik_elem_free(p,$$);}
+%type basetype {PObj*}
 %destructor basetype {pik_elem_free(p,$$);}
 %type expr {PNum}
 %type numproperty {PToken}
@@ -481,8 +481,8 @@ static PNum pik_dist(PPoint*,PPoint*);
 %type locproperty {PToken}
 %type position {PPoint}
 %type place {PPoint}
-%type object {PElem*}
-%type objectname {PElem*}
+%type object {PObj*}
+%type objectname {PObj*}
 %type nth {PToken}
 %type textposition {int}
 %type rvalue {PNum}
@@ -503,30 +503,30 @@ static PNum pik_dist(PPoint*,PPoint*);
   pik_error(p, 0, "parser stack overflow");
 }
 
-document ::= element_list(X).  {pik_render(p,X);}
+document ::= statement_list(X).  {pik_render(p,X);}
 
 
-element_list(A) ::= element(X).   { A = pik_elist_append(p,0,X); }
-element_list(A) ::= element_list(B) EOL element(X).
+statement_list(A) ::= statement(X).   { A = pik_elist_append(p,0,X); }
+statement_list(A) ::= statement_list(B) EOL statement(X).
                       { A = pik_elist_append(p,B,X); }
 
 
-element(A) ::= .   { A = 0; }
-element(A) ::= direction(D).  { pik_set_direction(p,D.eCode);  A=0; }
-element(A) ::= lvalue(N) ASSIGN(OP) rvalue(X). {pik_set_var(p,&N,X,&OP); A=0;}
-element(A) ::= PLACENAME(N) COLON unnamed_element(X).
+statement(A) ::= .   { A = 0; }
+statement(A) ::= direction(D).  { pik_set_direction(p,D.eCode);  A=0; }
+statement(A) ::= lvalue(N) ASSIGN(OP) rvalue(X). {pik_set_var(p,&N,X,&OP); A=0;}
+statement(A) ::= PLACENAME(N) COLON unnamed_statement(X).
                { A = X;  pik_elem_setname(p,X,&N); }
-element(A) ::= PLACENAME(N) COLON position(P).
+statement(A) ::= PLACENAME(N) COLON position(P).
                { A = pik_elem_new(p,0,0,0);
                  if(A){ A->ptAt = P; pik_elem_setname(p,A,&N); }}
-element(A) ::= unnamed_element(X).  {A = X;}
-element(A) ::= print prlist.  {pik_append(p,"<br>\n",5); A=0;}
+statement(A) ::= unnamed_statement(X).  {A = X;}
+statement(A) ::= print prlist.  {pik_append(p,"<br>\n",5); A=0;}
 
 // assert() statements are undocumented and are intended for testing and
 // debugging use only.  If the equality comparison of the assert() fails
 // then an error message is generated.
-element(A) ::= ASSERT LP expr(X) EQ(OP) expr(Y) RP.  {A=pik_assert(p,X,&OP,Y);}
-element(A) ::= ASSERT LP position(X) EQ(OP) position(Y) RP.  
+statement(A) ::= ASSERT LP expr(X) EQ(OP) expr(Y) RP. {A=pik_assert(p,X,&OP,Y);}
+statement(A) ::= ASSERT LP position(X) EQ(OP) position(Y) RP.  
                                           {A=pik_position_assert(p,&X,&OP,&Y);}
 
 lvalue(A) ::= ID(A).
@@ -550,18 +550,18 @@ pritem ::= rvalue(X).      {pik_append_num(p,"",X);}
 pritem ::= STRING(S). {pik_append_text(p,S.z+1,S.n-2,0);}
 prsep  ::= COMMA. {pik_append(p, " ", 1);}
 
-unnamed_element(A) ::= basetype(X) attribute_list.  
+unnamed_statement(A) ::= basetype(X) attribute_list.  
                           {A = X; pik_after_adding_attributes(p,A);}
 
 basetype(A) ::= CLASSNAME(N).            {A = pik_elem_new(p,&N,0,0); }
 basetype(A) ::= STRING(N) textposition(P).
                             {N.eCode = P; A = pik_elem_new(p,0,&N,0); }
-basetype(A) ::= LB savelist(L) element_list(X) RB(E).
+basetype(A) ::= LB savelist(L) statement_list(X) RB(E).
       { p->list = L; A = pik_elem_new(p,0,0,X); if(A) A->errTok = E; }
 
-%type savelist {PEList*}
-// No destructor required as this same PEList is also held by
-// an "element" non-terminal deeper on the stack.
+%type savelist {PList*}
+// No destructor required as this same PList is also held by
+// an "statement" non-terminal deeper on the stack.
 savelist(A) ::= .   {A = p->list; p->list = 0;}
 
 direction(A) ::= UP(A).
@@ -937,9 +937,9 @@ static const struct { const char *zName; PNum val; } aBuiltin[] = {
 
 
 /* Methods for the "arc" class */
-static void arcInit(Pik *p, PElem *pElem){
-  pElem->w = pik_value(p, "arcrad",6,0);
-  pElem->h = pElem->w;
+static void arcInit(Pik *p, PObj *pObj){
+  pObj->w = pik_value(p, "arcrad",6,0);
+  pObj->h = pObj->w;
 }
 /* Hack: Arcs are here rendered as quadratic Bezier curves rather
 ** than true arcs.  Multiple reasons: (1) the legacy-PIC parameters
@@ -963,61 +963,61 @@ static PPoint arcControlPoint(int cw, PPoint f, PPoint t, PNum rScale){
   }
   return m;
 }
-static void arcCheck(Pik *p, PElem *pElem){
+static void arcCheck(Pik *p, PObj *pObj){
   PPoint m;
   if( p->nTPath>2 ){
-    pik_error(p, &pElem->errTok, "arc geometry error");
+    pik_error(p, &pObj->errTok, "arc geometry error");
     return;
   }
-  m = arcControlPoint(pElem->cw, p->aTPath[0], p->aTPath[1], 0.5);
-  pik_bbox_add_xy(&pElem->bbox, m.x, m.y);
+  m = arcControlPoint(pObj->cw, p->aTPath[0], p->aTPath[1], 0.5);
+  pik_bbox_add_xy(&pObj->bbox, m.x, m.y);
 }
-static void arcRender(Pik *p, PElem *pElem){
+static void arcRender(Pik *p, PObj *pObj){
   PPoint f, m, t;
-  if( pElem->nPath<2 ) return;
-  if( pElem->sw<=0.0 ) return;
-  f = pElem->aPath[0];
-  t = pElem->aPath[1];
-  m = arcControlPoint(pElem->cw,f,t,1.0);
-  if( pElem->larrow ){
-    pik_draw_arrowhead(p,&m,&f,pElem);
+  if( pObj->nPath<2 ) return;
+  if( pObj->sw<=0.0 ) return;
+  f = pObj->aPath[0];
+  t = pObj->aPath[1];
+  m = arcControlPoint(pObj->cw,f,t,1.0);
+  if( pObj->larrow ){
+    pik_draw_arrowhead(p,&m,&f,pObj);
   }
-  if( pElem->rarrow ){
-    pik_draw_arrowhead(p,&m,&t,pElem);
+  if( pObj->rarrow ){
+    pik_draw_arrowhead(p,&m,&t,pObj);
   }
   pik_append_xy(p,"<path d=\"M", f.x, f.y);
   pik_append_xy(p,"Q", m.x, m.y);
   pik_append_xy(p," ", t.x, t.y);
   pik_append(p,"\" ",2);
-  pik_append_style(p,pElem,0);
+  pik_append_style(p,pObj,0);
   pik_append(p,"\" />\n", -1);
 
-  pik_append_txt(p, pElem, 0);
+  pik_append_txt(p, pObj, 0);
 }
 
 
 /* Methods for the "arrow" class */
-static void arrowInit(Pik *p, PElem *pElem){
-  pElem->w = pik_value(p, "linewid",7,0);
-  pElem->h = pik_value(p, "lineht",6,0);
-  pElem->rad = pik_value(p, "linerad",7,0);
-  pElem->fill = -1.0;
-  pElem->rarrow = 1;
+static void arrowInit(Pik *p, PObj *pObj){
+  pObj->w = pik_value(p, "linewid",7,0);
+  pObj->h = pik_value(p, "lineht",6,0);
+  pObj->rad = pik_value(p, "linerad",7,0);
+  pObj->fill = -1.0;
+  pObj->rarrow = 1;
 }
 
 /* Methods for the "box" class */
-static void boxInit(Pik *p, PElem *pElem){
-  pElem->w = pik_value(p, "boxwid",6,0);
-  pElem->h = pik_value(p, "boxht",5,0);
-  pElem->rad = pik_value(p, "boxrad",6,0);
+static void boxInit(Pik *p, PObj *pObj){
+  pObj->w = pik_value(p, "boxwid",6,0);
+  pObj->h = pik_value(p, "boxht",5,0);
+  pObj->rad = pik_value(p, "boxrad",6,0);
 }
 /* Return offset from the center of the box to the compass point 
 ** given by parameter cp */
-static PPoint boxOffset(Pik *p, PElem *pElem, int cp){
+static PPoint boxOffset(Pik *p, PObj *pObj, int cp){
   PPoint pt = cZeroPoint;
-  PNum w2 = 0.5*pElem->w;
-  PNum h2 = 0.5*pElem->h;
-  PNum rad = pElem->rad;
+  PNum w2 = 0.5*pObj->w;
+  PNum h2 = 0.5*pObj->h;
+  PNum rad = pObj->rad;
   PNum rx;
   if( rad<=0.0 ){
     rx = 0.0;
@@ -1041,14 +1041,14 @@ static PPoint boxOffset(Pik *p, PElem *pElem, int cp){
   UNUSED_PARAMETER(p);
   return pt;
 }
-static PPoint boxChop(Pik *p, PElem *pElem, PPoint *pPt){
+static PPoint boxChop(Pik *p, PObj *pObj, PPoint *pPt){
   PNum dx, dy;
   int cp = CP_C;
-  PPoint chop = pElem->ptAt;
-  if( pElem->w<=0.0 ) return chop;
-  if( pElem->h<=0.0 ) return chop;
-  dx = (pPt->x - pElem->ptAt.x)*pElem->h/pElem->w;
-  dy = (pPt->y - pElem->ptAt.y);
+  PPoint chop = pObj->ptAt;
+  if( pObj->w<=0.0 ) return chop;
+  if( pObj->h<=0.0 ) return chop;
+  dx = (pPt->x - pObj->ptAt.x)*pObj->h/pObj->w;
+  dy = (pPt->y - pObj->ptAt.y);
   if( dx>0.0 ){
     if( dy>=2.414*dx ){
       cp = CP_N;
@@ -1074,22 +1074,22 @@ static PPoint boxChop(Pik *p, PElem *pElem, PPoint *pPt){
       cp = CP_S;
     }
   }
-  chop = pElem->type->xOffset(p,pElem,cp);
-  chop.x += pElem->ptAt.x;
-  chop.y += pElem->ptAt.y;
+  chop = pObj->type->xOffset(p,pObj,cp);
+  chop.x += pObj->ptAt.x;
+  chop.y += pObj->ptAt.y;
   return chop;
 }
-static void boxFit(Pik *p, PElem *pElem, PNum w, PNum h){
-  if( w>0 ) pElem->w = w;
-  if( h>0 ) pElem->h = h;
+static void boxFit(Pik *p, PObj *pObj, PNum w, PNum h){
+  if( w>0 ) pObj->w = w;
+  if( h>0 ) pObj->h = h;
   UNUSED_PARAMETER(p);
 }
-static void boxRender(Pik *p, PElem *pElem){
-  PNum w2 = 0.5*pElem->w;
-  PNum h2 = 0.5*pElem->h;
-  PNum rad = pElem->rad;
-  PPoint pt = pElem->ptAt;
-  if( pElem->sw>0.0 ){
+static void boxRender(Pik *p, PObj *pObj){
+  PNum w2 = 0.5*pObj->w;
+  PNum h2 = 0.5*pObj->h;
+  PNum rad = pObj->rad;
+  PPoint pt = pObj->ptAt;
+  if( pObj->sw>0.0 ){
     if( rad<=0.0 ){
       pik_append_xy(p,"<path d=\"M", pt.x-w2,pt.y-h2);
       pik_append_xy(p,"L", pt.x+w2,pt.y-h2);
@@ -1132,48 +1132,48 @@ static void boxRender(Pik *p, PElem *pElem){
       pik_append_arc(p, rad, rad, x1, y0);
       pik_append(p,"Z\" ",-1);
     }
-    pik_append_style(p,pElem,1);
+    pik_append_style(p,pObj,1);
     pik_append(p,"\" />\n", -1);
   }
-  pik_append_txt(p, pElem, 0);
+  pik_append_txt(p, pObj, 0);
 }
 
 /* Methods for the "circle" class */
-static void circleInit(Pik *p, PElem *pElem){
-  pElem->w = pik_value(p, "circlerad",9,0)*2;
-  pElem->h = pElem->w;
-  pElem->rad = 0.5*pElem->w;
+static void circleInit(Pik *p, PObj *pObj){
+  pObj->w = pik_value(p, "circlerad",9,0)*2;
+  pObj->h = pObj->w;
+  pObj->rad = 0.5*pObj->w;
 }
-static void circleNumProp(Pik *p, PElem *pElem, PToken *pId){
+static void circleNumProp(Pik *p, PObj *pObj, PToken *pId){
   /* For a circle, the width must equal the height and both must
   ** be twice the radius.  Enforce those constraints. */
   switch( pId->eType ){
     case T_RADIUS:
-      pElem->w = pElem->h = 2.0*pElem->rad;
+      pObj->w = pObj->h = 2.0*pObj->rad;
       break;
     case T_WIDTH:
-      pElem->h = pElem->w;
-      pElem->rad = 0.5*pElem->w;
+      pObj->h = pObj->w;
+      pObj->rad = 0.5*pObj->w;
       break;
     case T_HEIGHT:
-      pElem->w = pElem->h;
-      pElem->rad = 0.5*pElem->w;
+      pObj->w = pObj->h;
+      pObj->rad = 0.5*pObj->w;
       break;
   }
   UNUSED_PARAMETER(p);
 }
-static PPoint circleChop(Pik *p, PElem *pElem, PPoint *pPt){
+static PPoint circleChop(Pik *p, PObj *pObj, PPoint *pPt){
   PPoint chop;
-  PNum dx = pPt->x - pElem->ptAt.x;
-  PNum dy = pPt->y - pElem->ptAt.y;
+  PNum dx = pPt->x - pObj->ptAt.x;
+  PNum dy = pPt->y - pObj->ptAt.y;
   PNum dist = hypot(dx,dy);
-  if( dist<pElem->rad ) return pElem->ptAt;
-  chop.x = pElem->ptAt.x + dx*pElem->rad/dist;
-  chop.y = pElem->ptAt.y + dy*pElem->rad/dist;
+  if( dist<pObj->rad ) return pObj->ptAt;
+  chop.x = pObj->ptAt.x + dx*pObj->rad/dist;
+  chop.y = pObj->ptAt.y + dy*pObj->rad/dist;
   UNUSED_PARAMETER(p);
   return chop;
 }
-static void circleFit(Pik *p, PElem *pElem, PNum w, PNum h){
+static void circleFit(Pik *p, PObj *pObj, PNum w, PNum h){
   PNum mx = 0.0;
   if( w>0 ) mx = w;
   if( h>mx ) mx = h;
@@ -1181,42 +1181,42 @@ static void circleFit(Pik *p, PElem *pElem, PNum w, PNum h){
     mx = hypot(w,h);
   }
   if( mx>0.0 ){
-    pElem->rad = 0.5*mx;
-    pElem->w = pElem->h = mx;
+    pObj->rad = 0.5*mx;
+    pObj->w = pObj->h = mx;
   }
   UNUSED_PARAMETER(p);
 }
 
-static void circleRender(Pik *p, PElem *pElem){
-  PNum r = pElem->rad;
-  PPoint pt = pElem->ptAt;
-  if( pElem->sw>0.0 ){
+static void circleRender(Pik *p, PObj *pObj){
+  PNum r = pObj->rad;
+  PPoint pt = pObj->ptAt;
+  if( pObj->sw>0.0 ){
     pik_append_x(p,"<circle cx=\"", pt.x, "\"");
     pik_append_y(p," cy=\"", pt.y, "\"");
     pik_append_dis(p," r=\"", r, "\" ");
-    pik_append_style(p,pElem,1);
+    pik_append_style(p,pObj,1);
     pik_append(p,"\" />\n", -1);
   }
-  pik_append_txt(p, pElem, 0);
+  pik_append_txt(p, pObj, 0);
 }
 
 /* Methods for the "cylinder" class */
-static void cylinderInit(Pik *p, PElem *pElem){
-  pElem->w = pik_value(p, "cylwid",6,0);
-  pElem->h = pik_value(p, "cylht",5,0);
-  pElem->rad = pik_value(p, "cylrad",6,0); /* Minor radius of ellipses */
+static void cylinderInit(Pik *p, PObj *pObj){
+  pObj->w = pik_value(p, "cylwid",6,0);
+  pObj->h = pik_value(p, "cylht",5,0);
+  pObj->rad = pik_value(p, "cylrad",6,0); /* Minor radius of ellipses */
 }
-static void cylinderFit(Pik *p, PElem *pElem, PNum w, PNum h){
-  if( w>0 ) pElem->w = w;
-  if( h>0 ) pElem->h = h + 4*pElem->rad + pElem->sw;
+static void cylinderFit(Pik *p, PObj *pObj, PNum w, PNum h){
+  if( w>0 ) pObj->w = w;
+  if( h>0 ) pObj->h = h + 4*pObj->rad + pObj->sw;
   UNUSED_PARAMETER(p);
 }
-static void cylinderRender(Pik *p, PElem *pElem){
-  PNum w2 = 0.5*pElem->w;
-  PNum h2 = 0.5*pElem->h;
-  PNum rad = pElem->rad;
-  PPoint pt = pElem->ptAt;
-  if( pElem->sw>0.0 ){
+static void cylinderRender(Pik *p, PObj *pObj){
+  PNum w2 = 0.5*pObj->w;
+  PNum h2 = 0.5*pObj->h;
+  PNum rad = pObj->rad;
+  PPoint pt = pObj->ptAt;
+  if( pObj->sw>0.0 ){
     pik_append_xy(p,"<path d=\"M", pt.x-w2,pt.y+h2-rad);
     pik_append_xy(p,"L", pt.x-w2,pt.y-h2+rad);
     pik_append_arc(p,w2,rad,pt.x+w2,pt.y-h2+rad);
@@ -1224,16 +1224,16 @@ static void cylinderRender(Pik *p, PElem *pElem){
     pik_append_arc(p,w2,rad,pt.x-w2,pt.y+h2-rad);
     pik_append_arc(p,w2,rad,pt.x+w2,pt.y+h2-rad);
     pik_append(p,"\" ",-1);
-    pik_append_style(p,pElem,1);
+    pik_append_style(p,pObj,1);
     pik_append(p,"\" />\n", -1);
   }
-  pik_append_txt(p, pElem, 0);
+  pik_append_txt(p, pObj, 0);
 }
-static PPoint cylinderOffset(Pik *p, PElem *pElem, int cp){
+static PPoint cylinderOffset(Pik *p, PObj *pObj, int cp){
   PPoint pt = cZeroPoint;
-  PNum w2 = pElem->w*0.5;
-  PNum h1 = pElem->h*0.5;
-  PNum h2 = h1 - pElem->rad;
+  PNum w2 = pObj->w*0.5;
+  PNum h1 = pObj->h*0.5;
+  PNum h2 = h1 - pObj->rad;
   switch( cp ){
     case CP_C:                                break;
     case CP_N:   pt.x = 0.0;   pt.y = h1;     break;
@@ -1251,75 +1251,75 @@ static PPoint cylinderOffset(Pik *p, PElem *pElem, int cp){
 }
 
 /* Methods for the "dot" class */
-static void dotInit(Pik *p, PElem *pElem){
-  pElem->rad = pik_value(p, "dotrad",6,0);
-  pElem->h = pElem->w = pElem->rad*6;
-  pElem->fill = pElem->color;
+static void dotInit(Pik *p, PObj *pObj){
+  pObj->rad = pik_value(p, "dotrad",6,0);
+  pObj->h = pObj->w = pObj->rad*6;
+  pObj->fill = pObj->color;
 }
-static void dotNumProp(Pik *p, PElem *pElem, PToken *pId){
+static void dotNumProp(Pik *p, PObj *pObj, PToken *pId){
   switch( pId->eType ){
     case T_COLOR:
-      pElem->fill = pElem->color;
+      pObj->fill = pObj->color;
       break;
     case T_FILL:
-      pElem->color = pElem->fill;
+      pObj->color = pObj->fill;
       break;
   }
   UNUSED_PARAMETER(p);
 }
-static void dotCheck(Pik *p, PElem *pElem){
-  pElem->w = pElem->h = 0;
-  pik_bbox_addellipse(&pElem->bbox, pElem->ptAt.x, pElem->ptAt.y,
-                       pElem->rad, pElem->rad);
+static void dotCheck(Pik *p, PObj *pObj){
+  pObj->w = pObj->h = 0;
+  pik_bbox_addellipse(&pObj->bbox, pObj->ptAt.x, pObj->ptAt.y,
+                       pObj->rad, pObj->rad);
   UNUSED_PARAMETER(p);
 }
-static PPoint dotOffset(Pik *p, PElem *pElem, int cp){
+static PPoint dotOffset(Pik *p, PObj *pObj, int cp){
   UNUSED_PARAMETER(p);
-  UNUSED_PARAMETER(pElem);
+  UNUSED_PARAMETER(pObj);
   UNUSED_PARAMETER(cp);
   return cZeroPoint;
 }
-static void dotRender(Pik *p, PElem *pElem){
-  PNum r = pElem->rad;
-  PPoint pt = pElem->ptAt;
-  if( pElem->sw>0.0 ){
+static void dotRender(Pik *p, PObj *pObj){
+  PNum r = pObj->rad;
+  PPoint pt = pObj->ptAt;
+  if( pObj->sw>0.0 ){
     pik_append_x(p,"<circle cx=\"", pt.x, "\"");
     pik_append_y(p," cy=\"", pt.y, "\"");
     pik_append_dis(p," r=\"", r, "\"");
-    pik_append_style(p,pElem,1);
+    pik_append_style(p,pObj,1);
     pik_append(p,"\" />\n", -1);
   }
-  pik_append_txt(p, pElem, 0);
+  pik_append_txt(p, pObj, 0);
 }
 
 
 
 /* Methods for the "ellipse" class */
-static void ellipseInit(Pik *p, PElem *pElem){
-  pElem->w = pik_value(p, "ellipsewid",10,0);
-  pElem->h = pik_value(p, "ellipseht",9,0);
+static void ellipseInit(Pik *p, PObj *pObj){
+  pObj->w = pik_value(p, "ellipsewid",10,0);
+  pObj->h = pik_value(p, "ellipseht",9,0);
 }
-static PPoint ellipseChop(Pik *p, PElem *pElem, PPoint *pPt){
+static PPoint ellipseChop(Pik *p, PObj *pObj, PPoint *pPt){
   PPoint chop;
   PNum s, dq, dist;
-  PNum dx = pPt->x - pElem->ptAt.x;
-  PNum dy = pPt->y - pElem->ptAt.y;
-  if( pElem->w<=0.0 ) return pElem->ptAt;
-  if( pElem->h<=0.0 ) return pElem->ptAt;
-  s = pElem->h/pElem->w;
+  PNum dx = pPt->x - pObj->ptAt.x;
+  PNum dy = pPt->y - pObj->ptAt.y;
+  if( pObj->w<=0.0 ) return pObj->ptAt;
+  if( pObj->h<=0.0 ) return pObj->ptAt;
+  s = pObj->h/pObj->w;
   dq = dx*s;
   dist = hypot(dq,dy);
-  if( dist<pElem->h ) return pElem->ptAt;
-  chop.x = pElem->ptAt.x + 0.5*dq*pElem->h/(dist*s);
-  chop.y = pElem->ptAt.y + 0.5*dy*pElem->h/dist;
+  if( dist<pObj->h ) return pObj->ptAt;
+  chop.x = pObj->ptAt.x + 0.5*dq*pObj->h/(dist*s);
+  chop.y = pObj->ptAt.y + 0.5*dy*pObj->h/dist;
   UNUSED_PARAMETER(p);
   return chop;
 }
-static PPoint ellipseOffset(Pik *p, PElem *pElem, int cp){
+static PPoint ellipseOffset(Pik *p, PObj *pObj, int cp){
   PPoint pt = cZeroPoint;
-  PNum w = pElem->w*0.5;
+  PNum w = pObj->w*0.5;
   PNum w2 = w*0.70710678118654747608;
-  PNum h = pElem->h*0.5;
+  PNum h = pObj->h*0.5;
   PNum h2 = h*0.70710678118654747608;
   switch( cp ){
     case CP_C:                                break;
@@ -1336,34 +1336,34 @@ static PPoint ellipseOffset(Pik *p, PElem *pElem, int cp){
   UNUSED_PARAMETER(p);
   return pt;
 }
-static void ellipseRender(Pik *p, PElem *pElem){
-  PNum w = pElem->w;
-  PNum h = pElem->h;
-  PPoint pt = pElem->ptAt;
-  if( pElem->sw>0.0 ){
+static void ellipseRender(Pik *p, PObj *pObj){
+  PNum w = pObj->w;
+  PNum h = pObj->h;
+  PPoint pt = pObj->ptAt;
+  if( pObj->sw>0.0 ){
     pik_append_x(p,"<ellipse cx=\"", pt.x, "\"");
     pik_append_y(p," cy=\"", pt.y, "\"");
     pik_append_dis(p," rx=\"", w/2.0, "\"");
     pik_append_dis(p," ry=\"", h/2.0, "\" ");
-    pik_append_style(p,pElem,1);
+    pik_append_style(p,pObj,1);
     pik_append(p,"\" />\n", -1);
   }
-  pik_append_txt(p, pElem, 0);
+  pik_append_txt(p, pObj, 0);
 }
 
 /* Methods for the "file" object */
-static void fileInit(Pik *p, PElem *pElem){
-  pElem->w = pik_value(p, "filewid",7,0);
-  pElem->h = pik_value(p, "fileht",6,0);
-  pElem->rad = pik_value(p, "filerad",7,0);
+static void fileInit(Pik *p, PObj *pObj){
+  pObj->w = pik_value(p, "filewid",7,0);
+  pObj->h = pik_value(p, "fileht",6,0);
+  pObj->rad = pik_value(p, "filerad",7,0);
 }
 /* Return offset from the center of the file to the compass point 
 ** given by parameter cp */
-static PPoint fileOffset(Pik *p, PElem *pElem, int cp){
+static PPoint fileOffset(Pik *p, PObj *pObj, int cp){
   PPoint pt = cZeroPoint;
-  PNum w2 = 0.5*pElem->w;
-  PNum h2 = 0.5*pElem->h;
-  PNum rx = pElem->rad;
+  PNum w2 = 0.5*pObj->w;
+  PNum h2 = 0.5*pObj->h;
+  PNum rx = pObj->rad;
   PNum mn = w2<h2 ? w2 : h2;
   if( rx>mn ) rx = mn;
   if( rx<mn*0.25 ) rx = mn*0.25;
@@ -1384,128 +1384,128 @@ static PPoint fileOffset(Pik *p, PElem *pElem, int cp){
   UNUSED_PARAMETER(p);
   return pt;
 }
-static void fileFit(Pik *p, PElem *pElem, PNum w, PNum h){
-  if( w>0 ) pElem->w = w;
-  if( h>0 ) pElem->h = h + 2*pElem->rad;
+static void fileFit(Pik *p, PObj *pObj, PNum w, PNum h){
+  if( w>0 ) pObj->w = w;
+  if( h>0 ) pObj->h = h + 2*pObj->rad;
   UNUSED_PARAMETER(p);
 }
-static void fileRender(Pik *p, PElem *pElem){
-  PNum w2 = 0.5*pElem->w;
-  PNum h2 = 0.5*pElem->h;
-  PNum rad = pElem->rad;
-  PPoint pt = pElem->ptAt;
+static void fileRender(Pik *p, PObj *pObj){
+  PNum w2 = 0.5*pObj->w;
+  PNum h2 = 0.5*pObj->h;
+  PNum rad = pObj->rad;
+  PPoint pt = pObj->ptAt;
   PNum mn = w2<h2 ? w2 : h2;
   if( rad>mn ) rad = mn;
   if( rad<mn*0.25 ) rad = mn*0.25;
-  if( pElem->sw>0.0 ){
+  if( pObj->sw>0.0 ){
     pik_append_xy(p,"<path d=\"M", pt.x-w2,pt.y-h2);
     pik_append_xy(p,"L", pt.x+w2,pt.y-h2);
     pik_append_xy(p,"L", pt.x+w2,pt.y+(h2-rad));
     pik_append_xy(p,"L", pt.x+(w2-rad),pt.y+h2);
     pik_append_xy(p,"L", pt.x-w2,pt.y+h2);
     pik_append(p,"Z\" ",-1);
-    pik_append_style(p,pElem,1);
+    pik_append_style(p,pObj,1);
     pik_append(p,"\" />\n",-1);
     pik_append_xy(p,"<path d=\"M", pt.x+(w2-rad), pt.y+h2);
     pik_append_xy(p,"L", pt.x+(w2-rad),pt.y+(h2-rad));
     pik_append_xy(p,"L", pt.x+w2, pt.y+(h2-rad));
     pik_append(p,"\" ",-1);
-    pik_append_style(p,pElem,0);
+    pik_append_style(p,pObj,0);
     pik_append(p,"\" />\n",-1);
   }
-  pik_append_txt(p, pElem, 0);
+  pik_append_txt(p, pObj, 0);
 }
 
 
 /* Methods for the "line" class */
-static void lineInit(Pik *p, PElem *pElem){
-  pElem->w = pik_value(p, "linewid",7,0);
-  pElem->h = pik_value(p, "lineht",6,0);
-  pElem->rad = pik_value(p, "linerad",7,0);
-  pElem->fill = -1.0;
+static void lineInit(Pik *p, PObj *pObj){
+  pObj->w = pik_value(p, "linewid",7,0);
+  pObj->h = pik_value(p, "lineht",6,0);
+  pObj->rad = pik_value(p, "linerad",7,0);
+  pObj->fill = -1.0;
 }
-static PPoint lineOffset(Pik *p, PElem *pElem, int cp){
+static PPoint lineOffset(Pik *p, PObj *pObj, int cp){
 #if 0
   /* In legacy PIC, the .center of an unclosed line is half way between
   ** its .start and .end. */
-  if( cp==CP_C && !pElem->bClose ){
+  if( cp==CP_C && !pObj->bClose ){
     PPoint out;
-    out.x = 0.5*(pElem->ptEnter.x + pElem->ptExit.x) - pElem->ptAt.x;
-    out.y = 0.5*(pElem->ptEnter.x + pElem->ptExit.y) - pElem->ptAt.y;
+    out.x = 0.5*(pObj->ptEnter.x + pObj->ptExit.x) - pObj->ptAt.x;
+    out.y = 0.5*(pObj->ptEnter.x + pObj->ptExit.y) - pObj->ptAt.y;
     return out;
   }
 #endif
-  return boxOffset(p,pElem,cp);
+  return boxOffset(p,pObj,cp);
 }
-static void lineRender(Pik *p, PElem *pElem){
+static void lineRender(Pik *p, PObj *pObj){
   int i;
-  if( pElem->sw>0.0 ){
+  if( pObj->sw>0.0 ){
     const char *z = "<path d=\"M";
-    int n = pElem->nPath;
-    if( pElem->larrow ){
-      pik_draw_arrowhead(p,&pElem->aPath[1],&pElem->aPath[0],pElem);
+    int n = pObj->nPath;
+    if( pObj->larrow ){
+      pik_draw_arrowhead(p,&pObj->aPath[1],&pObj->aPath[0],pObj);
     }
-    if( pElem->rarrow ){
-      pik_draw_arrowhead(p,&pElem->aPath[n-2],&pElem->aPath[n-1],pElem);
+    if( pObj->rarrow ){
+      pik_draw_arrowhead(p,&pObj->aPath[n-2],&pObj->aPath[n-1],pObj);
     }
-    for(i=0; i<pElem->nPath; i++){
-      pik_append_xy(p,z,pElem->aPath[i].x,pElem->aPath[i].y);
+    for(i=0; i<pObj->nPath; i++){
+      pik_append_xy(p,z,pObj->aPath[i].x,pObj->aPath[i].y);
       z = "L";
     }
-    if( pElem->bClose ){
+    if( pObj->bClose ){
       pik_append(p,"Z",1);
     }else{
-      pElem->fill = -1.0;
+      pObj->fill = -1.0;
     }
     pik_append(p,"\" ",-1);
-    pik_append_style(p,pElem,pElem->bClose);
+    pik_append_style(p,pObj,pObj->bClose);
     pik_append(p,"\" />\n", -1);
   }
-  pik_append_txt(p, pElem, 0);
+  pik_append_txt(p, pObj, 0);
 }
 
 /* Methods for the "move" class */
-static void moveInit(Pik *p, PElem *pElem){
-  pElem->w = pik_value(p, "movewid",7,0);
-  pElem->h = pElem->w;
-  pElem->fill = -1.0;
-  pElem->color = -1.0;
-  pElem->sw = -1.0;
+static void moveInit(Pik *p, PObj *pObj){
+  pObj->w = pik_value(p, "movewid",7,0);
+  pObj->h = pObj->w;
+  pObj->fill = -1.0;
+  pObj->color = -1.0;
+  pObj->sw = -1.0;
 }
-static void moveRender(Pik *p, PElem *pElem){
+static void moveRender(Pik *p, PObj *pObj){
   /* No-op */
   UNUSED_PARAMETER(p);
-  UNUSED_PARAMETER(pElem);
+  UNUSED_PARAMETER(pObj);
 }
 
 /* Methods for the "oval" class */
-static void ovalInit(Pik *p, PElem *pElem){
-  pElem->h = pik_value(p, "ovalht",6,0);
-  pElem->w = pik_value(p, "ovalwid",7,0);
-  pElem->rad = 0.5*(pElem->h<pElem->w?pElem->h:pElem->w);
+static void ovalInit(Pik *p, PObj *pObj){
+  pObj->h = pik_value(p, "ovalht",6,0);
+  pObj->w = pik_value(p, "ovalwid",7,0);
+  pObj->rad = 0.5*(pObj->h<pObj->w?pObj->h:pObj->w);
 }
-static void ovalNumProp(Pik *p, PElem *pElem, PToken *pId){
+static void ovalNumProp(Pik *p, PObj *pObj, PToken *pId){
   UNUSED_PARAMETER(p);
   UNUSED_PARAMETER(pId);
   /* Always adjust the radius to be half of the smaller of
   ** the width and height. */
-  pElem->rad = 0.5*(pElem->h<pElem->w?pElem->h:pElem->w);
+  pObj->rad = 0.5*(pObj->h<pObj->w?pObj->h:pObj->w);
 }
-static void ovalFit(Pik *p, PElem *pElem, PNum w, PNum h){
+static void ovalFit(Pik *p, PObj *pObj, PNum w, PNum h){
   UNUSED_PARAMETER(p);
-  if( w>0 ) pElem->w = w;
-  if( h>0 ) pElem->h = h;
-  if( pElem->w<pElem->h ) pElem->w = pElem->h;
+  if( w>0 ) pObj->w = w;
+  if( h>0 ) pObj->h = h;
+  if( pObj->w<pObj->h ) pObj->w = pObj->h;
 }
 
 
 
 /* Methods for the "spline" class */
-static void splineInit(Pik *p, PElem *pElem){
-  pElem->w = pik_value(p, "linewid",7,0);
-  pElem->h = pik_value(p, "lineht",6,0);
-  pElem->rad = 1000;
-  pElem->fill = -1.0;  /* Disable fill by default */
+static void splineInit(Pik *p, PObj *pObj){
+  pObj->w = pik_value(p, "linewid",7,0);
+  pObj->h = pik_value(p, "lineht",6,0);
+  pObj->rad = 1000;
+  pObj->fill = -1.0;  /* Disable fill by default */
 }
 /* Return a point along the path from "f" to "t" that is r units
 ** prior to reaching "t", except if the path is less than 2*r total,
@@ -1529,10 +1529,10 @@ static PPoint radiusMidpoint(PPoint f, PPoint t, PNum r, int *pbMid){
   m.y = t.y - r*dy;
   return m;
 }
-static void radiusPath(Pik *p, PElem *pElem, PNum r){
+static void radiusPath(Pik *p, PObj *pObj, PNum r){
   int i;
-  int n = pElem->nPath;
-  const PPoint *a = pElem->aPath;
+  int n = pObj->nPath;
+  const PPoint *a = pObj->aPath;
   PPoint m;
   int isMid = 0;
 
@@ -1550,64 +1550,64 @@ static void radiusPath(Pik *p, PElem *pElem, PNum r){
   }
   pik_append_xy(p," L ",a[i].x,a[i].y);
   pik_append(p,"\" ",-1);
-  pik_append_style(p,pElem,0);
+  pik_append_style(p,pObj,0);
   pik_append(p,"\" />\n", -1);
 }
-static void splineRender(Pik *p, PElem *pElem){
-  if( pElem->sw>0.0 ){
-    int n = pElem->nPath;
-    PNum r = pElem->rad;
+static void splineRender(Pik *p, PObj *pObj){
+  if( pObj->sw>0.0 ){
+    int n = pObj->nPath;
+    PNum r = pObj->rad;
     if( n<3 || r<=0.0 ){
-      lineRender(p,pElem);
+      lineRender(p,pObj);
       return;
     }
-    if( pElem->larrow ){
-      pik_draw_arrowhead(p,&pElem->aPath[1],&pElem->aPath[0],pElem);
+    if( pObj->larrow ){
+      pik_draw_arrowhead(p,&pObj->aPath[1],&pObj->aPath[0],pObj);
     }
-    if( pElem->rarrow ){
-      pik_draw_arrowhead(p,&pElem->aPath[n-2],&pElem->aPath[n-1],pElem);
+    if( pObj->rarrow ){
+      pik_draw_arrowhead(p,&pObj->aPath[n-2],&pObj->aPath[n-1],pObj);
     }
-    radiusPath(p,pElem,pElem->rad);
+    radiusPath(p,pObj,pObj->rad);
   }
-  pik_append_txt(p, pElem, 0);
+  pik_append_txt(p, pObj, 0);
 }
 
 
 /* Methods for the "text" class */
-static void textInit(Pik *p, PElem *pElem){
+static void textInit(Pik *p, PObj *pObj){
   pik_value(p, "textwid",7,0);
   pik_value(p, "textht",6,0);
-  pElem->sw = 0.0;
+  pObj->sw = 0.0;
 }
-static PPoint textOffset(Pik *p, PElem *pElem, int cp){
+static PPoint textOffset(Pik *p, PObj *pObj, int cp){
   /* Automatically slim-down the width and height of text
-  ** elements so that the bounding box tightly encloses the text,
+  ** statements so that the bounding box tightly encloses the text,
   ** then get boxOffset() to do the offset computation.
   */
-  pik_size_to_fit(p, &pElem->errTok);
-  return boxOffset(p, pElem, cp);
+  pik_size_to_fit(p, &pObj->errTok);
+  return boxOffset(p, pObj, cp);
 }
 
 /* Methods for the "sublist" class */
-static void sublistInit(Pik *p, PElem *pElem){
-  PEList *pList = pElem->pSublist;
+static void sublistInit(Pik *p, PObj *pObj){
+  PList *pList = pObj->pSublist;
   int i;
   UNUSED_PARAMETER(p);
-  pik_bbox_init(&pElem->bbox);
+  pik_bbox_init(&pObj->bbox);
   for(i=0; i<pList->n; i++){
-    pik_bbox_addbox(&pElem->bbox, &pList->a[i]->bbox);
+    pik_bbox_addbox(&pObj->bbox, &pList->a[i]->bbox);
   }
-  pElem->w = pElem->bbox.ne.x - pElem->bbox.sw.x;
-  pElem->h = pElem->bbox.ne.y - pElem->bbox.sw.y;
-  pElem->ptAt.x = 0.5*(pElem->bbox.ne.x + pElem->bbox.sw.x);
-  pElem->ptAt.y = 0.5*(pElem->bbox.ne.y + pElem->bbox.sw.y);
-  pElem->mCalc |= A_WIDTH|A_HEIGHT|A_RADIUS;
+  pObj->w = pObj->bbox.ne.x - pObj->bbox.sw.x;
+  pObj->h = pObj->bbox.ne.y - pObj->bbox.sw.y;
+  pObj->ptAt.x = 0.5*(pObj->bbox.ne.x + pObj->bbox.sw.x);
+  pObj->ptAt.y = 0.5*(pObj->bbox.ne.y + pObj->bbox.sw.y);
+  pObj->mCalc |= A_WIDTH|A_HEIGHT|A_RADIUS;
 }
 
 
 /*
-** The following array holds all the different kinds of named
-** elements.  The special STRING and [] elements are separate.
+** The following array holds all the different kinds of objects.
+** The special [] object is separate.
 */
 static const PClass aClass[] = {
    {  /* name */          "arc",
@@ -1803,16 +1803,16 @@ static void pik_chop(PPoint *f, PPoint *t, PNum amt){
 ** Also, shorten the line segment (by changing the value of pTo) so that
 ** the shaft of the arrow does not extend into the arrowhead.
 */
-static void pik_draw_arrowhead(Pik *p, PPoint *f, PPoint *t, PElem *pElem){
+static void pik_draw_arrowhead(Pik *p, PPoint *f, PPoint *t, PObj *pObj){
   PNum dx = t->x - f->x;
   PNum dy = t->y - f->y;
   PNum dist = hypot(dx,dy);
-  PNum h = p->hArrow * pElem->sw;
-  PNum w = p->wArrow * pElem->sw;
+  PNum h = p->hArrow * pObj->sw;
+  PNum w = p->wArrow * pObj->sw;
   PNum e1, ddx, ddy;
   PNum bx, by;
-  if( pElem->color<0.0 ) return;
-  if( pElem->sw<=0.0 ) return;
+  if( pObj->color<0.0 ) return;
+  if( pObj->sw<=0.0 ) return;
   if( dist<=0.0 ) return;  /* Unable */
   dx /= dist;
   dy /= dist;
@@ -1828,16 +1828,16 @@ static void pik_draw_arrowhead(Pik *p, PPoint *f, PPoint *t, PElem *pElem){
   pik_append_xy(p,"<polygon points=\"", t->x, t->y);
   pik_append_xy(p," ",bx-ddx, by-ddy);
   pik_append_xy(p," ",bx+ddx, by+ddy);
-  pik_append_clr(p,"\" style=\"fill:",pElem->color,"\"/>\n");
+  pik_append_clr(p,"\" style=\"fill:",pObj->color,"\"/>\n");
   pik_chop(f,t,h/2);
 }
 
 /*
 ** Compute the relative offset to an edge location from the reference for a
-** an element.
+** an statement.
 */
-static PPoint pik_elem_offset(Pik *p, PElem *pElem, int cp){
-  return pElem->type->xOffset(p, pElem, cp);
+static PPoint pik_elem_offset(Pik *p, PObj *pObj, int cp){
+  return pObj->type->xOffset(p, pObj, cp);
 }
 
 
@@ -1984,27 +1984,27 @@ static void pik_append_arc(Pik *p, PNum r1, PNum r2, PNum x, PNum y){
 /* Append a style="..." text.  But, leave the quote unterminated, in case
 ** the caller wants to add some more.
 */
-static void pik_append_style(Pik *p, PElem *pElem, int bFill){
+static void pik_append_style(Pik *p, PObj *pObj, int bFill){
   pik_append(p, " style=\"", -1);
-  if( pElem->fill>=0 && bFill ){
-    pik_append_clr(p, "fill:", pElem->fill, ";");
+  if( pObj->fill>=0 && bFill ){
+    pik_append_clr(p, "fill:", pObj->fill, ";");
   }else{
     pik_append(p,"fill:none;",-1);
   }
-  if( pElem->sw>0.0 && pElem->color>=0.0 ){
-    PNum sw = pElem->sw;
+  if( pObj->sw>0.0 && pObj->color>=0.0 ){
+    PNum sw = pObj->sw;
     pik_append_dis(p, "stroke-width:", sw, ";");
-    if( pElem->nPath>2 && pElem->rad<=pElem->sw ){
+    if( pObj->nPath>2 && pObj->rad<=pObj->sw ){
       pik_append(p, "stroke-linejoin:round;", -1);
     }
-    pik_append_clr(p, "stroke:",pElem->color,";");
-    if( pElem->dotted>0.0 ){
-      PNum v = pElem->dotted;
+    pik_append_clr(p, "stroke:",pObj->color,";");
+    if( pObj->dotted>0.0 ){
+      PNum v = pObj->dotted;
       if( sw<2.1/p->rScale ) sw = 2.1/p->rScale;
       pik_append_dis(p,"stroke-dasharray:",sw,"");
       pik_append_dis(p,",",v,";");
-    }else if( pElem->dashed>0.0 ){
-      PNum v = pElem->dashed;
+    }else if( pObj->dashed>0.0 ){
+      PNum v = pObj->dashed;
       pik_append_dis(p,"stroke-dasharray:",v,"");
       pik_append_dis(p,",",v,";");
     }
@@ -2013,16 +2013,16 @@ static void pik_append_style(Pik *p, PElem *pElem, int bFill){
 
 /*
 ** Compute the vertical locations for all text items in the
-** element pElem.  In other words, set every pElem->aTxt[*].eCode
+** object pObj.  In other words, set every pObj->aTxt[*].eCode
 ** value to contain exactly one of: TP_ABOVE2, TP_ABOVE, TP_CENTER,
 ** TP_BELOW, or TP_BELOW2 is set.
 */
-static void pik_txt_vertical_layout(PElem *pElem){
+static void pik_txt_vertical_layout(PObj *pObj){
   int n, i;
   PToken *aTxt;
-  n = pElem->nTxt;
+  n = pObj->nTxt;
   if( n==0 ) return;
-  aTxt = pElem->aTxt;
+  aTxt = pObj->aTxt;
   if( n==1 ){
     if( (aTxt[0].eCode & TP_VMASK)==0 ){
       aTxt[0].eCode |= TP_CENTER;
@@ -2089,18 +2089,18 @@ static void pik_txt_vertical_layout(PElem *pElem){
   }
 }
 
-/* Append multiple <text> SVG element for the text fields of the PElem.
+/* Append multiple <text> SVG elements for the text fields of the PObj.
 ** Parameters:
 **
 **    p          The Pik object into which we are rendering
 **
-**    pElem      Object containing the text to be rendered
+**    pObj      Object containing the text to be rendered
 **
 **    pBox       If not NULL, do no rendering at all.  Instead
 **               expand the box object so that it will include all
 **               of the text.
 */
-static void pik_append_txt(Pik *p, PElem *pElem, PBox *pBox){
+static void pik_append_txt(Pik *p, PObj *pObj, PBox *pBox){
   PNum dy;          /* Half the height of a single line of text */
   PNum dy2;         /* Extra vertical space around the center */
   PNum jw;          /* Justification margin relative to center */
@@ -2111,31 +2111,31 @@ static void pik_append_txt(Pik *p, PElem *pElem, PBox *pBox){
   int hasCenter = 0;
 
   if( p->nErr ) return;
-  if( pElem->nTxt==0 ) return;
-  aTxt = pElem->aTxt;
+  if( pObj->nTxt==0 ) return;
+  aTxt = pObj->aTxt;
   dy = 0.5*p->charHeight;
-  n = pElem->nTxt;
-  pik_txt_vertical_layout(pElem);
-  x = pElem->ptAt.x;
+  n = pObj->nTxt;
+  pik_txt_vertical_layout(pObj);
+  x = pObj->ptAt.x;
   for(i=0; i<n; i++){
-    if( (pElem->aTxt[i].eCode & TP_CENTER)!=0 ) hasCenter = 1;
+    if( (pObj->aTxt[i].eCode & TP_CENTER)!=0 ) hasCenter = 1;
   }
   if( hasCenter ){
     dy2 = dy;
-  }else if( pElem->type->isLine ){
-    dy2 = pElem->sw;
+  }else if( pObj->type->isLine ){
+    dy2 = pObj->sw;
   }else{
     dy2 = 0.0;
   }
-  if( pElem->type->eJust==1 ){
-    jw = 0.5*(pElem->w - 0.5*(p->charWidth + pElem->sw));
+  if( pObj->type->eJust==1 ){
+    jw = 0.5*(pObj->w - 0.5*(p->charWidth + pObj->sw));
   }else{
     jw = 0.0;
   }
   for(i=0; i<n; i++){
     PToken *t = &aTxt[i];
     PNum xtraFontScale = 1.0;
-    orig_y = pElem->ptAt.y;
+    orig_y = pObj->ptAt.y;
     PNum nx = 0;
     y = 0;
     if( t->eCode & TP_ABOVE2 ) y += dy2 + 3*dy;
@@ -2153,7 +2153,7 @@ static void pik_append_txt(Pik *p, PElem *pElem, PBox *pBox){
       ** pBox to include the text */
       PNum cw = pik_text_length(t)*p->charWidth*xtraFontScale*0.01;
       PNum ch = p->charHeight*0.5*xtraFontScale;
-      PNum x0, y0, x1, y1;  /* Boundary of text relative to pElem->ptAt */
+      PNum x0, y0, x1, y1;  /* Boundary of text relative to pObj->ptAt */
       if( t->eCode & TP_BOLD ) cw *= 1.1;
       if( t->eCode & TP_RJUST ){
         x0 = nx;
@@ -2171,10 +2171,10 @@ static void pik_append_txt(Pik *p, PElem *pElem, PBox *pBox){
         x1 = nx-cw/2;
         y1 = y-ch;
       }
-      if( (t->eCode & TP_ALIGN)!=0 && pElem->nPath>=2 ){
-        int n = pElem->nPath;
-        PNum dx = pElem->aPath[n-1].x - pElem->aPath[0].x;
-        PNum dy = pElem->aPath[n-1].y - pElem->aPath[0].y;
+      if( (t->eCode & TP_ALIGN)!=0 && pObj->nPath>=2 ){
+        int n = pObj->nPath;
+        PNum dx = pObj->aPath[n-1].x - pObj->aPath[0].x;
+        PNum dy = pObj->aPath[n-1].y - pObj->aPath[0].y;
         if( dx!=0 || dy!=0 ){
           PNum dist = hypot(dx,dy);
           PNum t;
@@ -2210,18 +2210,18 @@ static void pik_append_txt(Pik *p, PElem *pElem, PBox *pBox){
     if( t->eCode & TP_BOLD ){
       pik_append(p, " font-weight=\"bold\"", -1);
     }
-    if( pElem->color>=0.0 ){
-      pik_append_clr(p, " fill=\"", pElem->color, "\"");
+    if( pObj->color>=0.0 ){
+      pik_append_clr(p, " fill=\"", pObj->color, "\"");
     }
     xtraFontScale *= p->fontScale;
     if( xtraFontScale<=0.99 || xtraFontScale>=1.01 ){
       pik_append_num(p, " font-size=\"", xtraFontScale*100.0);
       pik_append(p, "%\"", 2);
     }
-    if( (t->eCode & TP_ALIGN)!=0 && pElem->nPath>=2 ){
-      int n = pElem->nPath;
-      PNum dx = pElem->aPath[n-1].x - pElem->aPath[0].x;
-      PNum dy = pElem->aPath[n-1].y - pElem->aPath[0].y;
+    if( (t->eCode & TP_ALIGN)!=0 && pObj->nPath>=2 ){
+      int n = pObj->nPath;
+      PNum dx = pObj->aPath[n-1].x - pObj->aPath[0].x;
+      PNum dy = pObj->aPath[n-1].y - pObj->aPath[0].y;
       if( dx!=0 || dy!=0 ){
         PNum ang = atan2(dy,dx)*-180/M_PI;
         pik_append_num(p, " transform=\"rotate(", ang);
@@ -2291,7 +2291,7 @@ static void pik_error(Pik *p, PToken *pErr, const char *zMsg){
 /*
 ** Process an "assert( e1 == e2 )" statement.  Always return NULL.
 */
-static PElem *pik_assert(Pik *p, PNum e1, PToken *pEq, PNum e2){
+static PObj *pik_assert(Pik *p, PNum e1, PToken *pEq, PNum e2){
   char zE1[100], zE2[100], zMsg[300];
 
   /* Convert the numbers to strings using %g for comparison.  This
@@ -2308,7 +2308,7 @@ static PElem *pik_assert(Pik *p, PNum e1, PToken *pEq, PNum e2){
 /*
 ** Process an "assert( place1 == place2 )" statement.  Always return NULL.
 */
-static PElem *pik_position_assert(Pik *p, PPoint *e1, PToken *pEq, PPoint *e2){
+static PObj *pik_position_assert(Pik *p, PPoint *e1, PToken *pEq, PPoint *e2){
   char zE1[100], zE2[100], zMsg[210];
 
   /* Convert the numbers to strings using %g for comparison.  This
@@ -2322,25 +2322,25 @@ static PElem *pik_position_assert(Pik *p, PPoint *e1, PToken *pEq, PPoint *e2){
   return 0;
 }
 
-/* Free a complete list of elements */
-static void pik_elist_free(Pik *p, PEList *pEList){
+/* Free a complete list of objects */
+static void pik_elist_free(Pik *p, PList *pList){
   int i;
-  if( pEList==0 ) return;
-  for(i=0; i<pEList->n; i++){
-    pik_elem_free(p, pEList->a[i]);
+  if( pList==0 ) return;
+  for(i=0; i<pList->n; i++){
+    pik_elem_free(p, pList->a[i]);
   }
-  free(pEList->a);
-  free(pEList);
+  free(pList->a);
+  free(pList);
   return;
 }
 
-/* Free a single element, and its substructure */
-static void pik_elem_free(Pik *p, PElem *pElem){
-  if( pElem==0 ) return;
-  free(pElem->zName);
-  pik_elist_free(p, pElem->pSublist);
-  free(pElem->aPath);
-  free(pElem);
+/* Free a single object, and its substructure */
+static void pik_elem_free(Pik *p, PObj *pObj){
+  if( pObj==0 ) return;
+  free(pObj->zName);
+  pik_elist_free(p, pObj->pSublist);
+  free(pObj->aPath);
+  free(pObj);
 }
 
 /* Convert a numeric literal into a number.  Return that number.
@@ -2457,38 +2457,38 @@ static void pik_bbox_addellipse(PBox *pA, PNum x, PNum y, PNum rx, PNum ry){
 
 
 
-/* Append a new element onto the end of an element_list.  The
-** element_list is created if it does not already exist.  Return
-** the new element list.
+/* Append a new object onto the end of an object list.  The
+** object list is created if it does not already exist.  Return
+** the new object list.
 */
-static PEList *pik_elist_append(Pik *p, PEList *pEList, PElem *pElem){
-  if( pElem==0 ) return pEList;
-  if( pEList==0 ){
-    pEList = malloc(sizeof(*pEList));
-    if( pEList==0 ){
+static PList *pik_elist_append(Pik *p, PList *pList, PObj *pObj){
+  if( pObj==0 ) return pList;
+  if( pList==0 ){
+    pList = malloc(sizeof(*pList));
+    if( pList==0 ){
       pik_error(p, 0, 0);
-      pik_elem_free(p, pElem);
+      pik_elem_free(p, pObj);
       return 0;
     }
-    memset(pEList, 0, sizeof(*pEList));
+    memset(pList, 0, sizeof(*pList));
   }
-  if( pEList->n>=pEList->nAlloc ){
-    int nNew = (pEList->n+5)*2;
-    PElem **pNew = realloc(pEList->a, sizeof(PElem*)*nNew);
+  if( pList->n>=pList->nAlloc ){
+    int nNew = (pList->n+5)*2;
+    PObj **pNew = realloc(pList->a, sizeof(PObj*)*nNew);
     if( pNew==0 ){
       pik_error(p, 0, 0);
-      pik_elem_free(p, pElem);
-      return pEList;
+      pik_elem_free(p, pObj);
+      return pList;
     }
-    pEList->nAlloc = nNew;
-    pEList->a = pNew;
+    pList->nAlloc = nNew;
+    pList->a = pNew;
   }
-  pEList->a[pEList->n++] = pElem;
-  p->list = pEList;
-  return pEList;
+  pList->a[pList->n++] = pObj;
+  p->list = pList;
+  return pList;
 }
 
-/* Convert an element class name into a PClass pointer
+/* Convert an object class name into a PClass pointer
 */
 static const PClass *pik_find_class(PToken *pId){
   int first = 0;
@@ -2509,15 +2509,15 @@ static const PClass *pik_find_class(PToken *pId){
   return 0;
 }
 
-/* Allocate and return a new PElem object.
+/* Allocate and return a new PObj object.
 **
-** If pId!=0 then pId is an identifier that defines the element class.
+** If pId!=0 then pId is an identifier that defines the object class.
 ** If pStr!=0 then it is a STRING literal that defines a text object.
 ** If pSublist!=0 then this is a [...] object. If all three parameters
 ** are NULL then this is a no-op object used to define a PLACENAME.
 */
-static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
-  PElem *pNew;
+static PObj *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PList *pSublist){
+  PObj *pNew;
   int miss = 0;
 
   if( p->nErr ) return 0;
@@ -2535,7 +2535,7 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
     pNew->ptAt.x = pNew->ptAt.y = 0.0;
     pNew->eWith = CP_C;
   }else{
-    PElem *pPrior = p->list->a[p->list->n-1];
+    PObj *pPrior = p->list->a[p->list->n-1];
     pNew->ptAt = pPrior->ptExit;
     switch( p->eDir ){
       default:         pNew->eWith = CP_W;   break;
@@ -2578,7 +2578,7 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
       pClass->xInit(p, pNew);
       return pNew;
     }
-    pik_error(p, pId, "unknown element type");
+    pik_error(p, pId, "unknown object type");
     pik_elem_free(p, pNew);
     return 0;
   }
@@ -2588,18 +2588,18 @@ static PElem *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PEList *pSublist){
 }
 
 /*
-** Set the output direction and exit point for an element.
+** Set the output direction and exit point for an object
 */
-static void pik_elem_set_exit(PElem *pElem, int eDir){
+static void pik_elem_set_exit(PObj *pObj, int eDir){
   assert( ValidDir(eDir) );
-  pElem->outDir = eDir;
-  if( !pElem->type->isLine || pElem->bClose ){
-    pElem->ptExit = pElem->ptAt;
-    switch( pElem->outDir ){
-      default:         pElem->ptExit.x += pElem->w*0.5;  break;
-      case DIR_LEFT:   pElem->ptExit.x -= pElem->w*0.5;  break;
-      case DIR_UP:     pElem->ptExit.y += pElem->h*0.5;  break;
-      case DIR_DOWN:   pElem->ptExit.y -= pElem->h*0.5;  break;
+  pObj->outDir = eDir;
+  if( !pObj->type->isLine || pObj->bClose ){
+    pObj->ptExit = pObj->ptAt;
+    switch( pObj->outDir ){
+      default:         pObj->ptExit.x += pObj->w*0.5;  break;
+      case DIR_LEFT:   pObj->ptExit.x -= pObj->w*0.5;  break;
+      case DIR_UP:     pObj->ptExit.y += pObj->h*0.5;  break;
+      case DIR_DOWN:   pObj->ptExit.y -= pObj->h*0.5;  break;
     }
   }
 }
@@ -2628,30 +2628,30 @@ static void pik_set_direction(Pik *p, int eDir){
   }
 }
 
-/* Move all coordinates contained within an element (and within its
+/* Move all coordinates contained within an object (and within its
 ** substructure) by dx, dy
 */
-static void pik_elem_move(PElem *pElem, PNum dx, PNum dy){
+static void pik_elem_move(PObj *pObj, PNum dx, PNum dy){
   int i;
-  pElem->ptAt.x += dx;
-  pElem->ptAt.y += dy;
-  pElem->ptEnter.x += dx;
-  pElem->ptEnter.y += dy;
-  pElem->ptExit.x += dx;
-  pElem->ptExit.y += dy;
-  pElem->bbox.ne.x += dx;
-  pElem->bbox.ne.y += dy;
-  pElem->bbox.sw.x += dx;
-  pElem->bbox.sw.y += dy;
-  for(i=0; i<pElem->nPath; i++){
-    pElem->aPath[i].x += dx;
-    pElem->aPath[i].y += dy;
+  pObj->ptAt.x += dx;
+  pObj->ptAt.y += dy;
+  pObj->ptEnter.x += dx;
+  pObj->ptEnter.y += dy;
+  pObj->ptExit.x += dx;
+  pObj->ptExit.y += dy;
+  pObj->bbox.ne.x += dx;
+  pObj->bbox.ne.y += dy;
+  pObj->bbox.sw.x += dx;
+  pObj->bbox.sw.y += dy;
+  for(i=0; i<pObj->nPath; i++){
+    pObj->aPath[i].x += dx;
+    pObj->aPath[i].y += dy;
   }
-  if( pElem->pSublist ){
-    pik_elist_move(pElem->pSublist, dx, dy);
+  if( pObj->pSublist ){
+    pik_elist_move(pObj->pSublist, dx, dy);
   }
 }
-static void pik_elist_move(PEList *pList, PNum dx, PNum dy){
+static void pik_elist_move(PList *pList, PNum dx, PNum dy){
   int i;
   for(i=0; i<pList->n; i++){
     pik_elem_move(pList->a[i], dx, dy);
@@ -2663,27 +2663,27 @@ static void pik_elist_move(PEList *pList, PNum dx, PNum dy){
 ** Return 0 if it is ok. If it not ok, generate an appropriate
 ** error message and return non-zero.
 **
-** Flags are set in pElem so that the same element or conflicting
-** elements may not be set again.
+** Flags are set in pObj so that the same object or conflicting
+** objects may not be set again.
 **
 ** To be ok, bit mThis must be clear and no more than one of
 ** the bits identified by mBlockers may be set.
 */
 static int pik_param_ok(
   Pik *p,             /* For storing the error message (if any) */
-  PElem *pElem,       /* The element under construction */
+  PObj *pObj,       /* The object under construction */
   PToken *pId,        /* Make the error point to this token */
   int mThis           /* Value we are trying to set */
 ){
-  if( pElem->mProp & mThis ){
+  if( pObj->mProp & mThis ){
     pik_error(p, pId, "value is already set");
     return 1;
   }
-  if( pElem->mCalc & mThis ){
+  if( pObj->mCalc & mThis ){
     pik_error(p, pId, "value already fixed by prior constraints");
     return 1;
   }
-  pElem->mProp |= mThis;
+  pObj->mProp |= mThis;
   return 0;
 }
 
@@ -2695,31 +2695,31 @@ static int pik_param_ok(
 ** a relative value by which to change the current value.
 */
 void pik_set_numprop(Pik *p, PToken *pId, PRel *pVal){
-  PElem *pElem = p->cur;
+  PObj *pObj = p->cur;
   switch( pId->eType ){
     case T_HEIGHT:
-      if( pik_param_ok(p, pElem, pId, A_HEIGHT) ) return;
-      pElem->h = pElem->h*pVal->rRel + pVal->rAbs;
+      if( pik_param_ok(p, pObj, pId, A_HEIGHT) ) return;
+      pObj->h = pObj->h*pVal->rRel + pVal->rAbs;
       break;
     case T_WIDTH:
-      if( pik_param_ok(p, pElem, pId, A_WIDTH) ) return;
-      pElem->w = pElem->w*pVal->rRel + pVal->rAbs;
+      if( pik_param_ok(p, pObj, pId, A_WIDTH) ) return;
+      pObj->w = pObj->w*pVal->rRel + pVal->rAbs;
       break;
     case T_RADIUS:
-      if( pik_param_ok(p, pElem, pId, A_RADIUS) ) return;
-      pElem->rad = pElem->rad*pVal->rRel + pVal->rAbs;
+      if( pik_param_ok(p, pObj, pId, A_RADIUS) ) return;
+      pObj->rad = pObj->rad*pVal->rRel + pVal->rAbs;
       break;
     case T_DIAMETER:
-      if( pik_param_ok(p, pElem, pId, A_RADIUS) ) return;
-      pElem->rad = pElem->rad*pVal->rRel + 0.5*pVal->rAbs; /* diam it 2x rad */
+      if( pik_param_ok(p, pObj, pId, A_RADIUS) ) return;
+      pObj->rad = pObj->rad*pVal->rRel + 0.5*pVal->rAbs; /* diam it 2x rad */
       break;
     case T_THICKNESS:
-      if( pik_param_ok(p, pElem, pId, A_THICKNESS) ) return;
-      pElem->sw = pElem->sw*pVal->rRel + pVal->rAbs;
+      if( pik_param_ok(p, pObj, pId, A_THICKNESS) ) return;
+      pObj->sw = pObj->sw*pVal->rRel + pVal->rAbs;
       break;
   }
-  if( pElem->type->xNumProp ){
-    pElem->type->xNumProp(p, pElem, pId);
+  if( pObj->type->xNumProp ){
+    pObj->type->xNumProp(p, pObj, pId);
   }
   return;
 }
@@ -2728,19 +2728,19 @@ void pik_set_numprop(Pik *p, PToken *pId, PRel *pVal){
 ** Set a color property.  The argument is an RGB value.
 */
 void pik_set_clrprop(Pik *p, PToken *pId, PNum rClr){
-  PElem *pElem = p->cur;
+  PObj *pObj = p->cur;
   switch( pId->eType ){
     case T_FILL:
-      if( pik_param_ok(p, pElem, pId, A_FILL) ) return;
-      pElem->fill = rClr;
+      if( pik_param_ok(p, pObj, pId, A_FILL) ) return;
+      pObj->fill = rClr;
       break;
     case T_COLOR:
-      if( pik_param_ok(p, pElem, pId, A_COLOR) ) return;
-      pElem->color = rClr;
+      if( pik_param_ok(p, pObj, pId, A_COLOR) ) return;
+      pObj->color = rClr;
       break;
   }
-  if( pElem->type->xNumProp ){
-    pElem->type->xNumProp(p, pElem, pId);
+  if( pObj->type->xNumProp ){
+    pObj->type->xNumProp(p, pObj, pId);
   }
   return;
 }
@@ -2752,19 +2752,19 @@ void pik_set_clrprop(Pik *p, PToken *pId, PNum rClr){
 ** a default.
 */
 void pik_set_dashed(Pik *p, PToken *pId, PNum *pVal){
-  PElem *pElem = p->cur;
+  PObj *pObj = p->cur;
   PNum v;
   switch( pId->eType ){
     case T_DOTTED:  {
       v = pVal==0 ? pik_value(p,"dashwid",7,0) : *pVal;
-      pElem->dotted = v;
-      pElem->dashed = 0.0;
+      pObj->dotted = v;
+      pObj->dashed = 0.0;
       break;
     }
     case T_DASHED:  {
       v = pVal==0 ? pik_value(p,"dashwid",7,0) : *pVal;
-      pElem->dashed = v;
-      pElem->dotted = 0.0;
+      pObj->dashed = v;
+      pObj->dotted = 0.0;
       break;
     }
   }
@@ -2786,14 +2786,14 @@ static void pik_reset_samepath(Pik *p){
 ** the information in the ptTo field over onto the path and into ptFrom
 ** resetting the ptTo.
 */
-static void pik_then(Pik *p, PToken *pToken, PElem *pElem){
+static void pik_then(Pik *p, PToken *pToken, PObj *pObj){
   int n;
-  if( !pElem->type->isLine ){
+  if( !pObj->type->isLine ){
     pik_error(p, pToken, "use with line-oriented objects only");
     return;
   }
   n = p->nTPath - 1;
-  if( n<1 && (pElem->mProp & A_FROM)==0 ){
+  if( n<1 && (pObj->mProp & A_FROM)==0 ){
     pik_error(p, pToken, "no prior path points");
     return;
   }
@@ -2815,18 +2815,18 @@ static int pik_next_rpath(Pik *p, PToken *pErr){
   return n;
 }
 
-/* Add a direction term to an element.  "up 0.5", or "left 3", or "down"
+/* Add a direction term to an object.  "up 0.5", or "left 3", or "down"
 ** or "down 50%".
 */
 static void pik_add_direction(Pik *p, PToken *pDir, PRel *pVal){
-  PElem *pElem = p->cur;
+  PObj *pObj = p->cur;
   int n;
   int dir;
-  if( !pElem->type->isLine ){
+  if( !pObj->type->isLine ){
     if( pDir ){
       pik_error(p, pDir, "use with line-oriented objects only");
     }else{
-      PToken x = pik_next_semantic_token(&pElem->errTok);
+      PToken x = pik_next_semantic_token(&pObj->errTok);
       pik_error(p, &x, "syntax error");
     }
     return;
@@ -2841,26 +2841,26 @@ static void pik_add_direction(Pik *p, PToken *pDir, PRel *pVal){
   switch( dir ){
     case DIR_UP:
        if( p->mTPath & 2 ) n = pik_next_rpath(p, pDir);
-       p->aTPath[n].y += pVal->rAbs + pElem->h*pVal->rRel;
+       p->aTPath[n].y += pVal->rAbs + pObj->h*pVal->rRel;
        p->mTPath |= 2;
        break;
     case DIR_DOWN:
        if( p->mTPath & 2 ) n = pik_next_rpath(p, pDir);
-       p->aTPath[n].y -= pVal->rAbs + pElem->h*pVal->rRel;
+       p->aTPath[n].y -= pVal->rAbs + pObj->h*pVal->rRel;
        p->mTPath |= 2;
        break;
     case DIR_RIGHT:
        if( p->mTPath & 1 ) n = pik_next_rpath(p, pDir);
-       p->aTPath[n].x += pVal->rAbs + pElem->w*pVal->rRel;
+       p->aTPath[n].x += pVal->rAbs + pObj->w*pVal->rRel;
        p->mTPath |= 1;
        break;
     case DIR_LEFT:
        if( p->mTPath & 1 ) n = pik_next_rpath(p, pDir);
-       p->aTPath[n].x -= pVal->rAbs + pElem->w*pVal->rRel;
+       p->aTPath[n].x -= pVal->rAbs + pObj->w*pVal->rRel;
        p->mTPath |= 1;
        break;
   }
-  pElem->outDir = dir;
+  pObj->outDir = dir;
 }
 
 /* Process a movement attribute of one of these forms:
@@ -2877,10 +2877,10 @@ static void pik_move_hdg(
   PToken *pEdgept,     /* EDGEPT keyword "ne", "sw", etc... */
   PToken *pErr         /* Token to use for error messages */
 ){
-  PElem *pElem = p->cur;
+  PObj *pObj = p->cur;
   int n;
   PNum rDist = pDist->rAbs + pik_value(p,"linewid",7,0)*pDist->rRel;
-  if( !pElem->type->isLine ){
+  if( !pObj->type->isLine ){
     pik_error(p, pErr, "use with line-oriented objects only");
     return;
   }
@@ -2900,15 +2900,15 @@ static void pik_move_hdg(
     rHdg = pik_hdg_angle[pEdgept->eEdge];
   }
   if( rHdg<=45.0 ){
-    pElem->outDir = DIR_UP;
+    pObj->outDir = DIR_UP;
   }else if( rHdg<=135.0 ){
-    pElem->outDir = DIR_RIGHT;
+    pObj->outDir = DIR_RIGHT;
   }else if( rHdg<=225.0 ){
-    pElem->outDir = DIR_DOWN;
+    pObj->outDir = DIR_DOWN;
   }else if( rHdg<=315.0 ){
-    pElem->outDir = DIR_LEFT;
+    pObj->outDir = DIR_LEFT;
   }else{
-    pElem->outDir = DIR_UP;
+    pObj->outDir = DIR_UP;
   }
   rHdg *= 0.017453292519943295769;  /* degrees to radians */
   p->aTPath[n].x += rDist*sin(rHdg);
@@ -2924,9 +2924,9 @@ static void pik_move_hdg(
 ** the point specified by pPoint.
 */
 static void pik_evenwith(Pik *p, PToken *pDir, PPoint *pPlace){
-  PElem *pElem = p->cur;
+  PObj *pObj = p->cur;
   int n;
-  if( !pElem->type->isLine ){
+  if( !pObj->type->isLine ){
     pik_error(p, pDir, "use with line-oriented objects only");
     return;
   }
@@ -2950,21 +2950,21 @@ static void pik_evenwith(Pik *p, PToken *pDir, PPoint *pPlace){
        p->mTPath |= 1;
        break;
   }
-  pElem->outDir = pDir->eCode;
+  pObj->outDir = pDir->eCode;
 }
 
-/* Set the "from" of an element
+/* Set the "from" of an object
 */
-static void pik_set_from(Pik *p, PElem *pElem, PToken *pTk, PPoint *pPt){
-  if( !pElem->type->isLine ){
+static void pik_set_from(Pik *p, PObj *pObj, PToken *pTk, PPoint *pPt){
+  if( !pObj->type->isLine ){
     pik_error(p, pTk, "use \"at\" to position this object");
     return;
   }
-  if( pElem->mProp & A_FROM ){
+  if( pObj->mProp & A_FROM ){
     pik_error(p, pTk, "line start location already fixed");
     return;
   }
-  if( pElem->bClose ){
+  if( pObj->bClose ){
     pik_error(p, pTk, "polygon is closed");
     return;
   }
@@ -2979,18 +2979,18 @@ static void pik_set_from(Pik *p, PElem *pElem, PToken *pTk, PPoint *pPt){
   }
   p->aTPath[0] = *pPt;
   p->mTPath = 3;
-  pElem->mProp |= A_FROM;
+  pObj->mProp |= A_FROM;
 }
 
-/* Set the "to" of an element
+/* Set the "to" of an object
 */
-static void pik_add_to(Pik *p, PElem *pElem, PToken *pTk, PPoint *pPt){
+static void pik_add_to(Pik *p, PObj *pObj, PToken *pTk, PPoint *pPt){
   int n = p->nTPath-1;
-  if( !pElem->type->isLine ){
+  if( !pObj->type->isLine ){
     pik_error(p, pTk, "use \"at\" to position this object");
     return;
   }
-  if( pElem->bClose ){
+  if( pObj->bClose ){
     pik_error(p, pTk, "polygon is closed");
     return;
   }
@@ -3002,61 +3002,61 @@ static void pik_add_to(Pik *p, PElem *pElem, PToken *pTk, PPoint *pPt){
 }
 
 static void pik_close_path(Pik *p, PToken *pErr){
-  PElem *pElem = p->cur;
+  PObj *pObj = p->cur;
   if( p->nTPath<3 ){
     pik_error(p, pErr,
       "need at least 3 vertexes in order to close the polygon");
     return;
   }
-  if( pElem->bClose ){
+  if( pObj->bClose ){
     pik_error(p, pErr, "polygon already closed");
     return;
   }
-  pElem->bClose = 1;
+  pObj->bClose = 1;
 }
 
-/* Lower the layer of the current element so that it is behind the
-** given element.
+/* Lower the layer of the current object so that it is behind the
+** given object.
 */
-static void pik_behind(Pik *p, PElem *pOther){
-  PElem *pElem = p->cur;
-  if( p->nErr==0 && pElem->iLayer>=pOther->iLayer ){
-    pElem->iLayer = pOther->iLayer - 1;
+static void pik_behind(Pik *p, PObj *pOther){
+  PObj *pObj = p->cur;
+  if( p->nErr==0 && pObj->iLayer>=pOther->iLayer ){
+    pObj->iLayer = pOther->iLayer - 1;
   }
 }
 
 
-/* Set the "at" of an element
+/* Set the "at" of an object
 */
 static void pik_set_at(Pik *p, PToken *pEdge, PPoint *pAt, PToken *pErrTok){
-  PElem *pElem;
+  PObj *pObj;
   if( p->nErr ) return;
-  pElem = p->cur;
+  pObj = p->cur;
 
-  if( pElem->type->isLine ){
+  if( pObj->type->isLine ){
     pik_error(p, pErrTok, "use \"from\" and \"to\" to position this object");
     return;
   }
-  if( pElem->mProp & A_AT ){
+  if( pObj->mProp & A_AT ){
     pik_error(p, pErrTok, "location fixed by prior \"at\"");
     return;
   }
-  pElem->mProp |= A_AT;
-  pElem->eWith = pEdge ? pEdge->eEdge : CP_C;
-  pElem->with = *pAt;
+  pObj->mProp |= A_AT;
+  pObj->eWith = pEdge ? pEdge->eEdge : CP_C;
+  pObj->with = *pAt;
 }
 
 /*
-** Try to add a text attribute to an element
+** Try to add a text attribute to an object
 */
 static void pik_add_txt(Pik *p, PToken *pTxt, int iPos){
-  PElem *pElem = p->cur;
+  PObj *pObj = p->cur;
   PToken *pT;
-  if( pElem->nTxt >= count(pElem->aTxt) ){
+  if( pObj->nTxt >= count(pObj->aTxt) ){
     pik_error(p, pTxt, "too many text terms");
     return;
   }
-  pT = &pElem->aTxt[pElem->nTxt++];
+  pT = &pObj->aTxt[pObj->nTxt++];
   *pT = *pTxt;
   pT->eCode = iPos;
 }
@@ -3255,23 +3255,23 @@ static int pik_text_length(const PToken *pToken){
 **    (5) This only works for attributes that have an xFit method.
 */
 static void pik_size_to_fit(Pik *p, PToken *pFit){
-  PElem *pElem;
+  PObj *pObj;
   PNum w, h;
   PBox bbox;
   if( p->nErr ) return;
-  pElem = p->cur;
+  pObj = p->cur;
 
-  if( pElem->nTxt==0 ){
+  if( pObj->nTxt==0 ){
     pik_error(0, pFit, "no text to fit to");
     return;
   }
-  if( pElem->type->xFit==0 ) return;
+  if( pObj->type->xFit==0 ) return;
   pik_bbox_init(&bbox);
   pik_compute_layout_settings(p);
-  pik_append_txt(p, pElem, &bbox);
+  pik_append_txt(p, pObj, &bbox);
   w = (bbox.ne.x - bbox.sw.x) + p->charWidth;
   h = (bbox.ne.y - bbox.sw.y) + 0.5*p->charHeight;
-  pElem->type->xFit(p, pElem, w, h);
+  pObj->type->xFit(p, pObj, w, h);
 }
 
 /* Set a local variable name to "val".
@@ -3428,11 +3428,11 @@ static short int pik_nth_value(Pik *p, PToken *pNth){
   return i;
 }
 
-/* Search for the NTH element.
+/* Search for the NTH object.
 **
-** If pBasis is not NULL then it should be a [] element.  Use the
-** sublist of that [] element for the search.  If pBasis is not a []
-** element, then throw an error.
+** If pBasis is not NULL then it should be a [] object.  Use the
+** sublist of that [] object for the search.  If pBasis is not a []
+** object, then throw an error.
 **
 ** The pNth token describes the N-th search.  The pNth->eCode value
 ** is one more than the number of items to skip.  It is negative
@@ -3443,8 +3443,8 @@ static short int pik_nth_value(Pik *p, PToken *pNth){
 **
 ** Raise an error if the item is not found.
 */
-static PElem *pik_find_nth(Pik *p, PElem *pBasis, PToken *pNth){
-  PEList *pList;
+static PObj *pik_find_nth(Pik *p, PObj *pBasis, PToken *pNth){
+  PList *pList;
   int i, n;
   const PClass *pClass;
   if( pBasis==0 ){
@@ -3470,30 +3470,30 @@ static PElem *pik_find_nth(Pik *p, PElem *pBasis, PToken *pNth){
   n = pNth->eCode;
   if( n<0 ){
     for(i=pList->n-1; i>=0; i--){
-      PElem *pElem = pList->a[i];
-      if( pClass && pElem->type!=pClass ) continue;
+      PObj *pObj = pList->a[i];
+      if( pClass && pObj->type!=pClass ) continue;
       n++;
-      if( n==0 ){ return pElem; }
+      if( n==0 ){ return pObj; }
     }
   }else{
     for(i=0; i<pList->n; i++){
-      PElem *pElem = pList->a[i];
-      if( pClass && pElem->type!=pClass ) continue;
+      PObj *pObj = pList->a[i];
+      if( pClass && pObj->type!=pClass ) continue;
       n--;
-      if( n==0 ){ return pElem; }
+      if( n==0 ){ return pObj; }
     }
   }
   pik_error(p, pNth, "no such object");
   return 0;
 }
 
-/* Search for an element by name.
+/* Search for an object by name.
 **
 ** Search in pBasis->pSublist if pBasis is not NULL.  If pBasis is NULL
 ** then search in p->list.
 */
-static PElem *pik_find_byname(Pik *p, PElem *pBasis, PToken *pName){
-  PEList *pList;
+static PObj *pik_find_byname(Pik *p, PObj *pBasis, PToken *pName){
+  PList *pList;
   int i, j;
   if( pBasis==0 ){
     pList = p->list;
@@ -3506,19 +3506,19 @@ static PElem *pik_find_byname(Pik *p, PElem *pBasis, PToken *pName){
   }
   /* First look explicitly tagged objects */
   for(i=pList->n-1; i>=0; i--){
-    PElem *pElem = pList->a[i];
-    if( pElem->zName && pik_token_eq(pName,pElem->zName)==0 ){
-      return pElem;
+    PObj *pObj = pList->a[i];
+    if( pObj->zName && pik_token_eq(pName,pObj->zName)==0 ){
+      return pObj;
     }
   }
   /* If not found, do a second pass looking for any object containing
   ** text which exactly matches pName */
   for(i=pList->n-1; i>=0; i--){
-    PElem *pElem = pList->a[i];
-    for(j=0; j<pElem->nTxt; j++){
-      if( pElem->aTxt[j].n==pName->n+2
-       && memcmp(pElem->aTxt[j].z+1,pName->z,pName->n)==0 ){
-        return pElem;
+    PObj *pObj = pList->a[i];
+    for(j=0; j<pObj->nTxt; j++){
+      if( pObj->aTxt[j].n==pName->n+2
+       && memcmp(pObj->aTxt[j].z+1,pName->z,pName->n)==0 ){
+        return pObj;
       }
     }
   }
@@ -3527,24 +3527,24 @@ static PElem *pik_find_byname(Pik *p, PElem *pBasis, PToken *pName){
 }
 
 /* Change most of the settings for the current object to be the
-** same as the pOther object, or the most recent element of the same
+** same as the pOther object, or the most recent object of the same
 ** type if pOther is NULL.
 */
-static void pik_same(Pik *p, PElem *pOther, PToken *pErrTok){
-  PElem *pElem = p->cur;
+static void pik_same(Pik *p, PObj *pOther, PToken *pErrTok){
+  PObj *pObj = p->cur;
   if( p->nErr ) return;
   if( pOther==0 ){
     int i;
     for(i=(p->list ? p->list->n : 0)-1; i>=0; i--){
       pOther = p->list->a[i];
-      if( pOther->type==pElem->type ) break;
+      if( pOther->type==pObj->type ) break;
     }
     if( i<0 ){
       pik_error(p, pErrTok, "no prior objects of the same type");
       return;
     }
   }
-  if( pOther->nPath && pElem->type->isLine ){
+  if( pOther->nPath && pObj->type->isLine ){
     PNum dx, dy;
     int i;
     dx = p->aTPath[0].x - pOther->aPath[0].x;
@@ -3557,49 +3557,49 @@ static void pik_same(Pik *p, PElem *pOther, PToken *pErrTok){
     p->mTPath = 3;
     p->samePath = 1;
   }
-  if( !pElem->type->isLine ){
-    pElem->w = pOther->w;
-    pElem->h = pOther->h;
+  if( !pObj->type->isLine ){
+    pObj->w = pOther->w;
+    pObj->h = pOther->h;
   }
-  pElem->rad = pOther->rad;
-  pElem->sw = pOther->sw;
-  pElem->dashed = pOther->dashed;
-  pElem->dotted = pOther->dotted;
-  pElem->fill = pOther->fill;
-  pElem->color = pOther->color;
-  pElem->cw = pOther->cw;
-  pElem->larrow = pOther->larrow;
-  pElem->rarrow = pOther->rarrow;
-  pElem->bClose = pOther->bClose;
-  pElem->bChop = pOther->bChop;
-  pElem->inDir = pOther->inDir;
-  pElem->outDir = pOther->outDir;
-  pElem->iLayer = pOther->iLayer;
+  pObj->rad = pOther->rad;
+  pObj->sw = pOther->sw;
+  pObj->dashed = pOther->dashed;
+  pObj->dotted = pOther->dotted;
+  pObj->fill = pOther->fill;
+  pObj->color = pOther->color;
+  pObj->cw = pOther->cw;
+  pObj->larrow = pOther->larrow;
+  pObj->rarrow = pOther->rarrow;
+  pObj->bClose = pOther->bClose;
+  pObj->bChop = pOther->bChop;
+  pObj->inDir = pOther->inDir;
+  pObj->outDir = pOther->outDir;
+  pObj->iLayer = pOther->iLayer;
 }
 
 
-/* Return a "Place" associated with element pElem.  If pEdge is NULL
+/* Return a "Place" associated with object pObj.  If pEdge is NULL
 ** return the center of the object.  Otherwise, return the corner
 ** described by pEdge.
 */
-static PPoint pik_place_of_elem(Pik *p, PElem *pElem, PToken *pEdge){
+static PPoint pik_place_of_elem(Pik *p, PObj *pObj, PToken *pEdge){
   PPoint pt = cZeroPoint;
   const PClass *pClass;
-  if( pElem==0 ) return pt;
+  if( pObj==0 ) return pt;
   if( pEdge==0 ){
-    return pElem->ptAt;
+    return pObj->ptAt;
   }
-  pClass = pElem->type;
+  pClass = pObj->type;
   if( pEdge->eType==T_EDGEPT || (pEdge->eEdge>0 && pEdge->eEdge<CP_END) ){
-    pt = pClass->xOffset(p, pElem, pEdge->eEdge);
-    pt.x += pElem->ptAt.x;
-    pt.y += pElem->ptAt.y;
+    pt = pClass->xOffset(p, pObj, pEdge->eEdge);
+    pt.x += pObj->ptAt.x;
+    pt.y += pObj->ptAt.y;
     return pt;
   }
   if( pEdge->eType==T_START ){
-    return pElem->ptEnter;
+    return pObj->ptEnter;
   }else{
-    return pElem->ptExit;
+    return pObj->ptExit;
   }
 }
 
@@ -3632,7 +3632,7 @@ static PPoint pik_position_at_hdg(PNum dist, PToken *pD, PPoint pt){
 
 /* Return the coordinates for the n-th vertex of a line.
 */
-static PPoint pik_nth_vertex(Pik *p, PToken *pNth, PToken *pErr, PElem *pObj){
+static PPoint pik_nth_vertex(Pik *p, PToken *pNth, PToken *pErr, PObj *pObj){
   static const PPoint zero;
   int n;
   if( p->nErr || pObj==0 ) return p->aTPath[0];
@@ -3650,24 +3650,24 @@ static PPoint pik_nth_vertex(Pik *p, PToken *pNth, PToken *pErr, PElem *pObj){
 
 /* Return the value of a property of an object.
 */
-static PNum pik_property_of(PElem *pElem, PToken *pProp){
+static PNum pik_property_of(PObj *pObj, PToken *pProp){
   PNum v = 0.0;
   switch( pProp->eType ){
-    case T_HEIGHT:    v = pElem->h;            break;
-    case T_WIDTH:     v = pElem->w;            break;
-    case T_RADIUS:    v = pElem->rad;          break;
-    case T_DIAMETER:  v = pElem->rad*2.0;      break;
-    case T_THICKNESS: v = pElem->sw;           break;
-    case T_DASHED:    v = pElem->dashed;       break;
-    case T_DOTTED:    v = pElem->dotted;       break;
-    case T_FILL:      v = pElem->fill;         break;
-    case T_COLOR:     v = pElem->color;        break;
-    case T_X:         v = pElem->ptAt.x;       break;
-    case T_Y:         v = pElem->ptAt.y;       break;
-    case T_TOP:       v = pElem->bbox.ne.y;    break;
-    case T_BOTTOM:    v = pElem->bbox.sw.y;    break;
-    case T_LEFT:      v = pElem->bbox.sw.x;    break;
-    case T_RIGHT:     v = pElem->bbox.ne.x;    break;
+    case T_HEIGHT:    v = pObj->h;            break;
+    case T_WIDTH:     v = pObj->w;            break;
+    case T_RADIUS:    v = pObj->rad;          break;
+    case T_DIAMETER:  v = pObj->rad*2.0;      break;
+    case T_THICKNESS: v = pObj->sw;           break;
+    case T_DASHED:    v = pObj->dashed;       break;
+    case T_DOTTED:    v = pObj->dotted;       break;
+    case T_FILL:      v = pObj->fill;         break;
+    case T_COLOR:     v = pObj->color;        break;
+    case T_X:         v = pObj->ptAt.x;       break;
+    case T_Y:         v = pObj->ptAt.y;       break;
+    case T_TOP:       v = pObj->bbox.ne.y;    break;
+    case T_BOTTOM:    v = pObj->bbox.sw.y;    break;
+    case T_LEFT:      v = pObj->bbox.sw.x;    break;
+    case T_RIGHT:     v = pObj->bbox.ne.x;    break;
   }
   return v;
 }
@@ -3696,18 +3696,18 @@ static PNum pik_func(Pik *p, PToken *pFunc, PNum x, PNum y){
   return v;
 }
 
-/* Attach a name to an element
+/* Attach a name to an object
 */
-static void pik_elem_setname(Pik *p, PElem *pElem, PToken *pName){
-  if( pElem==0 ) return;
+static void pik_elem_setname(Pik *p, PObj *pObj, PToken *pName){
+  if( pObj==0 ) return;
   if( pName==0 ) return;
-  free(pElem->zName);
-  pElem->zName = malloc(pName->n+1);
-  if( pElem->zName==0 ){
+  free(pObj->zName);
+  pObj->zName = malloc(pName->n+1);
+  if( pObj->zName==0 ){
     pik_error(p,0,0);
   }else{
-    memcpy(pElem->zName,pName->z,pName->n);
-    pElem->zName[pName->n] = 0;
+    memcpy(pObj->zName,pName->z,pName->n);
+    pObj->zName[pName->n] = 0;
   }
   return;
 }
@@ -3716,19 +3716,19 @@ static void pik_elem_setname(Pik *p, PElem *pElem, PToken *pName){
 ** Search for object located at *pCenter that has an xChop method.
 ** Return a pointer to the object, or NULL if not found.
 */
-static PElem *pik_find_chopper(PEList *pList, PPoint *pCenter){
+static PObj *pik_find_chopper(PList *pList, PPoint *pCenter){
   int i;
   if( pList==0 ) return 0;
   for(i=pList->n-1; i>=0; i--){
-    PElem *pElem = pList->a[i];
-    if( pElem->type->xChop!=0
-     && pElem->ptAt.x==pCenter->x
-     && pElem->ptAt.y==pCenter->y
+    PObj *pObj = pList->a[i];
+    if( pObj->type->xChop!=0
+     && pObj->ptAt.x==pCenter->x
+     && pObj->ptAt.y==pCenter->y
     ){
-      return pElem;
-    }else if( pElem->pSublist ){
-      pElem = pik_find_chopper(pElem->pSublist,pCenter);
-      if( pElem ) return pElem;
+      return pObj;
+    }else if( pObj->pSublist ){
+      pObj = pik_find_chopper(pObj->pSublist,pCenter);
+      if( pObj ) return pObj;
     }
   }
   return 0;
@@ -3742,76 +3742,76 @@ static PElem *pik_find_chopper(PEList *pList, PPoint *pCenter){
 ** of pFrom.
 */
 static void pik_autochop(Pik *p, PPoint *pFrom, PPoint *pTo){
-  PElem *pElem = pik_find_chopper(p->list, pTo);
-  if( pElem ){
-    *pTo = pElem->type->xChop(p, pElem, pFrom);
+  PObj *pObj = pik_find_chopper(p->list, pTo);
+  if( pObj ){
+    *pTo = pObj->type->xChop(p, pObj, pFrom);
   }
 }
 
 /* This routine runs after all attributes have been received
-** on an element.
+** on an object.
 */
-static void pik_after_adding_attributes(Pik *p, PElem *pElem){
+static void pik_after_adding_attributes(Pik *p, PObj *pObj){
   int i;
   PPoint ofst;
   PNum dx, dy;
 
   if( p->nErr ) return;
 
-  /* Position block elements */
-  if( pElem->type->isLine==0 ){
-    ofst = pik_elem_offset(p, pElem, pElem->eWith);
-    dx = (pElem->with.x - ofst.x) - pElem->ptAt.x;
-    dy = (pElem->with.y - ofst.y) - pElem->ptAt.y;
+  /* Position block objects */
+  if( pObj->type->isLine==0 ){
+    ofst = pik_elem_offset(p, pObj, pObj->eWith);
+    dx = (pObj->with.x - ofst.x) - pObj->ptAt.x;
+    dy = (pObj->with.y - ofst.y) - pObj->ptAt.y;
     if( dx!=0 || dy!=0 ){
-      pik_elem_move(pElem, dx, dy);
+      pik_elem_move(pObj, dx, dy);
     }
   }
 
   /* For a line object with no movement specified, a single movement
   ** of the default length in the current direction
   */
-  if( pElem->type->isLine && p->nTPath<2 ){
+  if( pObj->type->isLine && p->nTPath<2 ){
     pik_next_rpath(p, 0);
     assert( p->nTPath==2 );
-    switch( pElem->inDir ){
-      default:        p->aTPath[1].x += pElem->w; break;
-      case DIR_DOWN:  p->aTPath[1].y -= pElem->h; break;
-      case DIR_LEFT:  p->aTPath[1].x -= pElem->w; break;
-      case DIR_UP:    p->aTPath[1].y += pElem->h; break;
+    switch( pObj->inDir ){
+      default:        p->aTPath[1].x += pObj->w; break;
+      case DIR_DOWN:  p->aTPath[1].y -= pObj->h; break;
+      case DIR_LEFT:  p->aTPath[1].x -= pObj->w; break;
+      case DIR_UP:    p->aTPath[1].y += pObj->h; break;
     }
-    if( pElem->type->xInit==arcInit ){
-      p->eDir = pElem->outDir = (pElem->inDir + (pElem->cw ? 1 : 3))%4;
-      switch( pElem->outDir ){
-        default:        p->aTPath[1].x += pElem->w; break;
-        case DIR_DOWN:  p->aTPath[1].y -= pElem->h; break;
-        case DIR_LEFT:  p->aTPath[1].x -= pElem->w; break;
-        case DIR_UP:    p->aTPath[1].y += pElem->h; break;
+    if( pObj->type->xInit==arcInit ){
+      p->eDir = pObj->outDir = (pObj->inDir + (pObj->cw ? 1 : 3))%4;
+      switch( pObj->outDir ){
+        default:        p->aTPath[1].x += pObj->w; break;
+        case DIR_DOWN:  p->aTPath[1].y -= pObj->h; break;
+        case DIR_LEFT:  p->aTPath[1].x -= pObj->w; break;
+        case DIR_UP:    p->aTPath[1].y += pObj->h; break;
       }
     }
   }
 
   /* Initialize the bounding box prior to running xCheck */
-  pik_bbox_init(&pElem->bbox);
+  pik_bbox_init(&pObj->bbox);
 
   /* Run object-specific code */
-  if( pElem->type->xCheck!=0 ){
-    pElem->type->xCheck(p,pElem);
+  if( pObj->type->xCheck!=0 ){
+    pObj->type->xCheck(p,pObj);
     if( p->nErr ) return;
   }
 
   /* Compute final bounding box, entry and exit points, center
-  ** point (ptAt) and path for the element
+  ** point (ptAt) and path for the object
   */
-  if( pElem->type->isLine ){
-    pElem->aPath = malloc( sizeof(PPoint)*p->nTPath );
-    if( pElem->aPath==0 ){
+  if( pObj->type->isLine ){
+    pObj->aPath = malloc( sizeof(PPoint)*p->nTPath );
+    if( pObj->aPath==0 ){
       pik_error(p, 0, 0);
       return;
     }else{
-      pElem->nPath = p->nTPath;
+      pObj->nPath = p->nTPath;
       for(i=0; i<p->nTPath; i++){
-        pElem->aPath[i] = p->aTPath[i];
+        pObj->aPath[i] = p->aTPath[i];
       }
     }
 
@@ -3819,14 +3819,14 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
     ** If the line goes to the center of an object with an
     ** xChop method, then use the xChop method to trim the line.
     */
-    if( pElem->bChop && pElem->nPath>=2 ){
-      int n = pElem->nPath;
-      pik_autochop(p, &pElem->aPath[n-2], &pElem->aPath[n-1]);
-      pik_autochop(p, &pElem->aPath[1], &pElem->aPath[0]);
+    if( pObj->bChop && pObj->nPath>=2 ){
+      int n = pObj->nPath;
+      pik_autochop(p, &pObj->aPath[n-2], &pObj->aPath[n-1]);
+      pik_autochop(p, &pObj->aPath[1], &pObj->aPath[0]);
     }
 
-    pElem->ptEnter = pElem->aPath[0];
-    pElem->ptExit = pElem->aPath[pElem->nPath-1];
+    pObj->ptEnter = pObj->aPath[0];
+    pObj->ptExit = pObj->aPath[pObj->nPath-1];
 
     /* Compute the center of the line based on the bounding box over
     ** the vertexes.  This is a difference from PIC.  In Pikchr, the
@@ -3834,84 +3834,84 @@ static void pik_after_adding_attributes(Pik *p, PElem *pElem){
     ** center of a line is halfway between its .start and .end.  For
     ** straight lines, this is the same point, but for multi-segment
     ** lines the result is usually diferent */
-    for(i=0; i<pElem->nPath; i++){
-      pik_bbox_add_xy(&pElem->bbox, pElem->aPath[i].x, pElem->aPath[i].y);
+    for(i=0; i<pObj->nPath; i++){
+      pik_bbox_add_xy(&pObj->bbox, pObj->aPath[i].x, pObj->aPath[i].y);
     }
-    pElem->ptAt.x = (pElem->bbox.ne.x + pElem->bbox.sw.x)/2.0;
-    pElem->ptAt.y = (pElem->bbox.ne.y + pElem->bbox.sw.y)/2.0;
+    pObj->ptAt.x = (pObj->bbox.ne.x + pObj->bbox.sw.x)/2.0;
+    pObj->ptAt.y = (pObj->bbox.ne.y + pObj->bbox.sw.y)/2.0;
 
     /* Reset the width and height of the object to be the width and height
     ** of the bounding box over vertexes */
-    pElem->w = pElem->bbox.ne.x - pElem->bbox.sw.x;
-    pElem->h = pElem->bbox.ne.y - pElem->bbox.sw.y;
+    pObj->w = pObj->bbox.ne.x - pObj->bbox.sw.x;
+    pObj->h = pObj->bbox.ne.y - pObj->bbox.sw.y;
 
     /* If this is a polygon (if it has the "close" attribute), then
     ** adjust the exit point */
-    if( pElem->bClose ){
+    if( pObj->bClose ){
       /* For "closed" lines, the .end is one of the .e, .s, .w, or .n
       ** points of the bounding box, as with block objects. */
-      pik_elem_set_exit(pElem, pElem->inDir);
+      pik_elem_set_exit(pObj, pObj->inDir);
     }
   }else{
-    PNum w2 = pElem->w/2.0;
-    PNum h2 = pElem->h/2.0;
-    pElem->ptEnter = pElem->ptAt;
-    pElem->ptExit = pElem->ptAt;
-    switch( pElem->inDir ){
-      default:         pElem->ptEnter.x -= w2;  break;
-      case DIR_LEFT:   pElem->ptEnter.x += w2;  break;
-      case DIR_UP:     pElem->ptEnter.y -= h2;  break;
-      case DIR_DOWN:   pElem->ptEnter.y += h2;  break;
+    PNum w2 = pObj->w/2.0;
+    PNum h2 = pObj->h/2.0;
+    pObj->ptEnter = pObj->ptAt;
+    pObj->ptExit = pObj->ptAt;
+    switch( pObj->inDir ){
+      default:         pObj->ptEnter.x -= w2;  break;
+      case DIR_LEFT:   pObj->ptEnter.x += w2;  break;
+      case DIR_UP:     pObj->ptEnter.y -= h2;  break;
+      case DIR_DOWN:   pObj->ptEnter.y += h2;  break;
     }
-    switch( pElem->outDir ){
-      default:         pElem->ptExit.x += w2;  break;
-      case DIR_LEFT:   pElem->ptExit.x -= w2;  break;
-      case DIR_UP:     pElem->ptExit.y += h2;  break;
-      case DIR_DOWN:   pElem->ptExit.y -= h2;  break;
+    switch( pObj->outDir ){
+      default:         pObj->ptExit.x += w2;  break;
+      case DIR_LEFT:   pObj->ptExit.x -= w2;  break;
+      case DIR_UP:     pObj->ptExit.y += h2;  break;
+      case DIR_DOWN:   pObj->ptExit.y -= h2;  break;
     }
-    pik_bbox_add_xy(&pElem->bbox, pElem->ptAt.x - w2, pElem->ptAt.y - h2);
-    pik_bbox_add_xy(&pElem->bbox, pElem->ptAt.x + w2, pElem->ptAt.y + h2);
+    pik_bbox_add_xy(&pObj->bbox, pObj->ptAt.x - w2, pObj->ptAt.y - h2);
+    pik_bbox_add_xy(&pObj->bbox, pObj->ptAt.x + w2, pObj->ptAt.y + h2);
   }
-  p->eDir = pElem->outDir;
+  p->eDir = pObj->outDir;
 }
 
-/* Show basic information about each element as a comment in the
+/* Show basic information about each object as a comment in the
 ** generated HTML.  Used for testing and debugging.  Activated
 ** by the (undocumented) "debug = 1;"
 ** command.
 */
-static void pik_elem_render(Pik *p, PElem *pElem){
+static void pik_elem_render(Pik *p, PObj *pObj){
   char *zDir;
-  if( pElem==0 ) return;
+  if( pObj==0 ) return;
   pik_append(p,"<!-- ", -1);
-  if( pElem->zName ){
-    pik_append_text(p, pElem->zName, -1, 0);
+  if( pObj->zName ){
+    pik_append_text(p, pObj->zName, -1, 0);
     pik_append(p, ": ", 2);
   }
-  pik_append_text(p, pElem->type->zName, -1, 0);
-  if( pElem->nTxt ){
+  pik_append_text(p, pObj->type->zName, -1, 0);
+  if( pObj->nTxt ){
     pik_append(p, " \"", 2);
-    pik_append_text(p, pElem->aTxt[0].z+1, pElem->aTxt[0].n-2, 1);
+    pik_append_text(p, pObj->aTxt[0].z+1, pObj->aTxt[0].n-2, 1);
     pik_append(p, "\"", 1);
   }
-  pik_append_num(p, " w=", pElem->w);
-  pik_append_num(p, " h=", pElem->h);
-  pik_append_point(p, " center=", &pElem->ptAt);
-  pik_append_point(p, " enter=", &pElem->ptEnter);
-  switch( pElem->outDir ){
+  pik_append_num(p, " w=", pObj->w);
+  pik_append_num(p, " h=", pObj->h);
+  pik_append_point(p, " center=", &pObj->ptAt);
+  pik_append_point(p, " enter=", &pObj->ptEnter);
+  switch( pObj->outDir ){
     default:        zDir = " right";  break;
     case DIR_LEFT:  zDir = " left";   break;
     case DIR_UP:    zDir = " up";     break;
     case DIR_DOWN:  zDir = " down";   break;
   }
-  pik_append_point(p, " exit=", &pElem->ptExit);
+  pik_append_point(p, " exit=", &pObj->ptExit);
   pik_append(p, zDir, -1);
   pik_append(p, " -->\n", -1);
 }
 
-/* Render a list of elements
+/* Render a list of objects
 */
-void pik_elist_render(Pik *p, PEList *pEList){
+void pik_elist_render(Pik *p, PList *pList){
   int i;
   int iNextLayer = 0;
   int iThisLayer;
@@ -3923,23 +3923,23 @@ void pik_elist_render(Pik *p, PEList *pEList){
     bMoreToDo = 0;
     iThisLayer = iNextLayer;
     iNextLayer = 0x7fffffff;
-    for(i=0; i<pEList->n; i++){
-      PElem *pElem = pEList->a[i];
-      if( pElem->iLayer>iThisLayer ){
-        if( pElem->iLayer<iNextLayer ) iNextLayer = pElem->iLayer;
+    for(i=0; i<pList->n; i++){
+      PObj *pObj = pList->a[i];
+      if( pObj->iLayer>iThisLayer ){
+        if( pObj->iLayer<iNextLayer ) iNextLayer = pObj->iLayer;
         bMoreToDo = 1;
         continue; /* Defer until another round */
-      }else if( pElem->iLayer<iThisLayer ){
+      }else if( pObj->iLayer<iThisLayer ){
         continue;
       }
-      void (*xRender)(Pik*,PElem*);
-      if( mDebug & 1 ) pik_elem_render(p, pElem);
-      xRender = pElem->type->xRender;
+      void (*xRender)(Pik*,PObj*);
+      if( mDebug & 1 ) pik_elem_render(p, pObj);
+      xRender = pObj->type->xRender;
       if( xRender ){
-        xRender(p, pElem);
+        xRender(p, pObj);
       }
-      if( pElem->pSublist ){
-        pik_elist_render(p, pElem->pSublist);
+      if( pObj->pSublist ){
+        pik_elist_render(p, pObj->pSublist);
       }
     }
   }while( bMoreToDo );
@@ -3948,7 +3948,7 @@ void pik_elist_render(Pik *p, PEList *pEList){
   ** and paint a dot at every label location */
   colorLabel = pik_value(p, "debug_label_color", 17, &miss);
   if( miss==0 && colorLabel>=0.0 ){
-    PElem dot;
+    PObj dot;
     memset(&dot, 0, sizeof(dot));
     dot.type = &noopClass;
     dot.rad = 0.015;
@@ -3957,37 +3957,37 @@ void pik_elist_render(Pik *p, PEList *pEList){
     dot.color = colorLabel;
     dot.nTxt = 1;
     dot.aTxt[0].eCode = TP_ABOVE;
-    for(i=0; i<pEList->n; i++){
-      PElem *pElem = pEList->a[i];
-      if( pElem->zName==0 ) continue;
-      dot.ptAt = pElem->ptAt;
-      dot.aTxt[0].z = pElem->zName;
-      dot.aTxt[0].n = (int)strlen(pElem->zName);
+    for(i=0; i<pList->n; i++){
+      PObj *pObj = pList->a[i];
+      if( pObj->zName==0 ) continue;
+      dot.ptAt = pObj->ptAt;
+      dot.aTxt[0].z = pObj->zName;
+      dot.aTxt[0].n = (int)strlen(pObj->zName);
       dotRender(p, &dot);
     }
   }
 }
 
-/* Add all elements of the list pEList to the bounding box
+/* Add all objects of the list pList to the bounding box
 */
-static void pik_bbox_add_elist(Pik *p, PEList *pEList, PNum wArrow){
+static void pik_bbox_add_elist(Pik *p, PList *pList, PNum wArrow){
   int i;
-  for(i=0; i<pEList->n; i++){
-    PElem *pElem = pEList->a[i];
-    if( pElem->sw>0.0 ) pik_bbox_addbox(&p->bbox, &pElem->bbox);
-    pik_append_txt(p, pElem, &p->bbox);
-    if( pElem->pSublist ) pik_bbox_add_elist(p, pElem->pSublist, wArrow);
+  for(i=0; i<pList->n; i++){
+    PObj *pObj = pList->a[i];
+    if( pObj->sw>0.0 ) pik_bbox_addbox(&p->bbox, &pObj->bbox);
+    pik_append_txt(p, pObj, &p->bbox);
+    if( pObj->pSublist ) pik_bbox_add_elist(p, pObj->pSublist, wArrow);
 
 
     /* Expand the bounding box to account for arrowheads on lines */
-    if( pElem->type->isLine && pElem->nPath>0 ){
-      if( pElem->larrow ){
-        pik_bbox_addellipse(&p->bbox, pElem->aPath[0].x, pElem->aPath[0].y,
+    if( pObj->type->isLine && pObj->nPath>0 ){
+      if( pObj->larrow ){
+        pik_bbox_addellipse(&p->bbox, pObj->aPath[0].x, pObj->aPath[0].y,
                             wArrow, wArrow);
       }
-      if( pElem->rarrow ){
-        int j = pElem->nPath-1;
-        pik_bbox_addellipse(&p->bbox, pElem->aPath[j].x, pElem->aPath[j].y,
+      if( pObj->rarrow ){
+        int j = pObj->nPath-1;
+        pik_bbox_addellipse(&p->bbox, pObj->aPath[j].x, pObj->aPath[j].y,
                             wArrow, wArrow);
       }
     }
@@ -4014,11 +4014,11 @@ static void pik_compute_layout_settings(Pik *p){
   p->bLayoutVars = 1;
 }
 
-/* Render a list of elements.  Write the SVG into p->zOut.
-** Delete the input element_list before returnning.
+/* Render a list of objects.  Write the SVG into p->zOut.
+** Delete the input object_list before returnning.
 */
-static void pik_render(Pik *p, PEList *pEList){
-  if( pEList==0 ) return;
+static void pik_render(Pik *p, PList *pList){
+  if( pList==0 ) return;
   if( p->nErr==0 ){
     PNum thickness;  /* Stroke width */
     PNum margin;     /* Extra bounding box margin */
@@ -4037,7 +4037,7 @@ static void pik_render(Pik *p, PEList *pEList){
     /* Compute a bounding box over all objects so that we can know
     ** how big to declare the SVG canvas */
     pik_bbox_init(&p->bbox);
-    pik_bbox_add_elist(p, pEList, wArrow);
+    pik_bbox_add_elist(p, pList, wArrow);
 
     /* Expand the bounding box slightly to account for line thickness
     ** and the optional "margin = EXPR" setting. */
@@ -4067,13 +4067,13 @@ static void pik_render(Pik *p, PEList *pEList){
     }
     pik_append_dis(p, " viewBox=\"0 0 ",w,"");
     pik_append_dis(p, " ",h,"\">\n");
-    pik_elist_render(p, pEList);
+    pik_elist_render(p, pList);
     pik_append(p,"</svg>\n", -1);
   }else{
     p->wSVG = -1;
     p->hSVG = -1;
   }
-  pik_elist_free(p, pEList);
+  pik_elist_free(p, pList);
 }
 
 
@@ -4185,7 +4185,7 @@ static const PikWord pik_keywords[] = {
 
 /*
 ** Search a PikWordlist for the given keyword.  Return a pointer to the
-** element found.  Or return 0 if not found.
+** keyword entry found.  Or return 0 if not found.
 */
 static const PikWord *pik_find_word(
   const char *zIn,              /* Word to search for */
