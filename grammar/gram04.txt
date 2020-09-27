@@ -23,71 +23,24 @@ oval "\"arc\"" fit
 arrow to X7
 arrow to X9
 
-right
-oval "\"arrow\"" fit with .w at 1.25*$r below last oval.w
-arrow right even with X7
-line right even with X8 then up linerad
-arrow from (X1,last oval.n) down even with last oval then to last oval.w
-
-right
-oval "\"box\"" fit with .w at 1.25*$r below last oval.w
-arrow right even with X7
-line right even with X8 then up linerad
-arrow from (X1,last oval.n) down even with last oval then to last oval.w
-
-right
-oval "\"circle\"" fit with .w at 1.25*$r below last oval.w
-arrow right even with X7
-line right even with X8 then up linerad
-arrow from (X1,last oval.n) down even with last oval then to last oval.w
-
-right
-oval "\"cylinder\"" fit with .w at 1.25*$r below last oval.w
-arrow right even with X7
-line right even with X8 then up linerad
-arrow from (X1,last oval.n) down even with last oval then to last oval.w
-
-right
-oval "\"dot\"" fit with .w at 1.25*$r below last oval.w
-arrow right even with X7
-line right even with X8 then up linerad
-arrow from (X1,last oval.n) down even with last oval then to last oval.w
-
-right
-oval "\"ellipse\"" fit with .w at 1.25*$r below last oval.w
-arrow right even with X7
-line right even with X8 then up linerad
-arrow from (X1,last oval.n) down even with last oval then to last oval.w
-
-right
-oval "\"file\"" fit with .w at 1.25*$r below last oval.w
-arrow right even with X7
-line right even with X8 then up linerad
-arrow from (X1,last oval.n) down even with last oval then to last oval.w
-
-right
-oval "\"line\"" fit with .w at 1.25*$r below last oval.w
-arrow right even with X7
-line right even with X8 then up linerad
-arrow from (X1,last oval.n) down even with last oval then to last oval.w
-
-right
-oval "\"move\"" fit with .w at 1.25*$r below last oval.w
-arrow right even with X7
-line right even with X8 then up linerad
-arrow from (X1,last oval.n) down even with last oval then to last oval.w
-
-right
-oval "\"oval\"" fit with .w at 1.25*$r below last oval.w
-arrow right even with X7
-line right even with X8 then up linerad
-arrow from (X1,last oval.n) down even with last oval then to last oval.w
-
-right
-oval "\"sline\"" fit with .w at 1.25*$r below last oval.w
-arrow right even with X7
-line right even with X8 then up linerad
-arrow from (X1,last oval.n) down even with last oval then to last oval.w
+define keyword {
+  right
+  oval $1 fit with .w at 1.25*$r below last oval.w
+  arrow right even with X7
+  line right even with X8 then up linerad
+  arrow from (X1,last oval.n) down even with last oval then to last oval.w
+}
+keyword("\"arrow\"")
+keyword("\"box\"")
+keyword("\"circle\"")
+keyword("\"cylinder\"")
+keyword("\"dot\"")
+keyword("\"ellipse\"")
+keyword("\"file\"")
+keyword("\"line\"")
+keyword("\"move\"")
+keyword("\"oval\"")
+keyword("\"spline\"")
 
 right
 oval "\"text\"" fit with .w at 1.25*$r below last oval.w
