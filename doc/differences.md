@@ -398,7 +398,7 @@ accessible to random passers-by on the internet.
 The "`copy`" command is similar.  It inserts the text of arbitrary
 files on the host computer into the middle of the PIC-script.
 
-### Pikchr omits "`for`" and "`if`" statements and macros.
+### Pikchr omits "`for`" and "`if`" statements
 
 Pikchr omits all support for branching and looping.  Each Pikchr
 statement maps directly into (at most) one graphic object in the

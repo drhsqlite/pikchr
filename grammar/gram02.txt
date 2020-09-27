@@ -44,9 +44,20 @@ box "expr" italic fit
 line right until even with X9 - ($r,0) \
   then up until even with X9 then to X9
 
-# The PRINT rule
+# The macro rule
 #
 arrow right $r from X0 then down 3.75*$r then right $r
+oval "\"define\""fit
+arrow
+oval "MACRONAME" fit
+arrow
+oval "{...}" fit
+line right until even with X9-($r,0) \
+  then up even with X9 then to X9
+
+# The PRINT rule
+#
+arrow right $r from X0 then down 5.0*$r then right $r
 oval "\"print\"" fit
 arrow
 box "print-args" italic fit
@@ -55,7 +66,7 @@ line right until even with X9 - ($r,0) \
 
 # The ASSERT rule
 #
-arrow right $r from X0 then down 5.0*$r then right $r
+arrow right $r from X0 then down 6.25*$r then right $r
 oval "\"assert\"" fit
 arrow 2*arrowht
 oval "\"(\"" fit

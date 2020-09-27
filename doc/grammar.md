@@ -53,6 +53,9 @@ The following special token classes are recognized:
      additional color names of "None" and "Off" are also recognized and
      have a value of -1.
 
+  *  CODEBLOCK &rarr;   All tokens contained within nested {...}.  This
+     is only used as the body of a "define".
+
 There are many non-terminals in the grammar, but a few are more important.
 If you are new to the Pikchr language, begin by focusing on these
 six:
@@ -85,7 +88,11 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * LABEL **:** *place*
   * *direction*
   * VARIABLE *assignment-op* *expr*
+  " **define** VARIABLE CODEBLOCK
   * **print** *print-argument* (**,** *print-argument*)\*
+  * **assert (** *expr* **==** *expr* **)**
+  * **assert (** *position* **==** *position* **)**
+
 
 ## *direction*:
   * **right**

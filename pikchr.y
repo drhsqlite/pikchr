@@ -368,6 +368,9 @@ struct Pik {
   int nTPath;              /* Number of entries on aTPath[] */
   int mTPath;              /* For last entry, 1: x set,  2: y set */
   PPoint aTPath[1000];     /* Path under construction */
+  /* Error contexts */
+  unsigned int nCtx;       /* Number of error contexts */
+  PToken aCtx[25];         /* Nested error contexts */
 };
 
 
@@ -2260,6 +2263,51 @@ static void pik_append_txt(Pik *p, PObj *pObj, PBox *pBox){
   }
 }
 
+/*
+** Append text (that will go inside of a <pre>...</pre>) that
+** shows the context of an error token.
+*/
+static void pik_error_context(Pik *p, PToken *pErr, int nContext){
+  int iErrPt;           /* Index of first byte of error from start of input */
+  int iErrCol;          /* Column of the error token on its line */
+  int iStart;           /* Start position of the error context */
+  int iEnd;             /* End position of the error context */
+  int iLineno;          /* Line number of the error */
+  int iFirstLineno;     /* Line number of start of error context */
+  int i;                /* Loop counter */
+  char zLineno[20];     /* Buffer in which to generate line numbers */
+
+  iErrPt = (int)(pErr->z - p->sIn.z);
+  iLineno = 1;
+  for(i=0; i<iErrPt-1; i++){
+    if( p->sIn.z[i]=='\n' ){
+      iLineno++;
+    }
+  }
+  iStart = 0;
+  iFirstLineno = 1;
+  while( iFirstLineno+nContext<iLineno ){
+    while( p->sIn.z[iStart]!='\n' ){ iStart++; }
+    iStart++;
+    iFirstLineno++;
+  }
+  for(iEnd=iErrPt; p->sIn.z[iEnd]!=0 && p->sIn.z[iEnd]!='\n'; iEnd++){}
+  i = iStart;
+  while( iFirstLineno<=iLineno ){
+    snprintf(zLineno,sizeof(zLineno)-1,"/* %4d */  ", iFirstLineno++);
+    zLineno[sizeof(zLineno)-1] = 0;
+    pik_append(p, zLineno, -1);
+    for(i=iStart; p->sIn.z[i]!=0 && p->sIn.z[i]!='\n'; i++){}
+    pik_append_text(p, p->sIn.z+iStart, i-iStart, 0);
+    iStart = i+1;
+    pik_append(p, "\n", 1);
+  }
+  for(iErrCol=0, i=iErrPt; i>0 && p->sIn.z[i]!='\n'; iErrCol++, i--){}
+  for(i=0; i<iErrCol+11; i++){ pik_append(p, " ", 1); }
+  for(i=0; i<(int)pErr->n; i++) pik_append(p, "^", 1);
+  pik_append(p, "\n", 1);
+}
+
 
 /*
 ** Generate an error message for the output.  pErr is the token at which
@@ -2269,10 +2317,7 @@ static void pik_append_txt(Pik *p, PObj *pObj, PBox *pBox){
 ** This routine is a no-op if there has already been an error reported.
 */
 static void pik_error(Pik *p, PToken *pErr, const char *zMsg){
-  int i, j;
-  int iCol;
-  int nExtra;
-  char c;
+  int i;
   if( p==0 ) return;
   if( p->nErr ) return;
   p->nErr++;
@@ -2285,19 +2330,16 @@ static void pik_error(Pik *p, PToken *pErr, const char *zMsg){
     pik_append_text(p, zMsg, -1, 0);
     return;
   }
-  i = (int)(pErr->z - p->sIn.z);
-  for(j=i; j>0 && p->sIn.z[j-1]!='\n'; j--){}
-  iCol = i - j;
-  for(nExtra=0; (c = p->sIn.z[i+nExtra])!=0 && c!='\n'; nExtra++){}
   pik_append(p, "<div><pre>\n", -1);
-  pik_append_text(p, p->sIn.z, i+nExtra, 3);
-  pik_append(p, "\n", 1);
-  for(i=0; i<iCol; i++){ pik_append(p, " ", 1); }
-  for(i=0; i<(int)pErr->n; i++) pik_append(p, "^", 1);
-  pik_append(p, "\nERROR: ", -1);
+  pik_error_context(p, pErr, 5);
+  pik_append(p, "ERROR: ", -1);
   pik_append_text(p, zMsg, -1, 0);
   pik_append(p, "\n", 1);
-  pik_append(p, "\n</pre></div>\n", -1);
+  for(i=p->nCtx-1; i>=0; i--){
+    pik_append(p, "Called from:\n", -1);
+    pik_error_context(p, &p->aCtx[i], 0);
+  }
+  pik_append(p, "</pre></div>\n", -1);
 }
 
 /*
@@ -4683,8 +4725,16 @@ void pik_tokenize(Pik *p, PToken *pIn, yyParser *pParser, PToken *aParam){
       break;
     }else if( token.eType==T_PARAMETER ){
       /* Substitute a parameter into the input stream */
-      if( aParam && aParam[token.eCode].n>0 ){
+      if( aParam==0 || aParam[token.eCode].n==0 ){
+        continue;
+      }
+      token.n = (unsigned short)(sz & 0xffff);
+      if( p->nCtx>=count(p->aCtx) ){
+        pik_error(p, &token, "macros nested too deep");
+      }else{
+        p->aCtx[p->nCtx++] = token;
         pik_tokenize(p, &aParam[token.eCode], pParser, 0);
+        p->nCtx--;
       }
     }else if( token.eType==T_ID && (pMac = pik_find_macro(p,&token))!=0 ){
       PToken args[9];
@@ -4693,10 +4743,17 @@ void pik_tokenize(Pik *p, PToken *pIn, yyParser *pParser, PToken *aParam){
         pik_error(p, &pMac->macroName, "recursive macro definition");
         break;
       }
+      token.n = (short int)(sz & 0xffff);
+      if( p->nCtx>=count(p->aCtx) ){
+        pik_error(p, &token, "macros nested too deep");
+        break;
+      } 
       pMac->inUse = 1;
       memset(args, 0, sizeof(args));
+      p->aCtx[p->nCtx++] = token;
       sz += pik_parse_macro_args(p, pIn->z+j, pIn->n-j, args);
       pik_tokenize(p, &pMac->macroBody, pParser, args);
+      p->nCtx--;
       pMac->inUse = 0;
     }else{
 #if 0
