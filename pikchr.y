@@ -2258,6 +2258,10 @@ static void pik_append_txt(Pik *p, PObj *pObj, PBox *pBox){
       int j;
       for(j=0; j<nz && z[j]!='\\'; j++){}
       if( j ) pik_append_text(p, z, j, 1);
+      if( j<nz && (j+1==nz || z[j+1]=='\\') ){
+        pik_append(p, "&#92;", -1);
+        j++;
+      }
       nz -= j+1;
       z += j+1;
     }
