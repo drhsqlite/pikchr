@@ -151,6 +151,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **invis**|**invisible**  [&#9654;info](./invis.md)
   * **thick**                [&#9654;info](./thickthin.md)
   * **thin**                 [&#9654;info](./thickthin.md)
+  * **solid**                [&#9654;info](./thickthin.md)
   * **chop**
   * **fit**                  [&#9654;info](./fit.md)
 

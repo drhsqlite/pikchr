@@ -649,6 +649,8 @@ boolproperty ::= LRARROW.     {p->cur->larrow=1; p->cur->rarrow=1; }
 boolproperty ::= INVIS.       {p->cur->sw = 0.0;}
 boolproperty ::= THICK.       {p->cur->sw *= 1.5;}
 boolproperty ::= THIN.        {p->cur->sw *= 0.67;}
+boolproperty ::= SOLID.       {p->cur->sw = pik_value(p,"thickness",9,0);
+                               p->cur->dotted = p->cur->dashed = 0.0;}
 
 textposition(A) ::= .   {A = 0;}
 textposition(A) ::= textposition(B) 
@@ -4290,6 +4292,7 @@ static const PikWord pik_keywords[] = {
   { "se",         2,   T_EDGEPT,    0,         CP_SE    },
   { "sin",        3,   T_FUNC1,     FN_SIN,    0        },
   { "small",      5,   T_SMALL,     0,         0        },
+  { "solid",      5,   T_SOLID,     0,         0        },
   { "south",      5,   T_EDGEPT,    0,         CP_S     },
   { "sqrt",       4,   T_FUNC1,     FN_SQRT,   0        },
   { "start",      5,   T_START,     0,         CP_START },
