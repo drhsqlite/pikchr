@@ -3096,6 +3096,7 @@ static void pik_add_to(Pik *p, PObj *pObj, PToken *pTk, PPoint *pPt){
     pik_error(p, pTk, "polygon is closed");
     return;
   }
+  pik_reset_samepath(p);
   if( n==0 || p->mTPath==3 || p->thenFlag ){
     n = pik_next_rpath(p, pTk);
   }
