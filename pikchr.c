@@ -7638,4 +7638,64 @@ int main(int argc, char **argv){
 }
 #endif /* PIKCHR_SHELL */
 
-#line 7666 "pikchr.c"
+#ifdef PIKCHR_TCL
+#include <tcl.h>
+/*
+** An interface to TCL
+**
+** TCL command:     pikchr $INPUTTEXT
+**
+** Returns a list of 3 elements which are the output text, the width, and
+** the height.
+**
+** Register the "pikchr" command by invoking Pikchr_Init(Tcl_Interp*).  Or
+** compile this source file as a shared library and load it using the
+** "load" command of Tcl.
+**
+** Compile this source-code file into a shared library using a command
+** similar to this:
+**
+**    gcc -c pikchr.so -DPIKCHR_TCL -shared pikchr.c
+*/
+static int pik_tcl_command(
+  ClientData clientData, /* Not Used */
+  Tcl_Interp *interp,    /* The TCL interpreter that invoked this command */
+  int objc,              /* Number of arguments */
+  Tcl_Obj *CONST objv[]  /* Command arguments */
+){
+  int w, h;              /* Width and height of the pikchr */
+  const char *zIn;       /* Source text input */
+  char *zOut;            /* SVG output text */
+  Tcl_Obj *pRes;         /* The result TCL object */
+
+  if( objc!=2 ){
+    Tcl_WrongNumArgs(interp, 1, objv, "PIKCHR_SOURCE_TEXT");
+    return TCL_ERROR;
+  }
+  zIn = Tcl_GetString(objv[1]);
+  w = h = 0;
+  zOut = pikchr(zIn, "pikchr", 0, &w, &h);
+  if( zOut==0 ){
+    return TCL_ERROR;  /* Out of memory */
+  }
+  pRes = Tcl_NewObj();
+  Tcl_ListObjAppendElement(0, pRes, Tcl_NewStringObj(zOut, -1));
+  free(zOut);
+  Tcl_ListObjAppendElement(0, pRes, Tcl_NewIntObj(w));
+  Tcl_ListObjAppendElement(0, pRes, Tcl_NewIntObj(h));
+  Tcl_SetObjResult(interp, pRes);
+  return TCL_OK;
+}
+
+/* Invoke this routine to register the "pikchr" command with the interpreter
+** given in the argument */
+int Pikchr_Init(Tcl_Interp *interp){
+  Tcl_CreateObjCommand(interp, "pikchr", pik_tcl_command, 0, 0);
+  return TCL_OK;
+}
+
+
+#endif /* PIKCHR_TCL */
+
+
+#line 7726 "pikchr.c"
