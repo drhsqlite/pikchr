@@ -54,7 +54,7 @@ The following special token classes are recognized:
      have a value of -1.
 
   *  CODEBLOCK &rarr;   All tokens contained within nested {...}.  This
-     is only used as the body of a "define".
+     is only used as the body of a "define" statement.
 
 There are many non-terminals in the grammar, but a few are more important.
 If you are new to the Pikchr language, begin by focusing on these
@@ -88,7 +88,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * LABEL **:** *place*
   * *direction*
   * VARIABLE *assignment-op* *expr*
-  " **define** VARIABLE CODEBLOCK
+  * **define** VARIABLE CODEBLOCK     [&#9654;info](./macro.md)
   * **print** *print-argument* (**,** *print-argument*)\*
   * **assert (** *expr* **==** *expr* **)**
   * **assert (** *position* **==** *position* **)**

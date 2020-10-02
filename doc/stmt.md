@@ -7,7 +7,11 @@
   * LABEL **:** *place*
   * *direction*
   * VARIABLE *assignment-op* *expr*
+  * **define** VARIABLE CODEBLOCK
   * **print** *print-argument* (**,** *print-argument*)\*
+  * **assert (** *expr* **==** *expr* **)**
+  * **assert (** *position* **==** *position* **)**
+
 
 ## Labels
 
@@ -24,12 +28,12 @@ to be redefined in terms of themselves.  Consider an example:
 
 ~~~~~
 /* 01 */        down
-/* 02 */  Root: dot "First Root" above color red
+/* 02 */  Root: dot "First \"Root\"" above color red
 /* 03 */        circle wid 50% at Root + (1.5cm, -1.5cm)
 /* 04 */        arrow dashed from previous to Root chop
 /* 05 */  Root: 3cm right of Root   // Move the location of Root 3cm right
 /* 06 */        arrow from last circle to Root chop
-/* 07 */        dot "Second Root" above color blue at Root
+/* 07 */        dot "Second \"Root\"" above color blue at Root
 ~~~~~
 
 Line 05 redefines Root in terms of itself.
@@ -37,19 +41,15 @@ In the rendering below, you can see that the dashed arrow drawn before
 Root was redefined goes to the original Root, but the solid arrow drawn
 afterwards goes to the revised location for Root.
 
-~~~~~ pikchr center
+~~~~~ pikchr center toggle
 /* 01 */        down
-/* 02 */  Root: dot "First Root" above color red
+/* 02 */  Root: dot "First \"Root\"" above color red
 /* 03 */        circle wid 50% at Root + (1.5cm, -1.5cm)
 /* 04 */        arrow dashed from previous to Root chop
 /* 05 */  Root: 3cm right of Root   // Move the location of Root 3cm right
 /* 06 */        arrow from last circle to Root chop
-/* 07 */        dot "Second Root" above color blue at Root
+/* 07 */        dot "Second \"Root\"" above color blue at Root
 ~~~~~
-
-
-
-
 
 ## Variables
 
@@ -101,6 +101,29 @@ of built-in variables, or create new variables.  In legacy-PIC, the only
 *assignment-op* was "`=`".  Pikchr adds "`+=`", "`-=`", "`*=`", and
 "`/=`" to make it easier to scale existing variables up or down.
 
+### Conflicts between variable names and keywords
+
+Some of the built-in variables have names that conflict with keywords:
+
+  *  color
+  *  fill
+  *  thickness
+
+To access such variables as part of an expression, simply put them inside
+of parentheses.  For example, to set the thickness of a box to be twice
+the default thinkness:
+
+~~~ pikchr center toggle source
+   box "Normal"
+   move
+   box "Double" "Thick" thickness 2*(thickness)
+~~~
+
+## Define
+
+The "`define`" statement creates a [macro](./macro.md)
+that can then be called in subsequent text.
+
 ## Print
 
 The "`print`" statement prints the strings and the values of the expressions
@@ -108,3 +131,34 @@ in its argument into the generated output in front of the
 "`<svg>`" element for the diagram.  This facility is intended for testing
 and debugging purposes.  There is no known practical use for "`print`" in
 a production Pikchr script.
+
+The following Pikchr script demonstrates the effect of "print".
+Click to toggle between the script and its rendering.
+
+~~~ pikchr toggle source indent
+   oval "Hello, World!" fit
+   print "Oval at: ",previous.x, ",", previous.y
+   line
+   oval "2nd oval" fit
+   print "2nd oval at: ",previous.x, ",", previous.y
+~~~
+
+## Assert
+
+The "`assert`" statement is intended for testing and debugging of Pikchr
+scripts.  An assert() is a no-op if the equality comparison in its
+argument is true.  But it raises an error if the condition is false.
+
+Consider this script:
+
+~~~
+   oval "Hello, World!" fit
+   assert( last oval.w == last oval.e ); # <-- should fail
+~~~
+
+And its rendering:
+
+~~~ pikchr
+   oval "Hello, World!" fit
+   assert( last oval.w == last oval.e ); # <-- should fail
+~~~
