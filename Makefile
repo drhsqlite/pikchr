@@ -11,8 +11,9 @@ pikchrfuzz:	pikchr.c
 	clang -g -O3 -fsanitize=fuzzer,undefined,address -o pikchrfuzz \
 	  -DPIKCHR_FUZZ pikchr.c $(LIBS)
 
-pikchr.c:	pikchr.y lempar.c lemon
+pikchr.c:	pikchr.y pikchr.h.in lempar.c lemon
 	./lemon pikchr.y
+	cat pikchr.h.in >pikchr.h
 
 lemon:	lemon.c
 	$(CC) $(CFLAGS) lemon.c -o lemon

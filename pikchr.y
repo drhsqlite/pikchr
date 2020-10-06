@@ -374,6 +374,11 @@ struct Pik {
   PToken aCtx[10];         /* Nested error contexts */
 };
 
+/* Include PIKCHR_PLAINTEXT_ERRORS among the bits of mFlags on the 3rd
+** argument to pikchr() in order to cause error message text to come out
+** as text/plain instead of as text/html
+*/
+#define PIKCHR_PLAINTEXT_ERRORS 0x0001
 
 /*
 ** The behavior of an object class is defined by an instance of
@@ -1921,6 +1926,19 @@ static void pik_append_text(Pik *p, const char *zText, int n, int mFlags){
   }
 }
 
+/*
+** Append error message text.  This is either a raw append, or an append
+** with HTML escapes, depending on whether the PIKCHR_PLAINTEXT_ERRORS flag
+** is set.
+*/
+static void pik_append_errtxt(Pik *p, const char *zText, int n){
+  if( p->mFlags & PIKCHR_PLAINTEXT_ERRORS ){
+    pik_append(p, zText, n);
+  }else{
+    pik_append_text(p, zText, n, 0);
+  }
+}
+
 /* Append a PNum value
 */
 static void pik_append_num(Pik *p, const char *z,PNum v){
@@ -2306,7 +2324,7 @@ static void pik_error_context(Pik *p, PToken *pErr, int nContext){
     zLineno[sizeof(zLineno)-1] = 0;
     pik_append(p, zLineno, -1);
     for(i=iStart; p->sIn.z[i]!=0 && p->sIn.z[i]!='\n'; i++){}
-    pik_append_text(p, p->sIn.z+iStart, i-iStart, 0);
+    pik_append_errtxt(p, p->sIn.z+iStart, i-iStart);
     iStart = i+1;
     pik_append(p, "\n", 1);
   }
@@ -2330,24 +2348,32 @@ static void pik_error(Pik *p, PToken *pErr, const char *zMsg){
   if( p->nErr ) return;
   p->nErr++;
   if( zMsg==0 ){
-    pik_append(p, "\n<div><p>Out of memory</p></div>\n", -1);
+    if( p->mFlags & PIKCHR_PLAINTEXT_ERRORS ){
+      pik_append(p, "\nOut of memory\n", -1);
+    }else{
+      pik_append(p, "\n<div><p>Out of memory</p></div>\n", -1);
+    }
     return;
   }
   if( pErr==0 ){
     pik_append(p, "\n", 1);
-    pik_append_text(p, zMsg, -1, 0);
+    pik_append_errtxt(p, zMsg, -1);
     return;
   }
-  pik_append(p, "<div><pre>\n", -1);
+  if( (p->mFlags & PIKCHR_PLAINTEXT_ERRORS)==0 ){
+    pik_append(p, "<div><pre>\n", -1);
+  }
   pik_error_context(p, pErr, 5);
   pik_append(p, "ERROR: ", -1);
-  pik_append_text(p, zMsg, -1, 0);
+  pik_append_errtxt(p, zMsg, -1);
   pik_append(p, "\n", 1);
   for(i=p->nCtx-1; i>=0; i--){
     pik_append(p, "Called from:\n", -1);
     pik_error_context(p, &p->aCtx[i], 0);
   }
-  pik_append(p, "</pre></div>\n", -1);
+  if( (p->mFlags & PIKCHR_PLAINTEXT_ERRORS)==0 ){
+    pik_append(p, "</pre></div>\n", -1);
+  }
 }
 
 /*
@@ -4948,6 +4974,7 @@ int main(int argc, char **argv){
   int bSvgOnly = 0;            /* Output SVG only.  No HTML wrapper */
   int bDontStop = 0;           /* Continue in spite of errors */
   int exitCode = 0;            /* What to return */
+  int mFlags = 0;              /* mFlags argument to pikchr() */
   const char *zHtmlHdr = 
     "<!DOCTYPE html>\n"
     "<html lang=\"en-US\">\n"
@@ -4992,6 +5019,7 @@ int main(int argc, char **argv){
           exit(1);
         }
         bSvgOnly = 1;
+        mFlags |= PIKCHR_PLAINTEXT_ERRORS;
       }else
       {
         fprintf(stderr,"unknown option: \"%s\"\n", argv[i]);
@@ -5016,7 +5044,7 @@ int main(int argc, char **argv){
     sz = fread(zIn, 1, sz, in);
     fclose(in);
     zIn[sz] = 0;
-    zOut = pikchr(zIn, "pikchr", 0, &w, &h);
+    zOut = pikchr(zIn, "pikchr", mFlags, &w, &h);
     if( zOut==0 ){
       fprintf(stderr, "pikchr() returns NULL.  Out of memory?\n");
       if( !bDontStop ) exit(1);
