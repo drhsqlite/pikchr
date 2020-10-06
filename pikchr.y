@@ -4947,6 +4947,7 @@ int main(int argc, char **argv){
   int i;
   int bSvgOnly = 0;            /* Output SVG only.  No HTML wrapper */
   int bDontStop = 0;           /* Continue in spite of errors */
+  int exitCode = 0;            /* What to return */
   const char *zHtmlHdr = 
     "<!DOCTYPE html>\n"
     "<html lang=\"en-US\">\n"
@@ -5029,6 +5030,7 @@ int main(int argc, char **argv){
       printf("<h1>File %s</h1>\n", argv[i]);
       if( w<0 ){
         printf("<p>ERROR</p>\n%s\n", zOut);
+        exitCode = 1;
       }else{
         printf("<div id=\"svg-%d\" onclick=\"toggleHidden('svg-%d')\">\n",i,i);
         printf("<div style='border:3px solid lightgray;max-width:%dpx;'>\n",w);
@@ -5044,7 +5046,7 @@ int main(int argc, char **argv){
   if( !bSvgOnly ){
     printf("</body></html>\n");
   }
-  return 0; 
+  return exitCode; 
 }
 #endif /* PIKCHR_SHELL */
 
