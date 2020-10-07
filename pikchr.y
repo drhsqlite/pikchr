@@ -5045,6 +5045,7 @@ int main(int argc, char **argv){
     fclose(in);
     zIn[sz] = 0;
     zOut = pikchr(zIn, "pikchr", mFlags, &w, &h);
+    if( w<0 ) exitCode = 1;
     if( zOut==0 ){
       fprintf(stderr, "pikchr() returns NULL.  Out of memory?\n");
       if( !bDontStop ) exit(1);
@@ -5058,7 +5059,6 @@ int main(int argc, char **argv){
       printf("<h1>File %s</h1>\n", argv[i]);
       if( w<0 ){
         printf("<p>ERROR</p>\n%s\n", zOut);
-        exitCode = 1;
       }else{
         printf("<div id=\"svg-%d\" onclick=\"toggleHidden('svg-%d')\">\n",i,i);
         printf("<div style='border:3px solid lightgray;max-width:%dpx;'>\n",w);

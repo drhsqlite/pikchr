@@ -7381,9 +7381,9 @@ void pik_tokenize(Pik *p, PToken *pIn, yyParser *pParser, PToken *aParam){
     sz = pik_token_length(&token, 1);
     if( token.eType==T_WHITESPACE ){
       /* no-op */
-    }else if( sz>50000 ){
+    }else if( sz>1000 ){
       token.n = 1;
-      pik_error(p, &token, "token is too long - max length 50000 bytes");
+      pik_error(p, &token, "token is too long - max length 1000 bytes");
       break;
     }else if( token.eType==T_ERROR ){
       token.n = (unsigned short)(sz & 0xffff);
@@ -7635,6 +7635,7 @@ int main(int argc, char **argv){
     fclose(in);
     zIn[sz] = 0;
     zOut = pikchr(zIn, "pikchr", mFlags, &w, &h);
+    if( w<0 ) exitCode = 1;
     if( zOut==0 ){
       fprintf(stderr, "pikchr() returns NULL.  Out of memory?\n");
       if( !bDontStop ) exit(1);
@@ -7648,7 +7649,6 @@ int main(int argc, char **argv){
       printf("<h1>File %s</h1>\n", argv[i]);
       if( w<0 ){
         printf("<p>ERROR</p>\n%s\n", zOut);
-        exitCode = 1;
       }else{
         printf("<div id=\"svg-%d\" onclick=\"toggleHidden('svg-%d')\">\n",i,i);
         printf("<div style='border:3px solid lightgray;max-width:%dpx;'>\n",w);
