@@ -4791,9 +4791,9 @@ void pik_tokenize(Pik *p, PToken *pIn, yyParser *pParser, PToken *aParam){
     sz = pik_token_length(&token, 1);
     if( token.eType==T_WHITESPACE ){
       /* no-op */
-    }else if( sz>1000 ){
+    }else if( sz>50000 ){
       token.n = 1;
-      pik_error(p, &token, "token is too long - max length 1000 bytes");
+      pik_error(p, &token, "token is too long - max length 50000 bytes");
       break;
     }else if( token.eType==T_ERROR ){
       token.n = (unsigned short)(sz & 0xffff);
@@ -5074,7 +5074,7 @@ int main(int argc, char **argv){
   if( !bSvgOnly ){
     printf("</body></html>\n");
   }
-  return exitCode; 
+  return exitCode ? EXIT_FAILURE : EXIT_SUCCESS; 
 }
 #endif /* PIKCHR_SHELL */
 
