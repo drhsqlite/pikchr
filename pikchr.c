@@ -7381,9 +7381,9 @@ void pik_tokenize(Pik *p, PToken *pIn, yyParser *pParser, PToken *aParam){
     sz = pik_token_length(&token, 1);
     if( token.eType==T_WHITESPACE ){
       /* no-op */
-    }else if( sz>1000 ){
+    }else if( sz>50000 ){
       token.n = 1;
-      pik_error(p, &token, "token is too long - max length 1000 bytes");
+      pik_error(p, &token, "token is too long - max length 50000 bytes");
       break;
     }else if( token.eType==T_ERROR ){
       token.n = (unsigned short)(sz & 0xffff);
