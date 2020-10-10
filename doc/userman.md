@@ -678,3 +678,313 @@ and after the "down" command to see that they shift:
     down
     print "after: ", C1.end.x, ", ", C1.end.y
 ~~~~~
+
+## Adjusting The Size Of Block Objects
+
+The size of every block object is controlled by three parameters:
+
+  *  `width` (often abbreviated as `wid`)
+  *  `height` (or `ht`)
+  *  `radius` (or `rad`)
+
+There is also a fourth convenience parameter:
+
+  *  `diameter`
+
+The `diameter` is always twice the radius. Setting the `diameter` automatically
+changes the `radius` and setting the `radius` automatically changes the
+`diameter.
+
+Usually the meanings of these parameters are obvious.
+
+~~~~ pikchr toggle indent
+A: box thick
+line thin color gray left 70% from 2mm left of A.nw
+line same from 2mm left of A.sw
+text "height" at (7/8<previous.start,previous.end>,1/2<1st line,2ndline>)
+line thin color gray from previous text.n up until even with 1st line ->
+line thin color gray from previous text.s down until even with 2nd line ->
+X1: line thin color gray down 50% from 2mm below A.sw
+X2: line thin color gray down 50% from 2mm below A.se
+text "width" at (1/2<X1,X2>,6/8<X1.start,X1.end>)
+line thin color gray from previous text.w left until even with X1 ->
+line thin color gray from previous text.e right until even with X2 ->
+~~~~
+
+The `radius` parameter, however, sometimes has non-obvious meanings.
+For example, on a box, the `radius` determines the rounding of corners:
+
+~~~~ pikchr toggle indent
+A: box thick rad 0.3*boxht
+line thin color gray left 70% from 2mm left of (A.w,A.n)
+line same from 2mm left of (A.w,A.s)
+text "height" at (7/8<previous.start,previous.end>,1/2<1st line,2ndline>)
+line thin color gray from previous text.n up until even with 1st line ->
+line thin color gray from previous text.s down until even with 2nd line ->
+X1: line thin color gray down 50% from 2mm below (A.w,A.s)
+X2: line thin color gray down 50% from 2mm below (A.e,A.s)
+text "width" at (1/2<X1,X2>,6/8<X1.start,X1.end>)
+line thin color gray from previous text.w left until even with X1 ->
+line thin color gray from previous text.e right until even with X2 ->
+X3: line thin color gray right 70% from 2mm right of (A.e,A.s)
+X4: line thin color gray right 70% from A.rad above start of X3
+text "radius" at (6/8<X4.start,X4.end>,1/2<X3,X4>)
+line thin color gray from (previous,X3) down 30% <-
+line thin color gray from (previous text,X4) up 30% <-
+~~~~
+
+For a [cylinder object](./cylinderobj.md) the `radius` determines the
+thickness of the end caps:
+
+~~~~ pikchr toggle indent
+A: cylinder thick rad 150%
+line thin color gray left 70% from 2mm left of (A.w,A.n)
+line same from 2mm left of (A.w,A.s)
+text "height" at (7/8<previous.start,previous.end>,1/2<1st line,2ndline>)
+line thin color gray from previous text.n up until even with 1st line ->
+line thin color gray from previous text.s down until even with 2nd line ->
+X1: line thin color gray down 50% from 2mm below (A.w,A.s)
+X2: line thin color gray down 50% from 2mm below (A.e,A.s)
+text "width" at (1/2<X1,X2>,6/8<X1.start,X1.end>)
+line thin color gray from previous text.w left until even with X1 ->
+line thin color gray from previous text.e right until even with X2 ->
+X3: line thin color gray right 70% from 2mm right of (A.e,A.ne)
+X4: line thin color gray right 70% from A.rad below start of X3
+text "radius" at (6/8<X4.start,X4.end>,1/2<X3,X4>)
+line thin color gray from (previous,X4) down 30% <-
+line thin color gray from (previous text,X3) up 30% <-
+~~~~
+
+For a [file object](./fileobj.md) the `radius` determines the size of
+the page fold-over in the upper-right corner:
+
+~~~~ pikchr toggle indent
+A: file thick rad 100%
+line thin color gray left 70% from 2mm left of (A.w,A.n)
+line same from 2mm left of (A.w,A.s)
+text "height" at (7/8<previous.start,previous.end>,1/2<1st line,2ndline>)
+line thin color gray from previous text.n up until even with 1st line ->
+line thin color gray from previous text.s down until even with 2nd line ->
+X1: line thin color gray down 50% from 2mm below (A.w,A.s)
+X2: line thin color gray down 50% from 2mm below (A.e,A.s)
+text "width" at (1/2<X1,X2>,6/8<X1.start,X1.end>)
+line thin color gray from previous text.w left until even with X1 ->
+line thin color gray from previous text.e right until even with X2 ->
+X3: line thin color gray right 70% from 2mm right of (A.e,A.n)
+X4: line thin color gray right 70% from A.rad below start of X3
+text "radius" at (6/8<X4.start,X4.end>,1/2<X3,X4>)
+line thin color gray from (previous,X4) down 30% <-
+line thin color gray from (previous text,X3) up 30% <-
+~~~~
+
+For a [circle object](./circleobj.md), the width and height and diameter
+are always the same and the radius is always half the diameter.  Changing
+any parameter automatically adjusts the other three.
+
+~~~~ pikchr toggle indent
+A: circle thick rad 120%
+line thin color gray left 70% from 2mm left of (A.w,A.n)
+line same from 2mm left of (A.w,A.s)
+text "height" at (7/8<previous.start,previous.end>,1/2<1st line,2ndline>)
+line thin color gray from previous text.n up until even with 1st line ->
+line thin color gray from previous text.s down until even with 2nd line ->
+X1: line thin color gray down 50% from 2mm below (A.w,A.s)
+X2: line thin color gray down 50% from 2mm below (A.e,A.s)
+text "width" at (1/2<X1,X2>,6/8<X1.start,X1.end>)
+line thin color gray from previous text.w left until even with X1 ->
+line thin color gray from previous text.e right until even with X2 ->
+X3: line thin color gray right 70% from 2mm right of (A.e,A.s)
+X4: line thin color gray right 70% from A.rad above start of X3
+text "radius" at (6/8<X4.start,X4.end>,1/2<X3,X4>)
+line thin color gray from (previous,X3) down 30% <-
+line thin color gray from (previous text,X4) up 30% <-
+line thin color gray <-> from A.sw to A.ne
+line thin color gray from A.ne go 0.5*A.rad ne then 0.25*A.rad east
+text " diameter" ljust at end of previous line
+~~~~
+
+Even though they are curvy objects, the `radius` (and hence `diameter`)
+has no effect on [ellipse](./ellipseobj.md) and [oval](./ovalobj.md) objects.
+The size of those objects is determined purely by their width and height:
+
+~~~~ pikchr toggle indent
+A: ellipse thick
+line thin color gray left 70% from 2mm left of (A.w,A.n)
+line same from 2mm left of (A.w,A.s)
+text "height" at (7/8<previous.start,previous.end>,1/2<1st line,2ndline>)
+line thin color gray from previous text.n up until even with 1st line ->
+line thin color gray from previous text.s down until even with 2nd line ->
+X1: line thin color gray down 50% from 2mm below (A.w,A.s)
+X2: line thin color gray down 50% from 2mm below (A.e,A.s)
+text "width" at (1/2<X1,X2>,6/8<X1.start,X1.end>)
+line thin color gray from previous text.w left until even with X1 ->
+line thin color gray from previous text.e right until even with X2 ->
+~~~~
+
+~~~~ pikchr toggle indent
+A: oval thick
+X0: line thin color gray left 70% from 2mm left of (A.w,A.n)
+X1: line same from 2mm left of (A.w,A.s)
+text "height" at (7/8<previous.start,previous.end>,1/2<X0,X1>)
+line thin color gray from previous text.n up until even with X0 ->
+line thin color gray from previous text.s down until even with X1 ->
+X2: line thin color gray down 50% from 2mm below (A.w,A.s)
+X3: line thin color gray down 50% from 2mm below (A.e,A.s)
+text "width" at (1/2<X2,X3>,6/8<X2.start,X2.end>)
+line thin color gray from previous text.w left until even with X2 ->
+line thin color gray from previous text.e right until even with X3 ->
+
+A: oval thick wid A.ht ht A.wid at 2.0*A.wid right of A
+X0: line thin color gray left 70% from 2mm left of (A.w,A.n)
+X1: line same from 2mm left of (A.w,A.s)
+text "height" at (7/8<previous.start,previous.end>,1/2<X0,X1>)
+line thin color gray from previous text.n up until even with X0 ->
+line thin color gray from previous text.s down until even with X1 ->
+X2: line thin color gray down 50% from 2mm below (A.w,A.s)
+X3: line thin color gray down 50% from 2mm below (A.e,A.s)
+text "width" small at (1/2<X2,X3>,6/8<X2.start,X2.end>)
+line thin color gray from previous text.w left until even with X2 ->
+line thin color gray from previous text.e right until even with X3 ->
+~~~~
+
+Notice that with an oval object, the semicircular end-cap is always
+on the narrow end of the object.  In the default configuration where
+the height is less than the width, the semicicular end-caps are on the
+left and right, but if the width and height are modified so that the
+width is less than the height, then semicircles appear on the top and
+bottom instead.
+
+
+### Default Sizes
+
+Block objects have default sizes which are determined by variables.
+For example, the width of a box is initialized the value of the `boxwid`
+variable, which defaults to `0.75in`.
+
+It is common for Pikchr scripts
+to change these default at or near the beginning of a script in order to adjust
+the default sizes of objects defined within that script.
+
+### Setting Sizes Using Attributes
+
+Use the "`width`" (or "`wid`") attribute to change the width of an object.
+The argument to this attribute can be an expression (such as "`1cm`" or
+"`0.75*boxwid`") or it can be a percentage of the prior value
+(example: "`75%`").  This also works for "`height`" (or "`ht`"),
+"`radius`" (or "`rad`"), and "`diameter`".
+
+### Automatic Sizing To Fit Text Annotations
+
+If a block object contains text annotations, the "`fit`" attribute causes
+the width and height to be adjusted so that the object neatly encloses that
+text.  The "`fit`" attribute only considers text that is priviously defined
+for the object, or in other words text annotatioons that occur to the left
+of the "`fit`" keyword.  The width and height can be adjusted further after
+the "`fit`" keyword, for example to provide a larger margin around the
+text.  Click on the following script to see the difference that the
+"`width 125%`" at the end of the second box definition makes.
+
+~~~~ pikchr source toggle indent
+    down
+    box "Auto-fit text annotation" "as is" fit
+    move 50%
+    box "Auto-fix text annotation" "with 125% width" fit width 125%
+~~~~
+
+If a the end of a block object definition, either the width or height of the
+object is less than or equal to zero, then that dimension is increased so as to
+enclose all text annotations on the object.  Thus, for example, 
+you can make all of the
+boxes in your diagram auto-fit around their text annotations by prefacing
+your script with something like:
+
+~~~~ pikchr source toggle indent
+    boxwid = 0; boxht = 0;
+    box "Hello";
+    move
+    box "A longer label" "with multiple lines" "of label text"
+~~~~
+
+For all of these auto-fit features, Pikchr needs to know the dimensions of the
+text annotations after rendering.  Unfortunately, that information is not
+readily available, as Pikchr runs long before the generated SVG reaches the
+web-browser in which it will be displayed.  Hence, Pikchr has to guess at the
+text size.  Usually it does a good job of this, but it can be a little off,
+especially for unusual (read: "non-ascii") characters or if the CSS for
+the rendering environment sets a non-standard font face or font size.  To
+compensate, the "`charwid`" and "`charht`" variables can be adjusted or
+extra spaces can be added at the beginning or end of text strings.
+
+These auto-fit features are a new innovation for Pikchr and are not available
+in legacy PIC as far as we are aware.
+
+## Attributes For Stroke-Width And Drawing Colors
+
+Various attributes can be added to both block and line objects to influence
+how the objects are drawn.
+
+  *  `thickness` *dimension*
+  *  `thick`
+  *  `thin`
+  *  `invisible` (or `invis`)
+  *  `color` *color*
+  *  `fill` *color*
+
+The "`thickness`", "`thick`", "`thin`", and "`invisible`" attributes control
+the stroke-width of the lines that construct an object.  The default stroke-width
+for all objects is determined by the "`thickness`" variable which defaults
+to "`0.015in`".  The "`thick`" and "`thin`" attributes increase or decrease
+the stroke-width by a fixed percentages.  This attributes can be repeated
+to make the stroke-width ever thinker or thinner.  The "`invisble`" attribute
+simply sets the stroke-width to 0.
+
+~~~~ pikchr toggle indent
+   boxwid = 0
+   boxht = 0
+   right
+   box "normal"
+   move
+   box "thin" thin
+   move
+   box "thick" thick
+   move
+   box "invisible" invisible
+~~~~
+
+The "`color`" and "`fill`" attributes change the foreground and background
+colors of an object.  Colors can be expressed using any of the 140 standard
+HTML color names, such as "Bisque" or "AliceBlue" or "LightGray".  Color
+names are not case sensitive, so "bisque", "BISQUE", and "Bisque" all mean
+the same thing.  Color names can also be expressed as an integer which is
+interpreted as a 24-bit RGB value.  It is convenient to express numeric
+color values using hexadecimal notation.  "Bisque" is the same as "0xffe4c4"
+which is the same as "16770244".  
+
+~~~~ pikchr toggle indent
+   boxwid = 0
+   boxht = 0
+   right
+   box "Color: CadetBlue" "Fill: Bisque" fill Bisque color CadetBlue
+   move
+   oval "Color: White" "Fill: RoyalBlue" color White fill ROYALBLUE
+~~~~
+
+Setting the "`fill`" to a negative number or "None" or "Off" makes the
+background transparent.  That is the default.  The default foreground
+color is black.
+
+### Filled Polygons
+
+The "`fill`" attribute does not affect the rendering of lines unless the
+route of the line is terminated by the "`close`" attribute.  The "`close`"
+keyword converts the line into a polygon.  Click to see the code:
+
+~~~~ pikchr toggle indent
+   line go 3cm heading 150 then 3cm west close \
+                                      /* ^^^^^ nota bene! */ \
+       fill 0x006000 color White "green" below "triange" below
+~~~~
+
+Polygons are not required to have a fill color.  You can use the "`close`"
+keyword to convert a polygon into a line and leave the background transparent.
+But using "`fill` *color*" together with "`close`" is a common idiom.
