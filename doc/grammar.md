@@ -152,7 +152,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **thick**                [&#9654;info](./thickthin.md)
   * **thin**                 [&#9654;info](./thickthin.md)
   * **solid**                [&#9654;info](./thickthin.md)
-  * **chop**
+  * **chop**                 [&#9654;info](./chop.md)
   * **fit**                  [&#9654;info](./fit.md)
 
 ## *color-expr*: [&#9654;info](./colorexpr.md)
