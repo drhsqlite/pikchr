@@ -961,12 +961,9 @@ color values using hexadecimal notation.  "Bisque" is the same as "0xffe4c4"
 which is the same as "16770244".  
 
 ~~~~ pikchr toggle indent
-   boxwid = 0
-   boxht = 0
-   right
-   box "Color: CadetBlue" "Fill: Bisque" fill Bisque color CadetBlue
+   box "Color: CadetBlue" "Fill: Bisque" fill Bisque color CadetBlue fit
    move
-   oval "Color: White" "Fill: RoyalBlue" color White fill ROYALBLUE
+   oval "Color: White" "Fill: RoyalBlue" color White fill ROYALBLUE fit
 ~~~~
 
 Setting the "`fill`" to a negative number or "None" or "Off" makes the
