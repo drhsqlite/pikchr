@@ -36,7 +36,10 @@ After a macro is defined, the body of the macro is substituted in
 place of any subsquent occurrance of the identifier that is the
 macro name.  The macro name can occur anywhere.  The substitution
 is performed by the lexical analyzer, before tokens are identified
-and sent into the parser.
+and sent into the parser.  Note this distinction:  The "`define`"
+statement used to create a new macro is recognized by the parser,
+but the expansion of the macro is subsequent text happens in the
+lexical analyzer.
 
 ## Parameters
 
@@ -62,5 +65,5 @@ parameter, but not both.
 
 Once created, a macro cannot be redefined.  If you attempt to redefine
 a macro by providing a second "`define`" statement with the same macro
-name, the macro name will be replaced by the previous macro body definition,
-likely resulting in a syntax error.
+name, the macro name will be replaced by the previous macro body definition
+during lexical analysis, likely resulting in a syntax error.

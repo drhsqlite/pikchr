@@ -50,23 +50,11 @@ Pikchr scripts cause no harm (apart from generating ugly diagrams).
   *  [Example Pikchr Scripts](./doc/examples.md)
   *  [](/pikchrshow) &larr; Enter Pikchr text and see the result on-line
 
-
-## Documentation Is A Work In Progress
-
-As of 2020-09-16, the Pikchr code is stable and is in active use.
-However, documentation is still under development.
-We are using Pikchr to write the Pikchr documentation (in Markdown),
-hence it was necessary to deploy Pikchr into a working content
-management system ([Fossil][3] in this case) prior to having
-complete documentation available.  Volunteer assistance is welcomed!
-
-[3]: https://fossil-scm.org/fossil
-
-## Pikchr Documentation (*still under development*)
+## Pikchr Documentation
 
   *  [Pikchr User Manual](./doc/userman.md)
   *  [An Example Of How A Pikchr Script Is Written](./doc/teardown01.md)
-  *  [Pikchr Language Grammar](./doc/grammar.md)
+  *  [Pikchr Language Spec](./doc/grammar.md)
   *  [Differences From PIC](./doc/differences.md)
   *  [Invoking Pikchr From Markdown](./doc/usepikchr.md)
   *  [How To Build Pikchr From Source](./doc/build.md)
