@@ -18,7 +18,7 @@ simple markup languages.  The details on how to embedded Pikchr in Markdown is
 [covered separately][embed].  For the purpose of this tutorial, we will only write
 pure Pikchr scripts without the surrounding markup.  To experiment
 with Pikchr, visit the [](/pikchrshow) page on the website hosting
-this document (preferrably in a separate window).  Type in the following
+this document (preferably in a separate window).  Type in the following
 script and press the Preview button:
 <a id="firstdemo"></a>
 
@@ -35,7 +35,7 @@ If you do this right, the output should appear as:
 So there you go: you've created and rendered your first diagram using
 Pikchr!  You will do well to keep that /pikchrshow screen handy, in a
 separate browser window, so that you can try out scripts as you proceed
-through this tutoral.
+through this tutorial.
 
 [embed]: ./usepikchr.md
 
@@ -349,7 +349,7 @@ distance for yourself.  Perhaps something like:
 
 The final phrase in the "arrow" statement is
 "`then to first cylinder.s`".  This phrase tells the arrow to go
-from whereever it is at the moment, directly to the ".s" corner
+from wherever it is at the moment, directly to the ".s" corner
 of the cylinder.
 
 # The Advantage Of Relative Layout
@@ -453,10 +453,10 @@ Consider how this simplifies our previous example:
 ~~~~~
 
 By giving symbolic names to the box and cylinder, the arrow path
-description is simplified.  Futhermore, if the ellipse gets changed
+description is simplified.  Furthermore, if the ellipse gets changed
 into another cylinder, the arrow still refers to the correct cylinder.
 Note that the indentation of the lines following each symbolic name
-above is syntacially unimportant - it serves only to improve human
+above is syntactically unimportant - it serves only to improve human
 readability.
 
 # Layout Of Block Objects
@@ -659,7 +659,7 @@ the circle.
 
 Pikchr works like PIC with one important change:  When the "down" statement
 is evaluated, Pikchr also moves the ".end" of the previous object
-to a new location that is approprate for the new direction.  So, in other
+to a new location that is appropriate for the new direction.  So, in other
 words, the down command moves the .end of the circle from .e to .s.
 You can see this by setting a red dot at the .end of
 the circle *after* the "down" command:
@@ -849,7 +849,7 @@ line thin color gray from previous text.e right until even with X3 ->
 
 Notice that with an oval object, the semicircular end-cap is always
 on the narrow end of the object.  In the default configuration where
-the height is less than the width, the semicicular end-caps are on the
+the height is less than the width, the semicircular end-caps are on the
 left and right, but if the width and height are modified so that the
 width is less than the height, then semicircles appear on the top and
 bottom instead.
@@ -877,8 +877,8 @@ The argument to this attribute can be an expression (such as "`1cm`" or
 
 If a block object contains text annotations, the "`fit`" attribute causes
 the width and height to be adjusted so that the object neatly encloses that
-text.  The "`fit`" attribute only considers text that is priviously defined
-for the object, or in other words text annotatioons that occur to the left
+text.  The "`fit`" attribute only considers text that is previously defined
+for the object, or in other words text annotations that occur to the left
 of the "`fit`" keyword.  The width and height can be adjusted further after
 the "`fit`" keyword, for example to provide a larger margin around the
 text.  Click on the following script to see the difference that the
@@ -935,7 +935,7 @@ the stroke-width of the lines that construct an object.  The default stroke-widt
 for all objects is determined by the "`thickness`" variable which defaults
 to "`0.015in`".  The "`thick`" and "`thin`" attributes increase or decrease
 the stroke-width by a fixed percentages.  This attributes can be repeated
-to make the stroke-width ever thinker or thinner.  The "`invisble`" attribute
+to make the stroke-width ever thicker or thinner.  The "`invisble`" attribute
 simply sets the stroke-width to 0.
 
 ~~~~ pikchr toggle indent
@@ -979,7 +979,7 @@ keyword converts the line into a polygon.  Click to see the code:
 ~~~~ pikchr toggle indent
    line go 3cm heading 150 then 3cm west close \
                                       /* ^^^^^ nota bene! */ \
-       fill 0x006000 color White "green" below "triange" below
+       fill 0x006000 color White "green" below "triangle" below
 ~~~~
 
 Polygons are not required to have a fill color.  You can use the "`close`"
@@ -1015,10 +1015,10 @@ that appear after each string literal.  The following modifiers are supported:
 
 ### Position Text Above Or Below The Center Of The Object
 
-The "above" and "below" keywords control the location of the
+The "`above`" and "`below`" keywords control the location of the
 text above or below the center point of the object with which
 the text is associated.  If there is just one text on the object
-and the "above" and "below" keywords are omitted, the text is
+and the "`above`" and "`below`" keywords are omitted, the text is
 placed directly over the center of the object.  This causes
 the text to appear in the middle of lines:
 
@@ -1027,24 +1027,24 @@ the text to appear in the middle of lines:
 ~~~~
 
 So, if there is just a single text label on a line, you probably
-want to include either the "above" or "below" keyword.
+want to include either the "`above`" or "`below`" keyword.
 
 ~~~~ pikchr indent toggle
-  line "above" above; move; line "below" below
+  line "above" above; move; line "`below`" below
 ~~~~
 
 If there are two texts on the object, they straddle the center point
-above and below, even without the use of the "above" and "below"
+above and below, even without the use of the "`above`" and "`below`"
 keywords:
 
 ~~~~ pikchr indent toggle
   line wid 300% "text without \"above\"" "text without \"below\""
 ~~~~
 
-The "above" and "below" attributes do not stack or accumulate.  Each "above"
-or "below" overrides any previous "above" or "below" for the same text.
+The "`above`" and "`below`" attributes do not stack or accumulate.  Each "`above`"
+or "`below`" overrides any previous "`above`" or "`below`" for the same text.
 
-If there are multiple texts and all are marked "above" or "below", then
+If there are multiple texts and all are marked "`above`" or "`below`", then
 all are placed above or below the center point, in order of appearance.
 
 ~~~~ pikchr indent toggle
@@ -1055,12 +1055,12 @@ all are placed above or below the center point, in order of appearance.
 
 ### Justify Text Left Or Right
 
-As the "above" and "below" keywords control up and down positioning of
-the text, so the "ljust" and "rjust" keywords control left and right
+As the "`above`" and "`below`" keywords control up and down positioning of
+the text, so the "`ljust`" and "`rjust`" keywords control left and right
 positioning.
 
-For a line, the "ljust" means that the left side of the text is flush
-against the center point of the line.  And "rjust" means that the right
+For a line, the "`ljust`" means that the left side of the text is flush
+against the center point of the line.  And "`rjust`" means that the right
 side of the text is flush against the center point of the line.
 (In the following diagram, the red dot is at the center of the line.)
 
@@ -1069,9 +1069,9 @@ side of the text is flush against the center point of the line.
    dot color red at previous.c
 ~~~~
 
-For a block object, "ljust" shifts the text to be left justified
+For a block object, "`ljust`" shifts the text to be left justified
 against the left edge of the block (with a small margin) and
-"rjust" puts the text against the right side of the object (with
+"`rjust`" puts the text against the right side of the object (with
 the same margin).
 
 ~~~~ pikchr indent toggle
@@ -1080,7 +1080,7 @@ the same margin).
    box "rjust" rjust "longer line" rjust "even longer line" rjust fit
 ~~~~
 
-The behavior of "ljust" and "rjust" for block objects in Pikchr differs
+The behavior of "`ljust`" and "`rjust`" for block objects in Pikchr differs
 from legacy PIC.
 In PIC, text is always justified around the center point, as in lines.
 But this means there is no easy way to left justify multiple lines of
@@ -1088,7 +1088,7 @@ text within a "box" or "file", and so the behavior was changed for
 Pikchr.
 
 Pikchr allows two texts to fill the same vertical slot if one is
-"ljust" and the other is "rjust".
+"`ljust`" and the other is "`rjust`".
 
 ~~~~ pikchr indent toggle
   box wid 300% \
@@ -1101,12 +1101,12 @@ Pikchr allows two texts to fill the same vertical slot if one is
 
 ### Text Attribute "center"
 
-The center attribute cancels all prior "above", "below", "ljust", and
-"rjust" attributes for the current text.
+The "`center`" attribute cancels all prior "`above`", "`below`", "`ljust`", and
+"`rjust`" attributes for the current text.
 
 ### Bold And Italic Font Styles
 
-The "bold" and "italic" attributes cause the text to use a bold or
+The "`bold`" and "`italic`" attributes cause the text to use a bold or
 an italic font.  Fonts can be both bold and italic at the same time.
 
 ~~~~ pikchr indent toggle
@@ -1115,7 +1115,7 @@ an italic font.  Fonts can be both bold and italic at the same time.
 
 ### Aligned Text
 
-The "aligned" attribute causes text associated with a straight line
+The "`aligned`" attribute causes text associated with a straight line
 to be rotated to align with that line.
 
 ~~~~ pikchr indent toggle
@@ -1136,10 +1136,10 @@ text to a line that is marked "`invisible`"
 
 ### Adjusting The Font Size
 
-The "big" and "small" attributes cause the text to be a little larger
-or a little smaller, respectively.  Two "big" attributes cause the
-text to be larger still, as do two "small" attributes.  But the text
-size does not increase or decrease beyond two "big" or "small" keywords.
+The "`big`" and "`small`" attributes cause the text to be a little larger
+or a little smaller, respectively.  Two "`big`" attributes cause the
+text to be larger still, as do two "`small`" attributes.  But the text
+size does not increase or decrease beyond two "`big`" or "`small`" keywords.
 
 ~~~~ pikchr indent toggle
   box "small small" small small "small" small \
@@ -1147,5 +1147,5 @@ size does not increase or decrease beyond two "big" or "small" keywords.
     "big" big "big big" big big ht 200%
 ~~~~
 
-A "big" keyword cancels any prior "small" keywords on the same text,
-and a "small" keyword cancels any prior "big" keywords.
+A "`big`" keyword cancels any prior "`small`" keywords on the same text,
+and a "`small`" keyword cancels any prior "`big`" keywords.

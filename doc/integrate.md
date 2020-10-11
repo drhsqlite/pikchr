@@ -79,7 +79,7 @@ compiling like this (or similarly):
 ~~~~
 
 Gather a bunch of Pikchr scripts to be used as seeds (perhaps from the
-tests/ or examples/ subdirectores of the source tree) and put them in
+tests/ or examples/ subdirectories of the source tree) and put them in
 a subdirectory, which we will call "fz".  Then run:
 
 ~~~~

@@ -174,7 +174,7 @@ easier to read and maintain.
 Lines 22 through 26 implement a single box object that provides background
 color for the trunk.  Note the use of backslash ("`\`") to continue the
 definition of this object across multiple lines.  It is not required to
-break up the definition of the box across muliple lines.  Splitting the
+break up the definition of the box across multiple lines.  Splitting the
 object definition to multiple lines merely is merely an aid to human
 understanding.  Pikchr does not care.
 
@@ -187,7 +187,7 @@ That is the equivalent of the distance between the bottom and second
 row.  In this way, the division between the bottom and top row can
 occur right in the middle of the two, and the margins above and below
 the bottom row will be the same.  The width is sufficient to span the
-entire row, plus one extra "linewid" for margin, to be evenly divided
+entire row, plus one extra "`linewid`" for margin, to be evenly divided
 between both ends.
 
 Line 24 positions the background color box.  That line says that the

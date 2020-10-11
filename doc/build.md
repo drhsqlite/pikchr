@@ -24,11 +24,11 @@
             arrow " generates" ljust above
   Lemon:    oval "lemon" ht 50%
             arrow from Src chop down until even with CC1 \
-              then to Lemon.nw
+              then to Lemon.nw rad 10px
             "Pikchr source " rjust "code input " rjust \
               at 2nd vertex of previous
             arrow from Lempar chop down until even with CC1 \
-              then to Lemon.ne
+              then to Lemon.ne rad 10px
             " parser template" ljust " resource file" ljust \
               at 2nd vertex of previous
   PikSrc:   file "pikchr.c" with .n at lineht below Lemon.s
@@ -45,7 +45,7 @@
             spline <- from 1mm west of PikSrc.w go 60% heading 250 \
                then go 40% heading 45 then go 60% heading 250 \
                thin color gray
-            box invis "Proprocessed" ljust small \
+            box invis "Preprocessed" ljust small \
               "C-code" ljust small "also in-tree" ljust small fit \
                with .e at end of last spline width 90%
 ~~~

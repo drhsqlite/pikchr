@@ -284,7 +284,7 @@ as the first token of the statement.
   *  topmargin
 
 If the "fontscale" variable exists and is not 1.0, then the point-size
-of fonts is increased or descreased by multiplying by the fontscale.
+of fonts is increased or decreased by multiplying by the fontscale.
 This variable can be used to increase or decrease the fonts in a
 diagram relative to all the other elements.
 

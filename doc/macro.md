@@ -33,7 +33,7 @@ an identifier that is the name of the macro and then the body of
 the macro contained within (possibly nested) curly braces.
 
 After a macro is defined, the body of the macro is substituted in
-place of any subsquent occurrance of the identifier that is the
+place of any subsquent occurrence of the identifier that is the
 macro name.  The macro name can occur anywhere.  The substitution
 is performed by the lexical analyzer, before tokens are identified
 and sent into the parser.  Note this distinction:  The "`define`"
@@ -44,7 +44,7 @@ lexical analyzer.
 ## Parameters
 
 The invocation of a macro can be followed immediately by a
-parenthesized list of parameters.  The open-parenthesis must immedately
+parenthesized list of parameters.  The open-parenthesis must immediately
 follow the macro name with no intervening whitespace.  Parameters are
 comma-separated.  There can be at most 9 parameters.
 

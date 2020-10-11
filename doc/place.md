@@ -124,7 +124,7 @@ the object.
 In the previous two diagrams, the ".start" and ".end" objects
 are marked with "&sup1;" because
 the location of ".start" and ".end" varies 
-according to the layout direction.  The previous diagrams asssumed
+according to the layout direction.  The previous diagrams assumed
 a layout direction of "right".  For other layout directions, we have:
 
 <blockquote>
