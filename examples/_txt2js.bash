@@ -1,15 +1,15 @@
 #!/bin/bash
 ########################################################################
-# Converts pikchr-format .txt files into a form usable by the
+# Converts pikchr-format text files into a form usable by the
 # Fossil SCM's pikchrshow page's "example scripts" JS code.
 #
-# Usage: $0 [options] [file1.txt [...fileN.txt]]
+# Usage: $0 [options] [file1.pikchr [...fileN.pikchr]]
 #
 # Options:
 #
 #  -o outfile, defaulting to /dev/stdout
 #
-# Its list of files defaults to $(ls -1 *.txt | sort).
+# Its list of files defaults to $(ls -1 *.pikchr | sort).
 ########################################################################
 
 function die(){
@@ -34,8 +34,8 @@ while [[ x != "x$1" ]]; do
 done
 
 [[ 0 = ${#scriptList[@]} ]] && {
-    scriptList=( $(ls -1 *.txt | sort) )
-    [[ 0 = ${#scriptList[@]} ]] && die 1 "Cannot find any *.txt files."
+    scriptList=( $(ls -1 *.pikchr | sort) )
+    [[ 0 = ${#scriptList[@]} ]] && die 1 "Cannot find any *.pikchr files."
 }
 
 ########################################################################
@@ -68,7 +68,7 @@ done
     n=0 # object count
     for f in ${scriptList[@]}; do
         [[ -f "$f" ]] || die $? "Missing file: $f"
-        fb=${f%%.txt}
+        fb=${f%%.pikchr}
         fb=${fb##*/}
         descVar=desc_${fb}
         desc=${!descVar}
