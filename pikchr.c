@@ -4806,8 +4806,8 @@ static void pik_append_txt(Pik *p, PObj *pObj, PBox *pBox){
   for(i=0; i<n; i++){
     PToken *t = &aTxt[i];
     PNum xtraFontScale = pik_font_scale(t);
-    orig_y = pObj->ptAt.y;
     PNum nx = 0;
+    orig_y = pObj->ptAt.y;
     y = 0;
     if( t->eCode & TP_ABOVE2 ) y += 0.5*hc + ha1 + 0.5*ha2;
     if( t->eCode & TP_ABOVE  ) y += 0.5*hc + 0.5*ha1;
@@ -5287,8 +5287,9 @@ static PObj *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PList *pSublist){
     return pNew;
   }
   if( pId ){
+    const PClass *pClass;
     pNew->errTok = *pId;
-    const PClass *pClass = pik_find_class(pId);
+    pClass = pik_find_class(pId);
     if( pClass ){
       pNew->type = pClass;
       pNew->sw = pik_value(p, "thickness",9,0);
@@ -6723,6 +6724,7 @@ void pik_elist_render(Pik *p, PList *pList){
     iNextLayer = 0x7fffffff;
     for(i=0; i<pList->n; i++){
       PObj *pObj = pList->a[i];
+      void (*xRender)(Pik*,PObj*);
       if( pObj->iLayer>iThisLayer ){
         if( pObj->iLayer<iNextLayer ) iNextLayer = pObj->iLayer;
         bMoreToDo = 1;
@@ -6730,7 +6732,6 @@ void pik_elist_render(Pik *p, PList *pList){
       }else if( pObj->iLayer<iThisLayer ){
         continue;
       }
-      void (*xRender)(Pik*,PObj*);
       if( mDebug & 1 ) pik_elem_render(p, pObj);
       xRender = pObj->type->xRender;
       if( xRender ){
@@ -7776,4 +7777,4 @@ int Pikchr_Init(Tcl_Interp *interp){
 #endif /* PIKCHR_TCL */
 
 
-#line 7804 "pikchr.c"
+#line 7805 "pikchr.c"
