@@ -145,9 +145,9 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **behind** *object*      [&#9654;info](./behind.md)
   * **cw**
   * **ccw**
-  * **&lt;-**
-  * **-&gt;**
-  * **&lt;-&gt;**
+  * **&lt;-**                [&#9654;info](./arrowdir.md)
+  * **-&gt;**                [&#9654;info](./arrowdir.md)
+  * **&lt;-&gt;**            [&#9654;info](./arrowdir.md)
   * **invis**|**invisible**  [&#9654;info](./invis.md)
   * **thick**                [&#9654;info](./thickthin.md)
   * **thin**                 [&#9654;info](./thickthin.md)
