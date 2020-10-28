@@ -1134,6 +1134,28 @@ text to a line that is marked "`invisible`"
   line invis from previous.s to previous.n "rotated text" aligned
 ~~~~
 
+Note that the direction of aligned text is the same as the direction of
+the line itself.  So if you draw a line from right to left, the aligned
+text will appear upside down:
+
+~~~~ pikchr indent toggle
+  circle "C1" fit
+  circle "C0" at C1+(2.5cm,-0.3cm) fit
+  arrow from C0 to C1 "aligned" aligned above chop
+~~~~
+
+If you need aligned text on an arrow that goes from right to left,
+and you want the text to appear rightside up, then actually draw
+the arrow from left to right and include the "**&lt;-**" attribute
+so that the arrowhead is at the beginning rather than at the end.
+For example:
+
+~~~~ pikchr indent toggle
+  circle "C1" fit
+  circle "C0" at C1+(2.5cm,-0.3cm) fit
+  arrow from C1 to C0 "aligned" aligned above <- chop
+~~~~
+
 ### Adjusting The Font Size
 
 The "`big`" and "`small`" attributes cause the text to be a little larger
