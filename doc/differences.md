@@ -373,7 +373,7 @@ spline thin color gray <-> \
    to d1+8mm heading 10 from C2 \
    to d1+8mm heading 20 from C2 \
    to d1+8mm heading 30 from C2 \
-   "30&deg;" aligned above small
+   "30&deg;" aligned below small
 
 X1: line thin color gray from circlerad+1mm heading 300 from C3 \
         to circlerad+6mm heading 300 from C3
