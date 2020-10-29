@@ -1558,23 +1558,31 @@ static void radiusPath(Pik *p, PObj *pObj, PNum r){
   int n = pObj->nPath;
   const PPoint *a = pObj->aPath;
   PPoint m;
+  PPoint an = a[n-1];
   int isMid = 0;
+  int iLast = pObj->bClose ? n : n-1;
 
   pik_append_xy(p,"<path d=\"M", a[0].x, a[0].y);
   m = radiusMidpoint(a[0], a[1], r, &isMid);
   pik_append_xy(p," L ",m.x,m.y);
-  for(i=1; i<n-1; i++){
-    m = radiusMidpoint(a[i+1],a[i],r, &isMid);
+  for(i=1; i<iLast; i++){
+    an = i<n-1 ? a[i+1] : a[0];
+    m = radiusMidpoint(an,a[i],r, &isMid);
     pik_append_xy(p," Q ",a[i].x,a[i].y);
     pik_append_xy(p," ",m.x,m.y);
     if( !isMid ){
-      m = radiusMidpoint(a[i],a[i+1],r, &isMid);
+      m = radiusMidpoint(a[i],an,r, &isMid);
       pik_append_xy(p," L ",m.x,m.y);
     }
   }
-  pik_append_xy(p," L ",a[i].x,a[i].y);
+  pik_append_xy(p," L ",an.x,an.y);
+  if( pObj->bClose ){
+    pik_append(p,"Z",1);
+  }else{
+    pObj->fill = -1.0;
+  }
   pik_append(p,"\" ",-1);
-  pik_append_style(p,pObj,0);
+  pik_append_style(p,pObj,pObj->bClose);
   pik_append(p,"\" />\n", -1);
 }
 static void splineRender(Pik *p, PObj *pObj){
