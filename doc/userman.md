@@ -1003,6 +1003,8 @@ in the order that they appear in the input script.
    arrow "Labeled" "line" wid 200%
 ~~~~
 
+## Text Attributes
+
 The layout and font style of the annotations can be modified using keywords
 that appear after each string literal.  The following modifiers are supported:
 
@@ -1034,7 +1036,7 @@ So, if there is just a single text label on a line, you probably
 want to include either the "`above`" or "`below`" keyword.
 
 ~~~~ pikchr indent toggle
-  line "above" above; move; line "`below`" below
+  line "above" above; move; line "below" below
 ~~~~
 
 If there are two texts on the object, they straddle the center point
@@ -1175,3 +1177,38 @@ size does not increase or decrease beyond two "`big`" or "`small`" keywords.
 
 A "`big`" keyword cancels any prior "`small`" keywords on the same text,
 and a "`small`" keyword cancels any prior "`big`" keywords.
+
+
+## Text Is Positioned Around The Center Of The Object
+
+The anchor point for text annotations is the center of the bounding box for
+the whole object.  This is intuitive for block objects and straight lines.
+But for multi-segment lines, the text might not be near
+the line itself.  For example, in the following four-segment arrow,
+the red box is the bounding box and the red dot shows the center of the
+bounding box.  The text label is aligned relative to the center of the
+bounding box which is not close to any part of the actual line.
+
+~~~~ pikchr toggle indent
+arrow up 1.5cm right 1.5cm then down .5cm right 1cm then up .5cm right .3cm \
+   then down 2.5cm right 1cm "text"
+box color red thin thin width previous.wid height previous.ht \
+   with .c at previous.c
+dot at last arrow.c color red behind last arrow
+~~~~
+
+If you need to position text beside one specific segment of a multi-segment
+line, consider creating a separate "`invis`" line over top of that line
+segment and attaching the text to the "invis" line instead.  Here is the
+same arrow as before, but with the text attached to a separate "invis" line
+that overlays the second segment of the arrow:
+
+~~~~ pikchr toggle indent
+arrow up 1.5cm right 1.5cm then down .5cm right 1cm then up .5cm right .3cm \
+   then down 2.5cm right 1cm
+box color red thin thin width previous.wid height previous.ht \
+   with .c at previous.c
+dot at last arrow.c color red behind last arrow
+line invis from 2nd vertex of last arrow to 3rd vertex of last arrow \
+   "text" below aligned
+~~~~
