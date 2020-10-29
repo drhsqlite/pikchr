@@ -49,9 +49,11 @@ Pikchr scripts cause no harm (apart from generating ugly diagrams).
 
   *  [Example Pikchr Scripts](./doc/examples.md)
   *  [](/pikchrshow) &larr; Enter Pikchr text and see the result on-line
+  *  [Source text for this page](./homepage.md?mimetype=text/plain)
 
 ## Pikchr Documentation
 
+  *  [Purpose And Scope Of Pikchr](./doc/purpose.md)
   *  [Pikchr User Manual](./doc/userman.md)
   *  [An Example Of How A Pikchr Script Is Written](./doc/teardown01.md)
   *  [Pikchr Language Spec](./doc/grammar.md)
