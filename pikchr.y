@@ -4870,7 +4870,10 @@ void pik_tokenize(Pik *p, PToken *pIn, yyParser *pParser, PToken *aParam){
         pik_tokenize(p, &aParam[token.eCode], pParser, 0);
         p->nCtx--;
       }
-    }else if( token.eType==T_ID && (pMac = pik_find_macro(p,&token))!=0 ){
+    }else if( token.eType==T_ID
+               && (token.n = (unsigned short)(sz & 0xffff), 
+                   (pMac = pik_find_macro(p,&token))!=0)
+    ){
       PToken args[9];
       unsigned int j = i+sz;
       if( pMac->inUse ){
