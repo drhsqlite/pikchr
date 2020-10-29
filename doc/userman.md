@@ -140,7 +140,7 @@ we see that that script contains three object descriptions:
 # Layout
 
 By default, objects are stacked beside each other from left to right.
-The Pikchr layout engine keeps track of the "layout direction" which
+The Pikchr layout engine keeps track of the "layout direction", which
 can be one of "right", "down", "left", or "up".  The layout direction
 defaults to "right", but you can change it using a statement which
 consists of just the name of the new direction.  So,
@@ -319,7 +319,7 @@ everything in inches only.  No units were allowed.  Pikchr allows
 you to attach units to measurements, as in this case where it is
 "1cm".  Internally, Pikchr still keeps track of everything in inches
 for compatibility with PIC, so the "1cm" token is really just an
-alternative spelling for the numeric constant "0.39370078740157480316"
+alternative spelling for the numeric constant "0.39370078740157480316",
 which is the inch-equivalent of 1 centimeter.  Surely you agree that
 "1cm" is much easier to read and write!  Other units recognized by Pikchr
 are "px" for pixels, "pt" for points, "pc" for picas, "mm" for millimeters,
@@ -861,7 +861,7 @@ bottom instead.
 
 ### Default Sizes
 
-Block objects have default sizes which are determined by variables.
+Block objects have default sizes, which are determined by variables.
 For example, the width of a box is initialized with the value of the `boxwid`
 variable, which defaults to `0.75in`.
 
@@ -895,7 +895,7 @@ text.  Click on the following script to see the difference that the
     box "Auto-fix text annotation" "with 125% width" fit width 125%
 ~~~~
 
-If a the end of a block object definition, either the width or height of the
+If at the end of a block object definition, either the width or height of the
 object is less than or equal to zero, then that dimension is increased so as to
 enclose all text annotations on the object.  Thus, for example, 
 you can make all of the
@@ -914,15 +914,15 @@ text annotations after rendering.  Unfortunately, that information is not
 readily available, as Pikchr runs long before the generated SVG reaches the
 web-browser in which it will be displayed.  Hence, Pikchr has to guess at the
 text size.  Usually it does a good job of this, but it can be a little off,
-especially for unusual (read: "non-ascii") characters or if the CSS for
+especially for unusual (read: "non-ASCII") characters or if the CSS for
 the rendering environment sets a non-standard font face or font size.  To
 compensate, the "`charwid`" and "`charht`" variables can be adjusted or
 extra spaces can be added at the beginning or end of text strings.
 
 These auto-fit features are a new innovation for Pikchr and are not available
-in legacy PIC as far as we are aware.
+in other PIC family interpreters, as far as we are aware.
 
-## Attributes For Stroke-Width And Drawing Colors
+## Attributes For Stroke Width And Drawing Colors
 
 Various attributes can be added to both block and line objects to influence
 how the objects are drawn.
@@ -935,12 +935,13 @@ how the objects are drawn.
   *  `fill` *color*
 
 The "`thickness`", "`thick`", "`thin`", and "`invisible`" attributes control
-the stroke-width of the lines that construct an object.  The default stroke-width
-for all objects is determined by the "`thickness`" variable which defaults
+the stroke width of the lines that construct an object.  The default stroke width
+for all objects is determined by the "`thickness`" variable, which defaults
 to "`0.015in`".  The "`thick`" and "`thin`" attributes increase or decrease
-the stroke-width by a fixed percentages.  This attributes can be repeated
-to make the stroke-width ever thicker or thinner.  The "`invisble`" attribute
-simply sets the stroke-width to 0.
+the stroke width by fixed percentages.  These attributes can be repeated
+to make the stroke width ever thicker or thinner, up to the limit of the object’s
+dimensions where the stroke fills the entire object.  The "`invisble`" attribute
+simply sets the stroke width to 0.
 
 ~~~~ pikchr toggle indent
    boxwid = 0
@@ -952,16 +953,30 @@ simply sets the stroke-width to 0.
    move
    box "thick" thick
    move
+   box "choked" thick thick thick thick thick thick thick thick thick
+   move
    box "invisible" invisible
 ~~~~
 
+Notice that “invisible” refers only to the object outline, not to the
+whole object. You therefore cancel the “invisible” attribute with
+“solid”, not “visible”:
+
+~~~~ pikchr toggle indent
+   boxwid = 0
+   boxht = 0
+   box "fully visible"
+   box invisible color gray "outline invisible"
+   box same solid "outline visible again" fit
+~~~~
+
 The "`color`" and "`fill`" attributes change the foreground and background
-colors of an object.  Colors can be expressed using any of the 140 standard
-HTML color names, such as "Bisque" or "AliceBlue" or "LightGray".  Color
+colors of an object.  Colors can be expressed using any of [the 148 standard
+CSS color names][ccn] such as "Bisque" or "AliceBlue" or "LightGray".  Color
 names are not case sensitive, so "bisque", "BISQUE", and "Bisque" all mean
 the same thing.  Color names can also be expressed as an integer which is
 interpreted as a 24-bit RGB value.  It is convenient to express numeric
-color values using hexadecimal notation.  "Bisque" is the same as "0xffe4c4"
+color values using hexadecimal notation.  "Bisque" is the same as "0xffe4c4",
 which is the same as "16770244".  
 
 ~~~~ pikchr toggle indent
@@ -970,15 +985,18 @@ which is the same as "16770244".
    oval "Color: White" "Fill: RoyalBlue" color White fill ROYALBLUE fit
 ~~~~
 
-Setting the "`fill`" to a negative number or "None" or "Off" makes the
-background transparent.  That is the default.  The default foreground
-color is black.
+Setting the "`fill`" to a negative number, to "None", or to "Off" makes the
+background transparent.  That is the default.
+
+The default foreground color is black.
+
+[ccn]: https://developer.mozilla.org/en-US/docs/Web/CSS/color_value
 
 ### Filled Polygons
 
 The "`fill`" attribute does not affect the rendering of lines unless the
 route of the line is terminated by the "`close`" attribute.  The "`close`"
-keyword converts the line into a polygon.  Click to see the code:
+keyword converts the line into a polygon:
 
 ~~~~ pikchr toggle indent
    line go 3cm heading 150 then 3cm west close \
@@ -986,9 +1004,10 @@ keyword converts the line into a polygon.  Click to see the code:
        fill 0x006000 color White "green" below "triangle" below
 ~~~~
 
-Polygons are not required to have a fill color.  You can use the "`close`"
-keyword to convert a polygon into a line and leave the background transparent.
-But using "`fill` *color*" together with "`close`" is a common idiom.
+Polygons are not required to have a fill color. With the default fill of “none,”
+you can use the "`close`"
+keyword to convert a polygon into a line and leave the background transparent,
+but using "`fill` *color*" together with "`close`" is a common idiom.
 
 ## Text Annotations
 
@@ -1066,7 +1085,7 @@ the text, so the "`ljust`" and "`rjust`" keywords control left and right
 positioning.
 
 For a line, the "`ljust`" means that the left side of the text is flush
-against the center point of the line.  And "`rjust`" means that the right
+against the center point of the line, and "`rjust`" means that the right
 side of the text is flush against the center point of the line.
 (In the following diagram, the red dot is at the center of the line.)
 
@@ -1088,13 +1107,13 @@ the same margin).
 
 The behavior of "`ljust`" and "`rjust`" for block objects in Pikchr differs
 from legacy PIC.
-In PIC, text is always justified around the center point, as in lines.
-But this means there is no easy way to left justify multiple lines of
-text within a "box" or "file", and so the behavior was changed for
+In PIC, text is always justified around the center point, as in lines,
+but this means there is no easy way to left justify multiple lines of
+text within a "box" or "file", so the behavior was changed for
 Pikchr.
 
-Pikchr allows two texts to fill the same vertical slot if one is
-"`ljust`" and the other is "`rjust`".
+Pikchr allows three separate text objects inside another object by combining
+"`ljust`", "`rjust`", and the default text centering:
 
 ~~~~ pikchr indent toggle
   box wid 300% \
@@ -1108,12 +1127,12 @@ Pikchr allows two texts to fill the same vertical slot if one is
 ### Text Attribute "center"
 
 The "`center`" attribute cancels all prior "`above`", "`below`", "`ljust`", and
-"`rjust`" attributes for the current text.
+"`rjust`" attributes for the current text object.
 
 ### Bold And Italic Font Styles
 
-The "`bold`" and "`italic`" attributes cause the text to use a bold or
-an italic font.  Fonts can be both bold and italic at the same time.
+The "`bold`" and "`italic`" attributes cause the text object to use a bold or
+italic font.  Fonts can be both bold and italic at the same time:
 
 ~~~~ pikchr indent toggle
   box "bold" bold "italic" italic "bold-italic" bold italic fit
@@ -1122,7 +1141,7 @@ an italic font.  Fonts can be both bold and italic at the same time.
 ### Aligned Text
 
 The "`aligned`" attribute causes text associated with a straight line
-to be rotated to align with that line.
+to be rotated to align with that line:
 
 ~~~~ pikchr indent toggle
   arrow go 150% heading 30 "aligned" aligned above
@@ -1132,7 +1151,7 @@ to be rotated to align with that line.
   arrow go 150% north "aligned" aligned above
 ~~~~
 
-To display rotated text not associated with a line attach the
+To display rotated text not associated with a line, attach the
 text to a line that is marked "`invisible`"
 
 ~~~~ pikchr indent toggle
@@ -1141,7 +1160,7 @@ text to a line that is marked "`invisible`"
 ~~~~
 
 Note that the direction of aligned text is the same as the direction of
-the line itself.  So if you draw a line from right to left, the aligned
+the line itself, so if you draw a line from right to left, the aligned
 text will appear upside down:
 
 ~~~~ pikchr indent toggle
@@ -1151,10 +1170,9 @@ text will appear upside down:
 ~~~~
 
 If you need aligned text on an arrow that goes from right to left,
-and you want the text to appear rightside up, then actually draw
-the arrow from left to right and include the "**&lt;-**" attribute
-so that the arrowhead is at the beginning rather than at the end.
-For example:
+and you do not want the text to be rendered upside-down, draw
+the arrow from left to right and include the "`<-`" attribute
+so that the arrowhead is at the beginning rather than at the end:
 
 ~~~~ pikchr indent toggle
   circle "C1" fit
@@ -1187,7 +1205,7 @@ But for multi-segment lines, the text might not be near
 the line itself.  For example, in the following four-segment arrow,
 the red box is the bounding box and the red dot shows the center of the
 bounding box.  The text label is aligned relative to the center of the
-bounding box which is not close to any part of the actual line.
+bounding box, which is not close to any part of the actual line.
 
 ~~~~ pikchr toggle indent
 arrow up 1.5cm right 1.5cm then down .5cm right 1cm then up .5cm right .3cm \
