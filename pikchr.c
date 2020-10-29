@@ -3614,7 +3614,6 @@ static void arrowInit(Pik *p, PObj *pObj){
   pObj->w = pik_value(p, "linewid",7,0);
   pObj->h = pik_value(p, "lineht",6,0);
   pObj->rad = pik_value(p, "linerad",7,0);
-  pObj->fill = -1.0;
   pObj->rarrow = 1;
 }
 
@@ -4035,7 +4034,6 @@ static void lineInit(Pik *p, PObj *pObj){
   pObj->w = pik_value(p, "linewid",7,0);
   pObj->h = pik_value(p, "lineht",6,0);
   pObj->rad = pik_value(p, "linerad",7,0);
-  pObj->fill = -1.0;
 }
 static PPoint lineOffset(Pik *p, PObj *pObj, int cp){
 #if 0
@@ -4119,7 +4117,6 @@ static void splineInit(Pik *p, PObj *pObj){
   pObj->w = pik_value(p, "linewid",7,0);
   pObj->h = pik_value(p, "lineht",6,0);
   pObj->rad = 1000;
-  pObj->fill = -1.0;  /* Disable fill by default */
 }
 /* Return a point along the path from "f" to "t" that is r units
 ** prior to reaching "t", except if the path is less than 2*r total,
@@ -7785,4 +7782,4 @@ int Pikchr_Init(Tcl_Interp *interp){
 #endif /* PIKCHR_TCL */
 
 
-#line 7813 "pikchr.c"
+#line 7810 "pikchr.c"
