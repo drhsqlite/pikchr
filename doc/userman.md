@@ -39,7 +39,7 @@ through this tutorial.
 
 [embed]: ./usepikchr.md
 
-# Viewing Pikchr Script Source Code For This Document
+# <a name="viewsrc"></a> Viewing Pikchr Script Source Code For This Document
 
 For this particular document, you can click on any of the diagrams
 rendered by Pikchr and the display will convert to showing you the
@@ -94,7 +94,7 @@ a backslash character and the new-line will be treated as any other space:
     arrow
 ~~~~~
 
-So, a Pikchr script is just a list of statements.  But what is a statement?
+So, a Pikchr script is just a list of statements, but what is a statement?
 
 # Pikchr Statements
 
@@ -122,7 +122,7 @@ text "arc" at (previous.start, previous.end)
 text "text" at 1.3 right of start of previous arc
 ~~~~~
 
-A statement can be only the class-name and nothing else.  But the class-name
+A statement can be only the class-name and nothing else, but the class-name
 is usually followed by one or more "attributes".  Attributes are used
 to modify the appearance of the object, or to position the object relative
 to prior objects.
@@ -220,7 +220,7 @@ the following script generates the same output as the previous.
 
 # Controlling Layout Using Attributes
 
-The automatic stacking of objects is convenient in many cases.  But
+The automatic stacking of objects is convenient in many cases, but
 most diagrams will want some objects placed somewhere other than
 immediately adjacent to their predecessor.  For that reason, layout
 attributes are provided that allow precise placement of objects.
@@ -264,13 +264,13 @@ be sure to remember the backslashes if you do split lines!
 The attributes on the "arrow" statement describe the path taken by
 the arrow.  The first attribute is "`from first box.s`".  This "from"
 attribute specifies where the arrow starts.  In this case, it starts
-at the "s" (or "south") corner of the "first box".  The "first box"
+at the "s" (or "south") anchor point of the "first box".  The "first box"
 part is probably self explanatory.  (You can also write it as
 "1st box" instead of "first box", and in fact legacy-PIC requires
 the use of "1st" instead of "first".)  But what is the ".s" part?
 
-Every block object has eight points on its perimeter that are named
-for compass points.   Like this:
+Every block object has eight anchor points on its perimeter that are named
+for compass points, like this:
 
 ~~~~~ pikchr toggle indent
 A: box
@@ -305,20 +305,20 @@ dot same at A.n ".n" above
 dot same at A.c " .c" ljust
 ~~~~~
 
-As you can see, there is also a point in the middle called ".c".
-Every block object has these compass points and you can refer to them
+As you can see, there is also a ninth point in the middle called ".c".
+Every block object has these anchor points; you can refer to them
 when positioning the object itself, or when positioning other objects
 relative to the block object.  In this case, we are starting the
-arrow at the ".s" corner of the box.
+arrow at the ".s" anchor of the box.
 
 The next phrase on the "arrow" statement is "`down 1cm`".  As you
 might guess, this phrase causes the arrow to move downward from its
 previous position (its starting point) by 1 centimeter.  This phrase
-highlights a key enhancement of Pikchr over legacy-PIC.  PIC does (or did)
+highlights a key enhancement of Pikchr over PIC, which did
 everything in inches only.  No units were allowed.  Pikchr allows
 you to attach units to measurements, as in this case where it is
 "1cm".  Internally, Pikchr still keeps track of everything in inches
-(for compatibility with PIC).  The "1cm" token is really just an
+for compatibility with PIC, so the "1cm" token is really just an
 alternative spelling for the numeric constant "0.39370078740157480316"
 which is the inch-equivalent of 1 centimeter.  Surely you agree that
 "1cm" is much easier to read and write!  Other units recognized by Pikchr
@@ -326,8 +326,8 @@ are "px" for pixels, "pt" for points, "pc" for picas, "mm" for millimeters,
 and of course "in" for inches.  Inches are assumed if no units are
 specified.
 
-Back to our arrow:  We have now established a path for the arrow
-down 1 centimeter from the ".s" corner of the box.  The next phrase
+Back to our arrow: we have now established a path for the arrow
+down 1 centimeter from the ".s" anchor of the box.  The next phrase
 is:  "`then right until even with first cylinder`".
 You can perhaps guess that this means that the arrow should continue
 to the right until it is lined up below the first cylinder.  You,
@@ -341,21 +341,21 @@ phrase is actually an abbreviation for "`first cylinder.c`" - the
 center of the cylinder.  This is what we want.  You could also
 write "`first cylinder.s`" if you want.
 
-The "until even with" phrase is not found in legacy-PIC.  In that
+The "until even with" phrase is not found in the original version of PIC.  In that
 system, you would have to do some extra math to figure out the
-distance for yourself.  Perhaps something like:
+distance for yourself, something like
 "`then right (1st cylinder.s.x - 1st box.s.x)`".  We think the
 "until even with" phrase is easier to use and understand.
 
 The final phrase in the "arrow" statement is
 "`then to first cylinder.s`".  This phrase tells the arrow to go
-from wherever it is at the moment, directly to the ".s" corner
+from wherever it is at the moment directly to the ".s" anchor
 of the cylinder.
 
 # The Advantage Of Relative Layout
 
 Notice that our sample diagram contains no coordinates and only
-one hard-coded distance (the "down 1cm" in the arrow).  The script
+one hard-coded distance, the "down 1cm" bit in the "arrow" statement.  The script
 is written in such a way that the script-writer does not have
 to do a lot of distance calculation.  The layout compensates
 automatically.
@@ -375,9 +375,9 @@ the cylinder.  This is easily accomplished:
 We simply add the ellipse (and an extra "move") on the first line.
 Even though the coordinate positions of the objects have adjusted,
 the description of the arrow that connects the box to the
-cylinder is not based on coordinates or absolute distances and
-so it does not have to change at all.  Pikchr will
-compensate automatically:
+cylinder is not based on coordinates or absolute distances,
+so it does not have to change at all.  Pikchr
+compensates automatically:
 
 ~~~~~ pikchr toggle indent
     box; move; circle; move; ellipse; move; cylinder
@@ -388,7 +388,7 @@ compensate automatically:
 ~~~~~
 
 Both PIC and Pikchr allow you to specify hard-coded coordinates
-and distances when laying out your diagram.  But you are encouraged
+and distances when laying out your diagram, but you are encouraged
 to avoid that approach.  Instead, place each new object you create
 relative to the position of prior objects.
 Pikchr provides many mechanisms for specifying the location
@@ -417,7 +417,7 @@ forward and backward layout constraints to find a solution.  This
 simplicity of design helps to keep Pikchr scripts easy to write and
 easy to understand.
 
-# Names Of Objects
+# Labeling Objects
 
 The previous example used the phrases like "`first box`" and "`first cylinder`"
 to refer to particular objects.  There are many variations on this naming
@@ -429,15 +429,18 @@ scheme:
   *  "`17th ellipse`" &larr; the seventeenth ellipse object
   *  ... and so forth
 
-This works, but it can be fragile.  If you go back later and insert a new
-object in the stream, it can mess up your counts.  Or, for that matter,
+These relative and ordinal references work, but they can be fragile.
+If you go back later and insert a new
+object in the stream, you can mess up the counting.  Or, for that matter,
 you might just miscount.
 
 In a complex diagram, it often works better to assign symbolic names to
-objects.  Do this by putting the object name and a colon ("`:`") immediately
-before the class-name in the object definition.  The object name must
-begin with a capital letter.  Afterwards, the object can be referred to
-by that name.
+objects, which we call “labels” in Pikchr. A label begins with a capital
+letter followed by some number of regular ASCII letters, digits or
+underscores, followed by a colon. This must come immediately before
+an object, without an intervening newline.
+Afterwards, the object can be referred to
+by that label.
 
 Consider how this simplifies our previous example:
 
@@ -452,22 +455,24 @@ Consider how this simplifies our previous example:
             then to C1.s
 ~~~~~
 
-By giving symbolic names to the box and cylinder, the arrow path
+By giving symbolic names to the box (B1) and cylinder (C1), the arrow path
 description is simplified.  Furthermore, if the ellipse gets changed
 into another cylinder, the arrow still refers to the correct cylinder.
-Note that the indentation of the lines following each symbolic name
-above is syntactically unimportant - it serves only to improve human
-readability.
+
+The indentation of the lines following each symbolic name
+above is syntactically unimportant: it serves only to improve human
+readability. Nevertheless, this is typical coding style for Pikchr
+and PIC before it.
 
 # Layout Of Block Objects
 
 For lines (and arrows and splines), you have to specify a path that the line
 follows, a path that might involve multiple bends and turns.  Defining the location
-of block objects is easier.  You just provide a single location to place
+of block objects is easier: you just provide a single location to place
 the object.  Ideally, you should place the object relative to some other
 object, of course.
 
-Let's say you have box and you want to position a circle 2 centimeters to the
+Let's say you have box, and you want to position a circle 2 centimeters to the
 right of that box.  You simply use an "`at`" attribute on the circle to tell it
 to position itself 2 cm to the right of the box:
 
@@ -489,11 +494,9 @@ The resulting diagram is:
       assert( last arrow.width == 2cm )
 ~~~~~
 
-(Actually, I added a three more objects in order to show the dimension lines
-in the diagram.  If you want to see the exact Pikchr code that generates any
-of the diagrams in this user manual - and assuming you are viewing this user
-manual from [Fossil][fossil] and that you are using a web browser with
-javascript enabled - just click on the diagram.)
+(We’ve added gray dimension lines purely for illustration.  Click the
+diagram [per the instructions above](#viewsrc) to see that they do not
+change the example, only add to it.)
 
 [fossil]: https://fossil-scm.org/
 
@@ -507,8 +510,8 @@ of the box, then just say so:
   C1: circle with .w at 2cm right of B1.e
 ~~~~~
 
-Normally at "`at`" clause will set the center of an object.  But if
-you add a "`with`" prefix you can specify to use any other boundary
+Normally an "`at`" clause will set the center of an object, but if
+you add a "`with`" prefix you can specify any other anchor
 point of the object to be the reference for positioning.  The Pikchr
 script above is saying "make the C1.w point be 2 cm right of B1.e".
 And we have:
@@ -553,12 +556,13 @@ Let's talk little more about the usual case:
 "`with .start at previous.end`".  The "`previous`" keyword means the
 previous object in the script.  (You can also use the keyword "`last`"
 for this purpose.)  So we are positioning the current object relative
-to the previous object.  But what about the ".start" and ".end".
+to the previous object.  But what about the ".start" and ".end"?
 
-Remember that every object has 8 boundary points whose names correspond
+Remember that every object has 8 anchor points whose names correspond
 to compass directions:  ".n", ".ne", ".e", ".se", ".s", ".sw", ".w",
-and ".nw", plus the center point ".c".  The ".start" and ".end" are also
-boundary points, but their position varies depending on the
+and ".nw", plus the ninth anchor, the center point ".c".  Every object
+also has ".start" and ".end" anchor
+points, but their position varies depending on the
 layout direction that is current when the object is created.
 
 <blockquote>
@@ -577,8 +581,8 @@ together:
     right; box; circle; cylinder
 ~~~~~
 
-(I added an "`right`" at the beginning to make the layout direction
-clear, but as "right" is the default layout direction, it doesn't change
+(I added a "`right`" at the beginning to make the layout direction
+clear, but as "right" is the default layout direction, so it doesn't change
 anything.)
 
 Armed with our new knowledge of how "`at`"-less block objects are
@@ -597,7 +601,7 @@ we can show by putting a red dot at (0,0):
 ~~~~~
 
 Because the layout direction is "right", the start and end of the box
-are the .w and .e boundary points.  Prove this by putting more colored dots
+are the .w and .e anchor points.  Prove this by putting more colored dots
 at those points and rendering the result:
 
 ~~~~~ pikchr source toggle indent
@@ -613,7 +617,7 @@ at those points and rendering the result:
 ~~~~~
 
 Similarly, we can show that the .start and .end of the circle are its
-.w and .e boundary points.  (Add new color dots to prove this to yourself
+.w and .e anchor points.  (Add new color dots to prove this to yourself,
 if you like.)  And clearly, the .start of the circle is directly on top
 of the .end of the box.
 
@@ -652,14 +656,14 @@ circle to show where it is, we can see this:
 
 The next statement is "down".  The "down" statement changes the layout
 direction to "down" in both systems.  In legacy PIC the .end of the circle
-remains at the .e boundary.  Then when the "cylinder" is positioned,
-its ".start" is at .n because the layout direction is now "down"
-and so the .n point of the cylinder is aligned to the .e point of
+remains at the .e anchor.  Then when the "cylinder" is positioned,
+its ".start" is at .n because the layout direction is now "down",
+so the .n point of the cylinder is aligned to the .e point of
 the circle.
 
-Pikchr works like PIC with one important change:  When the "down" statement
+Pikchr works like PIC with one important change: when the "down" statement
 is evaluated, Pikchr also moves the ".end" of the previous object
-to a new location that is appropriate for the new direction.  So, in other
+to a new location that is appropriate for the new direction. In other
 words, the down command moves the .end of the circle from .e to .s.
 You can see this by setting a red dot at the .end of
 the circle *after* the "down" command:
@@ -777,8 +781,8 @@ line thin color gray from (previous,X4) down 30% <-
 line thin color gray from (previous text,X3) up 30% <-
 ~~~~
 
-For a [circle object](./circleobj.md), the width and height and diameter
-are always the same and the radius is always half the diameter.  Changing
+For a [circle object](./circleobj.md), the width, height, and diameter
+are always the same, and the radius is always half the diameter.  Changing
 any parameter automatically adjusts the other three.
 
 ~~~~ pikchr toggle indent
@@ -858,7 +862,7 @@ bottom instead.
 ### Default Sizes
 
 Block objects have default sizes which are determined by variables.
-For example, the width of a box is initialized the value of the `boxwid`
+For example, the width of a box is initialized with the value of the `boxwid`
 variable, which defaults to `0.75in`.
 
 It is common for Pikchr scripts
@@ -868,10 +872,10 @@ the default sizes of objects defined within that script.
 ### Setting Sizes Using Attributes
 
 Use the "`width`" (or "`wid`") attribute to change the width of an object.
-The argument to this attribute can be an expression (such as "`1cm`" or
-"`0.75*boxwid`") or it can be a percentage of the prior value
-(example: "`75%`").  This also works for "`height`" (or "`ht`"),
-"`radius`" (or "`rad`"), and "`diameter`".
+The argument to this attribute can be an expression — such as "`1cm`" or
+"`0.75*boxwid`" — or it can be a percentage of the prior value,
+such as "`75%`".  This also works for "`height`",
+"`radius`", and "`diameter`".
 
 ### Automatic Sizing To Fit Text Annotations
 
@@ -1160,7 +1164,7 @@ For example:
 
 The "`big`" and "`small`" attributes cause the text to be a little larger
 or a little smaller, respectively.  Two "`big`" attributes cause the
-text to be larger still, as do two "`small`" attributes.  But the text
+text to be larger still, as do two "`small`" attributes. Text
 size does not increase or decrease beyond two "`big`" or "`small`" keywords.
 
 ~~~~ pikchr indent toggle
