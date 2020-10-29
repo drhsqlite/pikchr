@@ -48,7 +48,7 @@ move
 dot "  dot" ljust
 ~~~
 
-Additional object types may be added in subsequence versions of Pikchr.
+Additional object types may be added in subsequent versions of Pikchr.
 
 ## Units Other Than Inches
 
@@ -137,7 +137,7 @@ line from 1cm right of previous.se to 3cm right of previous.ne \
 ## Adjust the size of objects to fit their text annotations
 
 The ["`fit`" attribute](./fit.md) adjusts the width and height of
-box-like objects to snuggly surround their text labels.
+box-like objects to snugly surround their text labels.
 
 Also, if the width or height of an object is zero after all attributes
 have been parsed, then the zero dimensions are increased to enclose
@@ -206,7 +206,7 @@ Pikchr allows the keywords "`last`" or "`previous`" to refer to
 the immediately previous object without having to specify the
 type of that object.
 
-Objects that contain a text that looks like a label (starts with
+Objects that contain text that looks like a label (starts with
 an upper-case letter and contains only letters, digits, and underscores)
 can be used as a label for that object.  Thus if you say:
 
@@ -218,18 +218,36 @@ Subsequent code can refer to that circle as either "`N1`" or as "`Node1`".
 
 ## Support for C and C++ style comments
 
-Pikchr continues to support Bourne-shell style "#" comments.
-(That is to say, a comment is a "#" character and all following
-characters until end-of-line.)  Pikchr further recognizes
-C and C++ style comments:  "//" to end of line and "/\*...\*/".
+Pikchr continues to support Bourne shell style “`#`” comments:
+a `#` character and all following
+characters until end-of-line.
 
-## Variable names can start with "`$`" or "`@`"
+As an extension to PIC, Pikchr also recognizes
+C and C++ style comments:  “`//`” to end of line and block comments
+beginning with “`/*`”, extending through “`*/`”, irrespective of
+any intervening newlines.
+
+*Example:*
+
+        box "Hello,"            # say “hi”
+        box "world!"            // complete the thought
+        box "Hello," "world!!"  /* You may also break the
+                                   lines, like this. */
+
+## Variable names can start with "`$`" or "`@`" sigils
 
 There are many built-in variable names and keywords in the PIC and
-Pikchr languages.  To help
+Pikchr languages, all of which currently begin with lowercase letters.  To
 reduce the chance of a collision between an application-defined
 variable and a built-in variable name or keyword, Pikchr allows
 application-defined variable names to begin with "`$`" or "`@`".
+Pikchr does not now — nor will it ever — pre-define variables with such
+sigils, other than documented cases such as the positional macro
+parameters `$1`, `$2`, etc.
+
+We recommend that you use such sigils on your own variables to ensure
+that they will never collide with variables a future version of Pikchr
+may define.
 
 ## New assignment operators for variables
 
@@ -334,7 +352,7 @@ name appears on the left-hand size of an assignment.  You still do:
 ## The "`arc`" object does not actually draw an arc.
 
 The behavior of the "`arc`" object is underspecified in the original
-[BWK paper on PIC][bwk].  Nobody is sure exactly what "arc" is suppose
+[BWK paper on PIC][bwk].  Nobody is sure exactly what "arc" is supposed
 to do. Furthermore, arcs seem to be seldom used.
 Splines and lines with a radius at corners are better mechanisms
 for drawing curvy lines in a diagram.  For these reasons, and to
@@ -345,10 +363,10 @@ taken.
 
 The 30&deg; dimensional "arc" in the drawing below 
 (taken from [a tutorial analysis of a Pikchr script](./teardown01.md))
-is really a spline.  It is  close enough to an true
+is really a spline.  It is close enough to a true
 arc for the purposes of Pikchr.  Can you tell the difference?
 
-~~~ pikchr
+``` pikchr
 scale = 0.8
 linewid *= 0.5
 circle "C0" fit
@@ -381,7 +399,7 @@ X2: line thin color gray from circlerad+1mm heading 300 from C2 \
         to circlerad+6mm heading 300 from C2
 line thin color gray <-> from X2 to X1 "distance" aligned above small \
     "C2 to C4" aligned below small
-~~~
+```
 
 ## Discontinued Features
 
@@ -397,7 +415,7 @@ commands was a great innovation in a phototypesetting control
 system for Version-III Unix running on a PDP/11 in 1982, in a
 controlled-access facility.
 But such a feature is undesirable in modern web-facing applications
-accessible to random passers-by on the internet.
+accessible to random passers-by on the Internet.
 
 [rce]: https://en.wikipedia.org/wiki/Arbitrary_code_execution
 
@@ -428,7 +446,7 @@ do not want to make potential exploits accessible to attackers.
 Furthermore, the `sprintf()` is of little to no utility in a Pikchr
 script that lacks loops.  A secure version of `sprintf()` could be
 added to Pikchr, but doing that would basically require recoding
-a secure sprintf() from from scratch.  It is safer and easier
+a secure `sprintf()` from from scratch.  It is safer and easier
 to simply omit it.
 
 ### Pikchr omits "`{...}`" subblocks
