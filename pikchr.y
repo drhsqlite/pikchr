@@ -380,6 +380,10 @@ struct Pik {
 */
 #define PIKCHR_PLAINTEXT_ERRORS 0x0001
 
+/* Include PIKCHR_DARK_MODE among the mFlag bits to invert colors.
+*/
+#define PIKCHR_DARK_MODE        0x0002
+
 /*
 ** The behavior of an object class is defined by an instance of
 ** this structure. This is the "virtual method" table.
@@ -1974,6 +1978,28 @@ static void pik_append_point(Pik *p, const char *z, PPoint *pPt){
   pik_append(p, buf, -1);
 }
 
+/*
+** Invert the RGB color so that it is appropriate for dark mode.
+*/
+static int pik_color_to_dark_mode(int x){
+  int r, g, b;
+  int mn, mx;
+  x = 0xffffff - x;
+  r = (x>>16) & 0xff;
+  g = (x>>8) & 0xff;
+  b = x & 0xff;
+  mx = r;
+  if( g>mx ) mx = g;
+  if( b>mx ) mx = b;
+  mn = r;
+  if( g<mn ) mn = g;
+  if( b<mn ) mn = b;
+  r = mn + (mx-r);
+  g = mn + (mx-g);
+  b = mn + (mx-b);
+  return r*0x10000 + g*0x100 + b;
+}
+
 /* Append a PNum value surrounded by text.  Do coordinate transformations
 ** on the value.
 */
@@ -2009,9 +2035,11 @@ static void pik_append_dis(Pik *p, const char *z1, PNum v, const char *z2){
 static void pik_append_clr(Pik *p, const char *z1, PNum v, const char *z2){
   char buf[200];
   int x = (int)v;
-  int r = (x>>16) & 0xff;
-  int g = (x>>8) & 0xff;
-  int b = x & 0xff;
+  int r, g, b;
+  if( p->mFlags & PIKCHR_DARK_MODE ) x = pik_color_to_dark_mode(x);
+  r = (x>>16) & 0xff;
+  g = (x>>8) & 0xff;
+  b = x & 0xff;
   snprintf(buf, sizeof(buf)-1, "%srgb(%d,%d,%d)%s", z1, r, g, b, z2);
   buf[sizeof(buf)-1] = 0;
   pik_append(p, buf, -1);
@@ -5041,6 +5069,7 @@ int main(int argc, char **argv){
   int bDontStop = 0;           /* Continue in spite of errors */
   int exitCode = 0;            /* What to return */
   int mFlags = 0;              /* mFlags argument to pikchr() */
+  const char *zStyle = "";     /* Extra styling */
   const char *zHtmlHdr = 
     "<!DOCTYPE html>\n"
     "<html lang=\"en-US\">\n"
@@ -5078,6 +5107,10 @@ int main(int argc, char **argv){
       if( z[0]=='-' ) z++;
       if( strcmp(z,"dont-stop")==0 ){
         bDontStop = 1;
+      }else
+      if( strcmp(z,"dark-mode")==0 ){
+        zStyle = "color:white;background-color:black;";
+        mFlags |= PIKCHR_DARK_MODE;
       }else
       if( strcmp(z,"svg-only")==0 ){
         if( zHtmlHdr==0 ){
@@ -5127,7 +5160,8 @@ int main(int argc, char **argv){
         printf("<p>ERROR</p>\n%s\n", zOut);
       }else{
         printf("<div id=\"svg-%d\" onclick=\"toggleHidden('svg-%d')\">\n",i,i);
-        printf("<div style='border:3px solid lightgray;max-width:%dpx;'>\n",w);
+        printf("<div style='border:3px solid lightgray;max-width:%dpx;%s'>\n",
+               w,zStyle);
         printf("%s</div>\n", zOut);
         printf("<pre class='hidden'>");
         print_escape_html(zIn);

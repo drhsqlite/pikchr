@@ -26,3 +26,8 @@ char *pikchr(
 ** as text/plain instead of as text/html
 */
 #define PIKCHR_PLAINTEXT_ERRORS 0x0001
+
+/* Include PIKCHR_DARK_MODE among the bits of mFlags on the 3rd
+** argument to pikchr() to render the image in dark mode.
+*/
+#define PIKCHR_DARK_MODE        0x0002
