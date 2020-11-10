@@ -364,6 +364,7 @@ struct Pik {
   char samePath;           /* aTPath copied by "same" */
   const char *zClass;      /* Class name for the <svg> */
   int wSVG, hSVG;          /* Width and height of the <svg> */
+  int fgcolor;             /* fgcolor value, or -1 for none */
   /* Paths for lines are constructed here first, then transferred into
   ** the PObj object at the end: */
   int nTPath;              /* Number of entries on aTPath[] */
@@ -2004,7 +2005,7 @@ static int pik_color_to_dark_mode(int x, int isBg){
       b = (127*b)/mx;
     }
   }else{
-    if( mn<128 ){
+    if( mn<128 && mx>mn ){
       r = 127 + ((r-mn)*128)/(mx-mn);
       g = 127 + ((g-mn)*128)/(mx-mn);
       b = 127 + ((b-mn)*128)/(mx-mn);
@@ -2049,7 +2050,11 @@ static void pik_append_clr(Pik *p,const char *z1,PNum v,const char *z2,int bg){
   char buf[200];
   int x = (int)v;
   int r, g, b;
-  if( p->mFlags & PIKCHR_DARK_MODE ) x = pik_color_to_dark_mode(x,bg);
+  if( x==0 && p->fgcolor>0 && !bg ){
+    x = p->fgcolor;
+  }else if( p->mFlags & PIKCHR_DARK_MODE ){
+    x = pik_color_to_dark_mode(x,bg);
+  }
   r = (x>>16) & 0xff;
   g = (x>>8) & 0xff;
   b = x & 0xff;
@@ -4289,6 +4294,7 @@ static void pik_render(Pik *p, PList *pList){
     PNum w, h;       /* Drawing width and height */
     PNum wArrow;
     PNum pikScale;   /* Value of the "scale" variable */
+    int miss = 0;
 
     /* Set up rendering parameters */
     pik_compute_layout_settings(p);
@@ -4297,6 +4303,13 @@ static void pik_render(Pik *p, PList *pList){
     margin = pik_value(p,"margin",6,0);
     margin += thickness;
     wArrow = p->wArrow*thickness;
+    p->fgcolor = (int)pik_value(p,"fgcolor",7,&miss);
+    if( miss ){
+      PToken t;
+      t.z = "fgcolor";
+      t.n = 7;
+      p->fgcolor = (int)pik_lookup_color(0, &t);
+    }
 
     /* Compute a bounding box over all objects so that we can know
     ** how big to declare the SVG canvas */
