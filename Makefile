@@ -20,7 +20,9 @@ lemon:	lemon.c
 
 test:	pikchr
 	./pikchr */*.pikchr >out.html || true
-	open out.html
+	open out.html || true
+	./pikchr --dark-mode */*.pikchr >darkmode.html || true
+	open darkmode.html
 
 clean:	
 	rm -f pikchr pikchr.c pikchr.h pikchr.out lemon out.html
