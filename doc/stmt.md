@@ -95,6 +95,22 @@ Pikchr has built-in variables as follows:
 | textwid       |: 0.750 :| *Not used by Pikchr*                             |
 | thickness     |: 0.015 :| Default line thickness for all objects           |
 
+In addition to the above, Pikchr recognizes the following variables
+which are not initially defined, but if they are defined by the script
+have special properties:
+
+>
+| Variable Name&nbsp;&nbsp;&nbsp;&nbsp; |: Purpose                           |
+------------------------------------------------------------------------------
+| bottommargin  | Extra border space added to the bottom of the diagram      |
+| fgcolor       | Use this foreground color in place of black                |
+| fontscale     | Scale factor applied to the font size of text              |
+| layer         | The default layer for all subsequent objects               |
+| leftmargin    | Extra border space added to the left of the diagram        |
+| margin        | Extra border space added to all four sides of the diagram  |
+| rightmargin   | Extra border space added to the right side of the diagram  |
+| topmargin     | Extra border space added to top top side of the diagram    |
+
 
 The "VARIABLE *assignment-op* *expr*" syntax is able to modify the value
 of built-in variables, or create new variables.  In legacy-PIC, the only
