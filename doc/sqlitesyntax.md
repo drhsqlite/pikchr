@@ -21,9 +21,10 @@ using Tcl/Tk, ghostscript, and imagemagick.
   *  The Pikchr source text promises to be easier to maintain than
      the older Tcl/Tk+ghostscript+imagemagick hodge-podge.
 
-  *  Converting the documentation source text into display-ready HTML
-     is now cross-platform.  The prior approach only seemed to work
-     on Linux, and then only if the right utilities were installed.
+  *  The scripts used to convert the documentation source text into
+     display-ready HTML can now be cross-platform.  The prior approach
+     only seemed to work on Linux, and then only if the right utilities
+     were installed.
 
   *  Pikchr provides additional flexibility in the formatting of
      syntax digrams, so that the diagrams can be made easier to read

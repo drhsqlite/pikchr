@@ -3,8 +3,9 @@
 Pikchr is a specialized tool designed for one specific purpose:
 
   *  Pikchr generates diagrams for technical documentation written in
-     Markdown or similar markup languages using an enduring and easily
-     human-readable, and human-editable graphic language.
+     Markdown or similar markup languages using an enduring language that
+     is easy for humans to read and maintain using a generic text
+     editor.
 
 To this end, Pikchr diagrams are designed to be:
 
@@ -24,9 +25,8 @@ To this end, Pikchr diagrams are designed to be:
 What Pikchr is <u>not</u>:
 
   *  Pikchr is not intended for marketing graphics.  Pikchr
-     deliberate avoids artsy features.  It strives to convey
-     information in a dry and mathematical style.  The objective of
-     Pikchr is to convey truth, not emotion.
+     strives to present information in a dry and mathematical style.
+     The objective of Pikchr is to convey truth, not feeling.
 
   *  Pikchr is not intended for generating charts and graphs.  It could
      perhaps be used for this.  One might propose extensions to make it more
