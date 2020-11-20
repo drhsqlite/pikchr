@@ -4829,6 +4829,7 @@ static void pik_append_txt(Pik *p, PObj *pObj, PBox *pBox){
   PNum hc = 0.0;    /* Height of the center row */
   PNum hb1 = 0.0;   /* Height of the first "below" row of text */
   PNum hb2 = 0.0;   /* Height of the second "below" row */
+  PNum yBase = 0.0;
   int n, i, nz;
   PNum x, y, orig_y, s;
   const char *z;
@@ -4842,7 +4843,11 @@ static void pik_append_txt(Pik *p, PObj *pObj, PBox *pBox){
   pik_txt_vertical_layout(pObj);
   x = pObj->ptAt.x;
   for(i=0; i<n; i++) allMask |= pObj->aTxt[i].eCode;
-  if( pObj->type->isLine ) hc = pObj->sw*1.5;
+  if( pObj->type->isLine ){
+    hc = pObj->sw*1.5;
+  }else if( pObj->type->xInit==cylinderInit ){
+    yBase = -0.75*pObj->rad;
+  }
   if( allMask & TP_CENTER ){
     for(i=0; i<n; i++){
       if( pObj->aTxt[i].eCode & TP_CENTER ){
@@ -4893,7 +4898,7 @@ static void pik_append_txt(Pik *p, PObj *pObj, PBox *pBox){
     PNum xtraFontScale = pik_font_scale(t);
     PNum nx = 0;
     orig_y = pObj->ptAt.y;
-    y = 0;
+    y = yBase;
     if( t->eCode & TP_ABOVE2 ) y += 0.5*hc + ha1 + 0.5*ha2;
     if( t->eCode & TP_ABOVE  ) y += 0.5*hc + 0.5*ha1;
     if( t->eCode & TP_BELOW  ) y -= 0.5*hc + 0.5*hb1;
@@ -7879,4 +7884,4 @@ int Pikchr_Init(Tcl_Interp *interp){
 #endif /* PIKCHR_TCL */
 
 
-#line 7907 "pikchr.c"
+#line 7912 "pikchr.c"
