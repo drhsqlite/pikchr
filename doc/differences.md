@@ -234,20 +234,20 @@ any intervening newlines.
         box "Hello," "world!!"  /* You may also break the
                                    lines, like this. */
 
-## Variable names can start with "`$`" or "`@`" sigils
+## Variable names can start with "`$`" or "`@`" characters
 
 There are many built-in variable names and keywords in the PIC and
 Pikchr languages, all of which currently begin with lowercase letters.  To
 reduce the chance of a collision between an application-defined
 variable and a built-in variable name or keyword, Pikchr allows
 application-defined variable names to begin with "`$`" or "`@`".
-Pikchr does not now — nor will it ever — pre-define variables with such
-sigils, other than documented cases such as the positional macro
+Pikchr does not now — nor will it ever — pre-define variables that
+begin with "`$`" or "`@`", other than the use of positional macro
 parameters `$1`, `$2`, etc.
 
-We recommend that you use such sigils on your own variables to ensure
-that they will never collide with variables a future version of Pikchr
-may define.
+We recommend that you begin your own variable names with either
+"`$`" or "`@`" to ensure that they will never collide with variables
+that might be added to future version of Pikchr.
 
 ## New assignment operators for variables
 

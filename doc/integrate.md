@@ -5,7 +5,9 @@ Pikchr is (currently) implemented in C.
   *  It uses no external libraries other than the standard C library and
      the standard math library (for sin(), cos(), and some others).
   *  It is completely contained in a single source code file:
-     [`pikchr.c`](/file/pikchr.c)
+     [`pikchr.c`](/file/pikchr.c).  There is also a header file
+     [`pikchr.h`](/file/pikchr.h) available if you want it, but it is not
+     required.
   *  It uses a single C-language interface routine: `pikchr()`
 
 Any existing Markdown or other wiki rendering engine that can invoke
@@ -48,6 +50,24 @@ example if it hits a `malloc()` failure.
 If the zClass parameter is not NULL, then it is an extra class name
 (or names) that is inserted into the "`<svg>`" element of the returned
 string.  The mFlags parameter is currently unused.  Leave it at zero.
+
+## Flags passed to pikchr()
+
+The [`pikchr.h`](/file/pikchr.h) header file currently defines two flags
+that can be passed into the pikchr() function as the 3rd argument.
+(Additional flags might get added in future releases.)
+
+   *  `PIKCHR_PLAINTEXT_ERRORS` &rarr;
+      Normally, the text returned by pikchr() in the even of an error
+      is formatted as HTML.  Setting this flag causes the error message
+      to be plain text.
+
+   *  `PIKCHR_DARK_MODE` &rarr;
+      When this flag is used,  Pikchr inverts the colors in the diagram
+      to make them suitable for "dark mode" pages.  The main Pikchr
+      website has a
+      [dark-mode counterpart](https://pikchr.org/darkmode/doc/trunk/homepage.md)
+      that you can visit to see the effects of this flag on Pikchr diagrams.
 
 ## Example use of pikchr()
 
