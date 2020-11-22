@@ -953,7 +953,7 @@ simply sets the stroke width to 0.
    move
    box "thick" thick
    move
-   box "choked" thick thick thick thick thick thick thick thick thick
+   box "thick thick thick" thick thick thick
    move
    box "invisible" invisible
 ~~~~
@@ -1199,7 +1199,7 @@ and a "`small`" keyword cancels any prior "`big`" keywords.
 
 ## Text Is Positioned Around The Center Of The Object
 
-The anchor point for text annotations is the center of the bounding box for
+The anchor point for text annotations is usually the center of the bounding box for
 the whole object.  This is intuitive for block objects and straight lines.
 But for multi-segment lines, the text might not be near
 the line itself.  For example, in the following four-segment arrow,
@@ -1230,3 +1230,23 @@ dot at last arrow.c color red behind last arrow
 line invis from 2nd vertex of last arrow to 3rd vertex of last arrow \
    "text" below aligned
 ~~~~
+
+The anchor point for text is *usually* the center of the object, but
+in some cases, the anchor point might be fudged a little.  This happens,
+for example for cylinder objects:
+
+~~~ pikchr toggle indent
+C1: cylinder "text in a" "cylinder" rad 120%
+    dot color red at C1.c
+    dot color blue at 0.75*C1.rad below C1.c
+~~~
+
+The red dot is on the center of the cylinder and the blue dot shows the
+anchor point for the text.  The text is a little lower for cylinders because
+that looks better.  With out this adjustment of the text center point, the
+cylinder text would look goofy:
+
+~~~ pikchr toggle indent
+C1: cylinder rad 120%
+    text "text in a" "cylinder" at C1.c
+~~~
