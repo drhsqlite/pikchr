@@ -697,7 +697,7 @@ There is also a fourth convenience parameter:
 
 The `diameter` is always twice the radius. Setting the `diameter` automatically
 changes the `radius` and setting the `radius` automatically changes the
-`diameter.
+`diameter`.
 
 Usually the meanings of these parameters are obvious.
 
