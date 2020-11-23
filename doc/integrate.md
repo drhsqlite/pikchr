@@ -49,12 +49,12 @@ example if it hits a `malloc()` failure.
 
 If the zClass parameter is not NULL, then it is an extra class name
 (or names) that is inserted into the "`<svg>`" element of the returned
-string.  The mFlags parameter is currently unused.  Leave it at zero.
+string.
 
 ## Flags passed to pikchr()
 
 The [`pikchr.h`](/file/pikchr.h) header file currently defines two flags
-that can be passed into the pikchr() function as the 3rd argument.
+that can be passed into the pikchr() function as the 3rd argument, "mFlags".
 (Additional flags might get added in future releases.)
 
    *  `PIKCHR_PLAINTEXT_ERRORS` &rarr;
