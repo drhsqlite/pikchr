@@ -58,7 +58,7 @@ that can be passed into the pikchr() function as the 3rd argument, "mFlags".
 (Additional flags might get added in future releases.)
 
    *  `PIKCHR_PLAINTEXT_ERRORS` &rarr;
-      Normally, the text returned by pikchr() in the even of an error
+      Normally, the text returned by pikchr() in the event of an error
       is formatted as HTML.  Setting this flag causes the error message
       to be plain text.
 
