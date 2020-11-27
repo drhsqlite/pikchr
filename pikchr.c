@@ -644,8 +644,8 @@ typedef union {
   pik_parserTOKENTYPE yy0;
   PObj* yy38;
   PPoint yy43;
+  short int yy44;
   PList* yy119;
-  int yy196;
   PRel yy200;
   PNum yy265;
 } YYMINORTYPE;
@@ -2516,7 +2516,7 @@ static YYACTIONTYPE yy_reduce(
         break;
       case 22: /* basetype ::= STRING textposition */
 #line 584 "pikchr.y"
-{yymsp[-1].minor.yy0.eCode = yymsp[0].minor.yy196; yylhsminor.yy38 = pik_elem_new(p,0,&yymsp[-1].minor.yy0,0); }
+{yymsp[-1].minor.yy0.eCode = yymsp[0].minor.yy44; yylhsminor.yy38 = pik_elem_new(p,0,&yymsp[-1].minor.yy0,0); }
 #line 2545 "pikchr.c"
   yymsp[-1].minor.yy38 = yylhsminor.yy38;
         break;
@@ -2636,7 +2636,7 @@ static YYACTIONTYPE yy_reduce(
         break;
       case 47: /* attribute ::= STRING textposition */
 #line 629 "pikchr.y"
-{pik_add_txt(p,&yymsp[-1].minor.yy0,yymsp[0].minor.yy196);}
+{pik_add_txt(p,&yymsp[-1].minor.yy0,yymsp[0].minor.yy44);}
 #line 2665 "pikchr.c"
         break;
       case 48: /* attribute ::= FIT */
@@ -2709,14 +2709,14 @@ static YYACTIONTYPE yy_reduce(
         break;
       case 62: /* textposition ::= */
 #line 665 "pikchr.y"
-{yymsp[1].minor.yy196 = 0;}
+{yymsp[1].minor.yy44 = 0;}
 #line 2738 "pikchr.c"
         break;
       case 63: /* textposition ::= textposition CENTER|LJUST|RJUST|ABOVE|BELOW|ITALIC|BOLD|ALIGNED|BIG|SMALL */
 #line 668 "pikchr.y"
-{yylhsminor.yy196 = pik_text_position(yymsp[-1].minor.yy196,&yymsp[0].minor.yy0);}
+{yylhsminor.yy44 = (short int)pik_text_position(yymsp[-1].minor.yy44,&yymsp[0].minor.yy0);}
 #line 2743 "pikchr.c"
-  yymsp[-1].minor.yy196 = yylhsminor.yy196;
+  yymsp[-1].minor.yy44 = yylhsminor.yy44;
         break;
       case 64: /* position ::= expr COMMA expr */
 #line 671 "pikchr.y"
@@ -4509,7 +4509,7 @@ static void pik_append(Pik *p, const char *zText, int n){
 */
 static void pik_append_text(Pik *p, const char *zText, int n, int mFlags){
   int i;
-  char c;
+  char c = 0;
   int bQSpace = mFlags & 1;
   int bQAmp = mFlags & 2;
   if( n<0 ) n = (int)strlen(zText);
@@ -4930,20 +4930,20 @@ static void pik_append_txt(Pik *p, PObj *pObj, PBox *pBox){
         y1 = y-ch;
       }
       if( (t->eCode & TP_ALIGN)!=0 && pObj->nPath>=2 ){
-        int n = pObj->nPath;
-        PNum dx = pObj->aPath[n-1].x - pObj->aPath[0].x;
-        PNum dy = pObj->aPath[n-1].y - pObj->aPath[0].y;
+        int nn = pObj->nPath;
+        PNum dx = pObj->aPath[nn-1].x - pObj->aPath[0].x;
+        PNum dy = pObj->aPath[nn-1].y - pObj->aPath[0].y;
         if( dx!=0 || dy!=0 ){
           PNum dist = hypot(dx,dy);
-          PNum t;
+          PNum tt;
           dx /= dist;
           dy /= dist;
-          t = dx*x0 - dy*y0;
+          tt = dx*x0 - dy*y0;
           y0 = dy*x0 - dx*y0;
-          x0 = t;
-          t = dx*x1 - dy*y1;
+          x0 = tt;
+          tt = dx*x1 - dy*y1;
           y1 = dy*x1 - dx*y1;
-          x1 = t;
+          x1 = tt;
         }
       }
       pik_bbox_add_xy(pBox, x+x0, orig_y+y0);
@@ -4977,9 +4977,9 @@ static void pik_append_txt(Pik *p, PObj *pObj, PBox *pBox){
       pik_append(p, "%\"", 2);
     }
     if( (t->eCode & TP_ALIGN)!=0 && pObj->nPath>=2 ){
-      int n = pObj->nPath;
-      PNum dx = pObj->aPath[n-1].x - pObj->aPath[0].x;
-      PNum dy = pObj->aPath[n-1].y - pObj->aPath[0].y;
+      int nn = pObj->nPath;
+      PNum dx = pObj->aPath[nn-1].x - pObj->aPath[0].x;
+      PNum dy = pObj->aPath[nn-1].y - pObj->aPath[0].y;
       if( dx!=0 || dy!=0 ){
         PNum ang = atan2(dy,dx)*-180/M_PI;
         pik_append_num(p, " transform=\"rotate(", ang);
@@ -5458,7 +5458,7 @@ static void pik_elem_set_exit(PObj *pObj, int eDir){
 */
 static void pik_set_direction(Pik *p, int eDir){
   assert( ValidDir(eDir) );
-  p->eDir = eDir;
+  p->eDir = (unsigned char)eDir;
 
   /* It seems to make sense to reach back into the last object and
   ** change its exit point (its ".end") to correspond to the new
@@ -5914,7 +5914,7 @@ static void pik_add_txt(Pik *p, PToken *pTxt, int iPos){
   }
   pT = &pObj->aTxt[pObj->nTxt++];
   *pT = *pTxt;
-  pT->eCode = iPos;
+  pT->eCode = (short)iPos;
 }
 
 /* Merge "text-position" flags
@@ -6295,7 +6295,7 @@ static short int pik_nth_value(Pik *p, PToken *pNth){
     i = 1;
   }
   if( i==0 && pik_token_eq(pNth,"first")==0 ) i = 1;
-  return i;
+  return (short int)i;
 }
 
 /* Search for the NTH object.
@@ -6503,7 +6503,7 @@ static PPoint pik_position_at_hdg(PNum dist, PToken *pD, PPoint pt){
 /* Return the coordinates for the n-th vertex of a line.
 */
 static PPoint pik_nth_vertex(Pik *p, PToken *pNth, PToken *pErr, PObj *pObj){
-  static const PPoint zero;
+  static const PPoint zero = {0, 0};
   int n;
   if( p->nErr || pObj==0 ) return p->aTPath[0];
   if( !pObj->type->isLine ){
@@ -6670,7 +6670,8 @@ static void pik_after_adding_attributes(Pik *p, PObj *pObj){
       case DIR_UP:    p->aTPath[1].y += pObj->h; break;
     }
     if( pObj->type->xInit==arcInit ){
-      p->eDir = pObj->outDir = (pObj->inDir + (pObj->cw ? 1 : 3))%4;
+      pObj->outDir = (pObj->inDir + (pObj->cw ? 1 : 3))%4;
+      p->eDir = (unsigned char)pObj->outDir;
       switch( pObj->outDir ){
         default:        p->aTPath[1].x += pObj->w; break;
         case DIR_DOWN:  p->aTPath[1].y -= pObj->h; break;
@@ -6761,7 +6762,7 @@ static void pik_after_adding_attributes(Pik *p, PObj *pObj){
     pik_bbox_add_xy(&pObj->bbox, pObj->ptAt.x - w2, pObj->ptAt.y - h2);
     pik_bbox_add_xy(&pObj->bbox, pObj->ptAt.x + w2, pObj->ptAt.y + h2);
   }
-  p->eDir = pObj->outDir;
+  p->eDir = (unsigned char)pObj->outDir;
 }
 
 /* Show basic information about each object as a comment in the
@@ -6956,8 +6957,8 @@ static void pik_render(Pik *p, PList *pList){
     p->hSVG = (int)(p->rScale*h);
     pikScale = pik_value(p,"scale",5,0);
     if( pikScale<0.99 || pikScale>1.01 ){
-      p->wSVG *= pikScale;
-      p->hSVG *= pikScale;
+      p->wSVG = (int)(p->wSVG*pikScale);
+      p->hSVG = (int)(p->hSVG*pikScale);
       pik_append_num(p, " width=\"", p->wSVG);
       pik_append_num(p, "\" height=\"", p->hSVG);
       pik_append(p, "\"", 1);
@@ -7335,6 +7336,7 @@ static int pik_token_length(PToken *pToken, int bAllowCodeBlock){
         }else{
           isInt = 0;
           nDigit = 0;
+          i = 0;
         }
         if( c=='.' ){
           isInt = 0;
@@ -7884,4 +7886,4 @@ int Pikchr_Init(Tcl_Interp *interp){
 #endif /* PIKCHR_TCL */
 
 
-#line 7912 "pikchr.c"
+#line 7914 "pikchr.c"
