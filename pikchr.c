@@ -6956,7 +6956,9 @@ static void pik_render(Pik *p, PList *pList){
     p->wSVG = (int)(p->rScale*w);
     p->hSVG = (int)(p->rScale*h);
     pikScale = pik_value(p,"scale",5,0);
-    if( pikScale<0.99 || pikScale>1.01 ){
+    if( pikScale>=0.001 && pikScale<=1000.0
+     && (pikScale<0.99 || pikScale>1.01)
+    ){
       p->wSVG = (int)(p->wSVG*pikScale);
       p->hSVG = (int)(p->hSVG*pikScale);
       pik_append_num(p, " width=\"", p->wSVG);
@@ -7886,4 +7888,4 @@ int Pikchr_Init(Tcl_Interp *interp){
 #endif /* PIKCHR_TCL */
 
 
-#line 7914 "pikchr.c"
+#line 7916 "pikchr.c"
