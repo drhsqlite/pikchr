@@ -22,7 +22,7 @@ pikchr.c:	pikchr.y pikchr.h.in lempar.c lemon
 	cat pikchr.h.in >pikchr.h
 
 piktcl: pikchr.c
-	mkdir piktcl
+	mkdir -p piktcl
 	$(CC) -shared -fPIC -o piktcl/libpikchr.so \
 	      $(CFLAGS) \
 	      -DPIKCHR_TCL $(TCL_PACKAGE_FLAGS) \
