@@ -7858,6 +7858,7 @@ static int pik_tcl_command(
   char *zOut;            /* SVG output text */
   Tcl_Obj *pRes;         /* The result TCL object */
 
+  (void)clientData;
   if( objc!=2 ){
     Tcl_WrongNumArgs(interp, 1, objv, "PIKCHR_SOURCE_TEXT");
     return TCL_ERROR;
@@ -7881,6 +7882,7 @@ static int pik_tcl_command(
 ** given in the argument */
 int Pikchr_Init(Tcl_Interp *interp){
   Tcl_CreateObjCommand(interp, "pikchr", pik_tcl_command, 0, 0);
+  Tcl_PkgProvide (interp, PACKAGE_NAME, PACKAGE_VERSION);
   return TCL_OK;
 }
 
@@ -7888,4 +7890,4 @@ int Pikchr_Init(Tcl_Interp *interp){
 #endif /* PIKCHR_TCL */
 
 
-#line 7916 "pikchr.c"
+#line 7918 "pikchr.c"
