@@ -5291,6 +5291,7 @@ static int pik_tcl_command(
 ** given in the argument */
 int Pikchr_Init(Tcl_Interp *interp){
   Tcl_CreateObjCommand(interp, "pikchr", pik_tcl_command, 0, 0);
+  Tcl_PkgProvide (interp, PACKAGE_NAME, PACKAGE_VERSION);
   return TCL_OK;
 }
 
