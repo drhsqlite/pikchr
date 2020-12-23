@@ -55,7 +55,7 @@ as we work through the text.
 The script begins by setting some global property variables.  The
 "`scale = 0.8`" line simply makes the whole diagram a little smaller
 so that it fits better within its host document.  Try commenting out
-that line (by adding a "`#`" or "`//`") and seeing the difference.
+that line by adding a "`#`" or "`//`" at the start to see the difference.
 
 The "`fill = white`" line causes all objects on the graph to have a
 default background fill color of white.  Without this line, the objects are
@@ -63,15 +63,15 @@ not filled at all, and so the background colors (to be inserted on lines 22
 through 29) show through.  The result is still legible, but less pleasing.
 Try commenting out line 02 to see what happens.  We could have
 added a "`fill white`" attribute on every circle in the diagram instead,
-but it seems easier just to set the default fill color once.
+but it's easier to set the default fill color once.
 
 The "`linewid *= 0.5`" on line 03 shortens the default length of lines
 and arrows by 50%.  Try commenting out that line.  You will see that the
 arrows become twice as long, which makes the graph more spread out and
 harder to read.  Shortening the arrows is an aesthetic improvement.
 
-Even though they appear first in the script, lines like these
-are typically added at the end of writing, in order to clean up a diagram after
+Even though they appear first in the script, directives like these
+are typically inserted after creating the initial version of the diagram in order to clean up a diagram once
 the basic structure is established.  Do not feel like you need
 to start out by setting a bunch of variables.  Write the object
 definitions first, and then perhaps go back and tweak the appearance
@@ -83,16 +83,16 @@ Line 04 creates a circle sized to fit its label "C0".  We want
 all the circles in this diagram to be the same size, so after sizing
 the first one to fit the text, line 05 sets the new default circle radius
 for all subsequent circles to be same as the first circle.  This
-saves us from having to add a "fit" on every line.  And it means that
-all of the circles will be of a uniform size, even if they contain
+not only saves us from having to add a "fit" on every "circle" call, it means
+all circles will be of a uniform size despite containing
 varying amounts of text.
 
 ## Lines 06 through 13 - the bottom row of nodes
 
-After the initial node has been established, lines 06 through 13 create
+After establishing the initial diagram node, lines 06 through 13 create
 a sequence of nodes, C1, C2, C4, and C6, connected by arrows and
-moving to the right.  The default layout direction for the graph is
-"right" so everything is placed automatically.
+moving to the right.  The default Pikchr layout direction is
+"right," so everything is placed automatically.
 
 ## Line 14 - drawing the first node of the first branch
 
@@ -107,10 +107,10 @@ a clause of the form:
 The *basis* is C2.  The *distance* is the same as the distance from C2
 to C4, and so we use the expression "`dist(C2,C4)`".  Notice here that
 we are able to refer to the nodes using their text annotations because
-the text annotations have the form of a valid object label - they begin
-with a capital letter and consists of alphanumerics and underscores.
-The *angle* is a compass heading - 0 to 360 degrees clockwise from
-from north.  A heading of 30 degrees means that there is a 60-degree
+the text annotations have the form of a valid object label: they begin
+with a capital letter and consist of alphanumerics and underscores.
+The *angle* is a compass heading: 0 to 360 degrees clockwise from
+north.  A heading of 30 degrees means that there is a 60-degree
 angle between C2-C4 and C2-C3, thus establishing C2, C3, and C4 as
 the vertexes of an equilateral triangle.
 
@@ -154,17 +154,17 @@ Lines 15 and 16 add the arrow and C5 node.
 
 The arrow from C2 to C3 is drawn by line 17.  The "`chop`" attribute
 causes the arrow to begin and end on node boundaries.  If you remove
-the "`chop`" (try it!) the arrow will go between the centers of the two
-nodes.
+the "`chop`" (try it!) the arrow will go from the center of the first
+node to the center of the second, which isn't what we want.
 
 ## Lines 18 through 21 - nodes of the second branch
 
 Lines 18 through 21 are mostly a repeat of lines 14 through 17.
 The differences are (1) the branch is connected to C6 instead of C2
-and (2) the nodes of the branch have text attributes "C3'" and "C5'"
-Because the addition of the "`'`" characters, text attributes are no longer
-valid object label names and we cannot use them to refer to objects
-any longer.  Therefore, the nodes of this second branch are given
+and (2) the nodes have different labels.
+Because these node labels include "prime" marks (`'`), you cannot use
+them as object labels as we could for the corresponding C3 and C5
+nodes. Therefore, the nodes of this second branch are given
 explicit labels "C3P" and "C5P".  Do not be bashful about adding
 labels to objects.  The use of labels often makes the script much
 easier to read and maintain.
@@ -174,9 +174,9 @@ easier to read and maintain.
 Lines 22 through 26 implement a single box object that provides background
 color for the trunk.  Note the use of backslash ("`\`") to continue the
 definition of this object across multiple lines.  It is not required to
-break up the definition of the box across multiple lines.  Splitting the
-object definition to multiple lines merely is merely an aid to human
-understanding.  Pikchr does not care.
+break up the definition of the box across multiple lines; it
+merely aids human
+understanding.  Pikchr does not care how long your source lines are.
 
 Some tricky calculations are involved here.  We need to figure out
 an appropriate width and height for the box so that it encloses the
@@ -197,16 +197,16 @@ Recall that we allowed for one linewid of margin to be split between
 both ends, so the western side is half that margin to the left of the
 leftmost end of the graph.
 
-Normally, Pikchr draws elements in the order that they appear in the
-graph.  So, normally, this new background color box would paint
-on top of the objects that come before.  That would obscure the graph nodes.
+Normally, Pikchr stacks elements on the SVG canvas in the order that they appear in the
+source text, so this new background color box would normally paint
+on top of the objects that come before, which would obscure the graph nodes.
 To prevent this, the "`behind C0`" on line 25 tells Pikchr to paint 
 this box before it paints the C0 circle, so that the background color
 box occurs in the background rather than on top of the graph.
-Try commenting out the "`behind C0`" and see what happens!
+Try commenting out the "`behind C0`" to see what happens!
 
 Finally, line 26 changes the fill color for the box to a light shade
-of blue, and makes the border line thin with color gray.
+of blue and the border to be thin and gray.
 
 # Lines 27 through 29 - background color for the branches
 
@@ -216,17 +216,25 @@ keyword "`same`".  The "`same`" means that all of the settings to
 the new box are initialized to values from the previous box.  That
 means we don't have to set the height, or set "`behind C0`" or
 "`thin`" or "`color gray`".  All those attributes are inherited.
-The second box only has to change the width (because it is shorter)
-and adjust the background color, and set the position.
+The second box only has to change the width to accommodate the shorter
+length of the branch it encloses in the diagram, to
+adjust the background color, and to set the position.
 
-We want the right edge of both background boxes to align.  And we
-want the branch background to begin at a little to the left of C3.
+We want the right edge of both background boxes to align, and we
+want the branch background to begin a little to the left of C3.
 The left edge of C2 seems like a reasonable starting point, so we
 set the width to "`previous.e.x - C2.w.x`" on line 27.  The "`previous`"
-refers to the previous background color box, of course.  Be careful
-that you do not insert any new objects in between the two boxes,
-and thus mess up the "`previous`".  Perhaps it would be better
-to label the prior color box and refer to it by name, like this:
+refers to the previous background color box, of course.
+
+If you had to insert a new object in between the two boxes,
+it would change the referent of the "`previous`" qualifier, but only
+if one or more of those new objects is itself a box. Inserting a
+circle wouldn't affect it, since "`previous`" always means the previous
+object of the same type.
+
+If you had to interpose another box, you could solve the broken
+reference problem by adding a label and using that label instead
+of "`previous`":
 
 ~~~~
          ...
@@ -254,9 +262,9 @@ Line 29 adjusts the background color to a darker shade of blue.
 Lines 30 and 31 create a pair of text objects to identify the two
 branches depicted in the diagram.  
 
-# Overview
+# Summary
 
-A 31-line Pikchr script might look intimidating at first glance.  But
+A 31-line Pikchr script might look intimidating at first glance, but
 as we see here, it is really quite simple.  No coordinates are involved,
 nor any hard-coded distances.  Everything is laid out and sized relative
 to other elements and to the system defaults.  This makes the diagram
@@ -267,12 +275,12 @@ portable and adjustments easy.
 Practice your Pikchr-script writing skills by modifying the
 example script as follows:
 
-  1.  Add a new "C7" node to the right of "C6"
+  1.  Add a new "C7" node to the right of "C6".
 
-  2.  Put the feature branch below the trunk rather than above it.
-
-  3.  Add "C8" to the right of "C7".  This one is harder because it
+  2.  Now add "C8" to the right of "C7".  This one is harder because it
       will involve expanding the background color boxes.
+
+  3.  Put the feature branch below the trunk rather than above it.
 
   4.  Move the "feature branch" and "trunk" labels to the left ends
       of their respective boxes, rather than centering them.
@@ -280,7 +288,7 @@ example script as follows:
   5.  Add another branch above the "feature branch" that adds
       nodes "C9", "C10", and "C11" that fork off from "C5'".  You
       will probably need to find a new place to put the "feature branch"
-      label in order to get it out of the way.
+      label to get it out of the way.
 
   6.  Add a new node and dashed line from "C5'" that illustrates "C5'"
       being merged back into trunk.
