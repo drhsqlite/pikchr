@@ -11,7 +11,7 @@ a practical and accessible tutorial on using Pikchr.
 
 [gram]: ./grammar.md
 
-# Running Pikchr Scripts
+# Running Pikchr Scripts <a id="running"></a>
 
 The design goal of Pikchr is to enable embedded line diagrams in Markdown or other
 simple markup languages.  The details on how to embedded Pikchr in Markdown is
@@ -39,7 +39,7 @@ through this tutorial.
 
 [embed]: ./usepikchr.md
 
-# <a name="viewsrc"></a> Viewing Pikchr Script Source Code For This Document
+# Viewing Pikchr Script Source Code For This Document <a name="viewsrc"></a>
 
 For this particular document, you can click on any of the diagrams
 rendered by Pikchr and the display will convert to showing you the
@@ -57,7 +57,7 @@ down there.  Other systems might not implement the view-swapping behavior
 at all.  This is a platform-depending feature that is one layer above
 Pikchr itself.
 
-# About Pikchr Scripts
+# About Pikchr Scripts <a id="about"></a>
 
 Pikchr is designed to be simple.  A Pikchr script is
 just a sequence of Pikchr statements, separated by either new-lines or
@@ -96,7 +96,7 @@ a backslash character and the new-line will be treated as any other space:
 
 So, a Pikchr script is just a list of statements, but what is a statement?
 
-# Pikchr Statements
+# Pikchr Statements <a id="statements"></a>
 
 *Most* statements are descriptions of a single graphic object that
 becomes part of the diagram.  The first token of the statement is the
@@ -137,7 +137,7 @@ we see that that script contains three object descriptions:
       inside the box.
   3.  An "arrow" object with no attributes.
 
-# Layout
+# Layout <a id="layout"></a>
 
 By default, objects are stacked beside each other from left to right.
 The Pikchr layout engine keeps track of the "layout direction", which
@@ -218,7 +218,7 @@ the following script generates the same output as the previous.
     box; line invisible; circle; line invisible; cylinder
 ~~~~~
 
-# Controlling Layout Using Attributes
+# Controlling Layout Using Attributes <a id="attributes"></a>
 
 The automatic stacking of objects is convenient in many cases, but
 most diagrams will want some objects placed somewhere other than
@@ -352,7 +352,7 @@ The final phrase in the "arrow" statement is
 from wherever it is at the moment directly to the ".s" anchor
 of the cylinder.
 
-# The Advantage Of Relative Layout
+# The Advantage Of Relative Layout <a id="relative"></a>
 
 Notice that our sample diagram contains no coordinates and only
 one hard-coded distance, the "down 1cm" bit in the "arrow" statement.  The script
@@ -397,7 +397,7 @@ a little study of the syntax options available to you (and discussed
 further below) you will be generating complex diagrams using Pikchr
 in no time.
 
-# Single-Pass Design
+# Single-Pass Design <a id="single-pass"></a>
 
 Both Pikchr and PIC operate on a single-pass design.  Objects
 can refer to other objects that occur before them in the script, but not
@@ -417,7 +417,7 @@ forward and backward layout constraints to find a solution.  This
 simplicity of design helps to keep Pikchr scripts easy to write and
 easy to understand.
 
-# Labeling Objects
+# Labeling Objects <a id="labeling"></a>
 
 The previous example used the phrases like "`first box`" and "`first cylinder`"
 to refer to particular objects.  There are many variations on this naming
@@ -464,7 +464,7 @@ above is syntactically unimportant: it serves only to improve human
 readability. Nevertheless, this is typical coding style for Pikchr
 and PIC before it.
 
-# Layout Of Block Objects
+# Layout Of Block Objects <a id="block-objects"></a>
 
 For lines (and arrows and splines), you have to specify a path that the line
 follows, a path that might involve multiple bends and turns.  Defining the location
@@ -540,7 +540,7 @@ The previous example used a relatively simple *position*
 of "`2cm right of B1.e`".  That was sufficient for our simple diagram.
 More complex diagrams can have move complex *position* phrases.
 
-## Automatic Layout Of Block Objects
+## Automatic Layout Of Block Objects <a id="auto-layout-block"></a>
 
 If you omit the "`at`" attribute from a block object, the object is positioned
 as if you had used the following:
@@ -683,7 +683,7 @@ and after the "down" command to see that they shift:
     print "after: ", C1.end.x, ", ", C1.end.y
 ~~~~~
 
-## Adjusting The Size Of Block Objects
+## Adjusting The Size Of Block Objects <a id="block-obj-size"></a>
 
 The size of every block object is controlled by three parameters:
 
@@ -859,7 +859,7 @@ width is less than the height, then semicircles appear on the top and
 bottom instead.
 
 
-### Default Sizes
+### Default Sizes <a id="def-size"></a>
 
 Block objects have default sizes, which are determined by variables.
 For example, the width of a box is initialized with the value of the `boxwid`
@@ -869,7 +869,7 @@ It is common for Pikchr scripts
 to change these default at or near the beginning of a script in order to adjust
 the default sizes of objects defined within that script.
 
-### Setting Sizes Using Attributes
+### Setting Sizes Using Attributes <a id="size-attr"></a>
 
 Use the "`width`" (or "`wid`") attribute to change the width of an object.
 The argument to this attribute can be an expression — such as "`1cm`" or
@@ -877,7 +877,7 @@ The argument to this attribute can be an expression — such as "`1cm`" or
 such as "`75%`".  This also works for "`height`",
 "`radius`", and "`diameter`".
 
-### Automatic Sizing To Fit Text Annotations
+### Automatic Sizing To Fit Text Annotations <a id="text-ann-size"></a>
 
 If a block object contains text annotations, the "`fit`" attribute causes
 the width and height to be adjusted so that the object neatly encloses that
@@ -922,7 +922,7 @@ extra spaces can be added at the beginning or end of text strings.
 These auto-fit features are a new innovation for Pikchr and are not available
 in other PIC family interpreters, as far as we are aware.
 
-## Attributes For Stroke Width And Drawing Colors
+## Attributes For Stroke Width And Drawing Colors <a id="stroke-attr"></a>
 
 Various attributes can be added to both block and line objects to influence
 how the objects are drawn.
@@ -992,7 +992,7 @@ The default foreground color is black.
 
 [ccn]: https://developer.mozilla.org/en-US/docs/Web/CSS/color_value
 
-### Filled Polygons
+### Filled Polygons <a id="filled-polys"></a>
 
 The "`fill`" attribute does not affect the rendering of lines unless the
 route of the line is terminated by the "`close`" attribute.  The "`close`"
@@ -1009,7 +1009,7 @@ you can use the "`close`"
 keyword to convert a polygon into a line and leave the background transparent,
 but using "`fill` *color*" together with "`close`" is a common idiom.
 
-## Text Annotations
+## Text Annotations <a id="text-ann"></a>
 
 Every object can have up to five lines of text annotation.  Each annotation
 is a string literal attribute on the object definition.  By default, the
@@ -1022,7 +1022,7 @@ in the order that they appear in the input script.
    arrow "Labeled" "line" wid 200%
 ~~~~
 
-## Text Attributes
+## Text Attributes <a id="text-attr"></a>
 
 The layout and font style of the annotations can be modified using keywords
 that appear after each string literal.  The following modifiers are supported:
@@ -1038,7 +1038,7 @@ that appear after each string literal.  The following modifiers are supported:
   * **rjust**
   * **small**
 
-### Position Text Above Or Below The Center Of The Object
+### Position Text Above Or Below The Center Of The Object <a id="text-pos"></a>
 
 The "`above`" and "`below`" keywords control the location of the
 text above or below the center point of the object with which
@@ -1078,7 +1078,7 @@ all are placed above or below the center point, in order of appearance.
   line same "first below" below "second below" below
 ~~~~
 
-### Justify Text Left Or Right
+### Justify Text Left Or Right <a id="text-just"></a>
 
 As the "`above`" and "`below`" keywords control up and down positioning of
 the text, so the "`ljust`" and "`rjust`" keywords control left and right
@@ -1124,12 +1124,12 @@ Pikchr allows three separate text objects inside another object by combining
      "below-rjust" below rjust
 ~~~~
 
-### Text Attribute "center"
+### Text Attribute "center" <a id="text-center"></a>
 
 The "`center`" attribute cancels all prior "`above`", "`below`", "`ljust`", and
 "`rjust`" attributes for the current text object.
 
-### Bold And Italic Font Styles
+### Bold And Italic Font Styles <a id="font-style"></a>
 
 The "`bold`" and "`italic`" attributes cause the text object to use a bold or
 italic font.  Fonts can be both bold and italic at the same time:
@@ -1138,7 +1138,7 @@ italic font.  Fonts can be both bold and italic at the same time:
   box "bold" bold "italic" italic "bold-italic" bold italic fit
 ~~~~
 
-### Aligned Text
+### Aligned Text <a id="text-align"></a>
 
 The "`aligned`" attribute causes text associated with a straight line
 to be rotated to align with that line:
@@ -1180,7 +1180,7 @@ so that the arrowhead is at the beginning rather than at the end:
   arrow from C1 to C0 "aligned" aligned above <- chop
 ~~~~
 
-### Adjusting The Font Size
+### Adjusting The Font Size <a id="font-size"></a>
 
 The "`big`" and "`small`" attributes cause the text to be a little larger
 or a little smaller, respectively.  Two "`big`" attributes cause the
@@ -1197,7 +1197,7 @@ A "`big`" keyword cancels any prior "`small`" keywords on the same text,
 and a "`small`" keyword cancels any prior "`big`" keywords.
 
 
-## Text Is Positioned Around The Center Of The Object
+## Text Is Positioned Around The Center Of The Object <a id="text-center"></a>
 
 The anchor point for text annotations is usually the center of the bounding box for
 the whole object.  This is intuitive for block objects and straight lines.
