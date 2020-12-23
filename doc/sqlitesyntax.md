@@ -1,25 +1,25 @@
-# How Pikchr Is Used To Generate SQLite Syntax Diagrams.
+# How Pikchr Generates the SQLite Syntax Diagrams
 
 Beginning with SQLite version 3.34.0, the graphical
-[syntax diagrams][1] in the SQLite documentation are SVG generated
-using Pikchr.  Previously the diagrams where GIF images generated
-using Tcl/Tk, ghostscript, and imagemagick.
+[syntax diagrams][1] in the SQLite documentation are SVGs generated
+using Pikchr.  In prior versions of SQLite, the diagrams were GIF images generated
+using a fiddly processing chain based on Tcl/Tk, Ghostscript, and ImageMagick.
 
-[1]: https://sqlite.org/draft/syntaxdiagrams.html
+[1]: https://sqlite.org/syntaxdiagrams.html
 
-## Advantages To The New Approach
+## Advantages to the New Approach
 
   *  The SVG syntax diagrams are embedded in the text of the
-     HTML documentation pages, rather than being separately loaded
-     GIF images.  That means fewer round-trips to the server to fetch
-     resources, and the HTML documentation pages can be saved to a
-     file and reloaded later for viewing off-line.
+     HTML documentation pages rather than separately-loaded
+     GIF images.  That speeds page loads due to fewer HTTP round-trips to the server to fetch
+     resources, and it makes saved copies of the resulting HTML documentation pages
+     self-contained, simplifying later off-line viewing.
 
   *  SVG is resolution independent, so that diagrams look better on
-     mobile devices.
+     high-DPI devices such as smartphones and tablets.
 
   *  The Pikchr source text promises to be easier to maintain than
-     the older Tcl/Tk+ghostscript+imagemagick hodge-podge.
+     the prior Tcl/Tk+Ghostscript+ImageMagick toolchain.
 
   *  The scripts used to convert the documentation source text into
      display-ready HTML can now be cross-platform.  The prior approach
@@ -32,16 +32,11 @@ using Tcl/Tk, ghostscript, and imagemagick.
 
 ## How It Works
 
-The SQLite documentation is generated using TCL.
-
-SQLite documentation source files are combinations HTML and TCL.
-The source documents are initially HTML, but any
-text between `<tcl>`...`</tcl>` is executed as TCL script.
-There are also other special features such as enhanced hyperlinks
-and some special markup styles.
-A [TCL script][2] is run over the source text that evaluates the
-embedded TCL and other special feathres and then outputs the pure 
-HTML documentation pages.
+The SQLite documentation is generated using [a Tcl script][2] from
+source documents. The script evaluates Tcl code embedded into the
+source files between `<tcl>`...`</tcl>` tags, extends HTML with
+enhanced hyperlinks and formatting features, and outputs the result
+as standard HTML.
 
 [2]: https://sqlite.org/docsrc/file/wrap.tcl
 
@@ -54,13 +49,13 @@ source text rather than the rendered SVG.
 [3]: https://www.sqlite.org/docsrc/dir/art/syntax?ci=trunk
 [4]: https://www.sqlite.org/docsrc/doc/trunk/README.md
 
-### Pikchr As A TCL Extension
+### Pikchr as a Tcl Extension
 
-The pikchr.c source file can be compiled into a TCL extension by
-adding the -DPIKCHR_TCL compile-time option.  As a TCL extensions,
-Pikchr provides a single new TCL command named "`pikchr`" which takes
-a single argument that the Pikchr source text.  The `pikchr` command returns
-a TCL list of three elements which are:
+The [`pikchr.c` source file][src] can be compiled into a Tcl extension by
+adding the `-DPIKCHR_TCL` compile-time option.  As a Tcl extension,
+Pikchr provides a single new Tcl command named "`pikchr`" which takes
+a single argument: the Pikchr source text.  The `pikchr` command returns
+a Tcl list of three elements which are:
 
    1.  The SVG output text
    2.  The width of the output in pixels
@@ -69,7 +64,9 @@ a TCL list of three elements which are:
 As with ordinary Pikchr, a negative width is returned if the input text
 contains an error, and the output text is the error message.
 
-### Automatic Insertion Of Diagrams Into Documentation
+[src]: https://pikchr.org/home/file/pikchr.c
+
+### Automatic Insertion of Diagrams into Documentation
 
 Within the SQLite documentation source text, markup of the following
 form causes the named Pikchr syntax diagram to be loaded, converted
@@ -81,9 +78,9 @@ into SVG, and the output SVG added to the documentation under construction:
    </tcl>
 ~~~~
 
-The RecursiveBubbleDiagram TCL procedure uses the "`pikchr`" TCL command
+The RecursiveBubbleDiagram Tcl procedure uses the "`pikchr`" Tcl command
 to convert the Pikchr source text into SVG and inserts that SVG.  The
 command also looks for other diagrams that are referenced by that diagram
-and loads them as well, together with appropriate javascript to cause the
-sub-diagrams to be initially hidden, but to expand when the read clicks on
+and loads them as well, together with appropriate JavaScript to cause the
+sub-diagrams to be initially hidden, but to expand when the reader clicks on
 the appropriate links.
