@@ -538,7 +538,7 @@ object ("`.c`") is used as the *reference-point*.  The power of Pikchr
 comes from the fact that "*position*" can be a rather complex expression.
 The previous example used a relatively simple *position*
 of "`2cm right of B1.e`".  That was sufficient for our simple diagram.
-More complex diagrams can have move complex *position* phrases.
+More complex diagrams can have more complex *position* phrases.
 
 ## Automatic Layout Of Block Objects <a id="auto-layout-block"></a>
 
