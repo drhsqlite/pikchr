@@ -9,4 +9,4 @@ to provide a convenient means of showing diagrams.
 
 Visit the [home page][3] for more information
 
-[3]: /doc/trunk/homepage.md
+[3]: https://pikchr.org/home/doc/trunk/homepage.md
