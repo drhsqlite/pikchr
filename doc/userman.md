@@ -1250,3 +1250,74 @@ cylinder text would look goofy:
 C1: cylinder rad 120%
     text "text in a" "cylinder" at C1.c
 ~~~
+
+# Containers
+
+A "container" is a list of one or more objects contained within "`[`...`]`".
+A container is a collection of one or more objects that looks like a single
+object to the remainder of the script.
+
+For example:
+
+~~~ pikchr toggle source indent
+    A: [
+      oval "Hello"
+      arrow
+      box "World" radius 4px
+    ]
+    Border: box thin width A.width+0.5in height A.height+0.5in at A.center
+~~~
+
+The "A" container is composed of an oval, and arrow, and a box with rounded
+corners.  But to the subsequent "Border" box, the "A" container appears to
+be a single object.  The Border box can reference the overall width and height
+and the center point of the A container in order to size and position itself to
+enclose the container with a 0.25in border:
+
+~~~ pikchr toggle indent
+    A: [
+      oval "Hello"
+      arrow
+      box "World" radius 4px
+    ]
+    Border: box thin width A.width+0.5in height A.height+0.5in at A.center
+~~~
+
+A container is mostly useful for adding a border around a collection of
+objects, as shown above, or adding a caption to a diagram.  The following
+diagram shows what a caption might look like.
+(Click to see the Pikchr source text.)
+
+~~~ pikchr toggle indent
+    A: [
+      oval "Hello"
+      arrow
+      box "World" radius 4px
+    ]
+    Caption: text "Diagram Caption" italic with .n at 0.1in below A.s
+~~~
+
+
+In legacy PIC, layout direction changes (the "up", "down", "left", and "right"
+commands) and variable definitions within a container only affect subsequent
+statements within the same container.  Once the container closes, the prior direction
+and variable values are restored.  Pikchr does not work this way.  In
+Pikchr, layout direction changes and variable definitions that occur within
+a container continue to be in effect after the container.
+
+# Summary And Conclusion
+
+Though based on the decades-old PIC language, Pikchr itself is a relatively
+new system.  However it has already proven itself to be amazingly useful for
+helping to illustrate concepts in technical documentation writhin using Markdown.
+
+This document has provided an overview of how Pikchr works.  For more
+details and other perspectives, see the following resources:
+
+  *  [The original Kernighan paper on PIC](/uv/pic.pdf)
+  *  [DPIC documentation](/uv/dpic-doc.pdf)
+  *  [ESR's documentation on GnuPIC](/uv/gpic.pdf)
+  *  [Pikchr Language Spec](./grammar.md)
+  *  [Differences between PIC and Pikchr](./differences.md)
+  *  [The scope and purpose of Pikchr](./purpose.md)
+  *  [Step-by-step example of writing a Pikchr document](./teardown01.md)
