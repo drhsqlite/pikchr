@@ -30,7 +30,7 @@ either before or after the various "to" subclauses.  That does not
 matter.  But the order of the various "to" subclauses do matter, of course.
 
 If there are two consecutive *direction* clauses (*direction* is
-always one of "`right`", "`down`", "`left`", or "`right`") then
+always one of "`up`", "`down`", "`left`", or "`right`") then
 the two will be combined to specify a single line segment.
 Hence, the following are equivalent:
 
