@@ -5088,7 +5088,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *aData, size_t nByte){
 static void usage(const char *argv0){
   fprintf(stderr, "usage: %s [OPTIONS] FILE ...\n", argv0);
   fprintf(stderr,
-    "Convert Pikchr input files into SVG.\n"
+    "Convert Pikchr input files into SVG.  Filename \"-\" means stdin.\n"
     "Options:\n"
     "   --dont-stop      Process all files even if earlier files have errors\n"
     "   --svg-only       Omit raw SVG without the HTML wrapper\n"
@@ -5116,6 +5116,47 @@ static void print_escape_html(const char *z){
     }
   }
 }
+
+/* Read the content of file zFilename into memory obtained from malloc()
+** Return the memory.  If something goes wrong (ex: the file does not exist
+** or cannot be opened) put an error message on stderr and return NULL.
+**
+** If the filename is "-" read stdin.
+*/
+static char *readFile(const char *zFilename){
+  FILE *in;
+  size_t n;
+  size_t nUsed = 0;
+  size_t nAlloc = 0;
+  char *z = 0, *zNew;
+  in = strcmp(zFilename,"-")==0 ? stdin : fopen(zFilename, "rb");
+  if( in==0 ){
+    fprintf(stderr, "cannot open \"%s\" for reading\n", zFilename);
+    return 0;
+  }
+  while(1){
+    if( nUsed+2>=nAlloc ){
+      nAlloc = nAlloc*2 + 4000;
+      zNew = realloc(z, nAlloc);
+    }
+    if( zNew==0 ){
+      free(z);
+      fprintf(stderr, "out of memory trying to allocate %lld bytes\n",
+              (long long int)nAlloc);
+      exit(1);
+    }
+    z = zNew;
+    n = fread(z+nUsed, 1, nAlloc-nUsed-1, in);
+    if( n<=0 ){
+      break;
+    }
+    nUsed += n;
+  }
+  if( in!=stderr ) fclose(in);
+  z[nUsed] = 0;
+  return z;
+}
+
 
 /* Testing interface
 **
@@ -5155,13 +5196,11 @@ int main(int argc, char **argv){
   ;
   if( argc<2 ) usage(argv[0]);
   for(i=1; i<argc; i++){
-    FILE *in;
-    size_t sz;
     char *zIn;
     char *zOut;
     int w, h;
 
-    if( argv[i][0]=='-' ){
+    if( argv[i][0]=='-' && argv[i][1]!=0 ){
       char *z = argv[i];
       z++;
       if( z[0]=='-' ) z++;
@@ -5186,23 +5225,8 @@ int main(int argc, char **argv){
       }
       continue;
     }
-    in = fopen(argv[i], "rb");
-    if( in==0 ){
-      fprintf(stderr, "cannot open \"%s\" for reading\n", argv[i]);
-      continue;
-    }
-    fseek(in, 0, SEEK_END);
-    sz = ftell(in);
-    rewind(in);
-    zIn = malloc( sz+1 );
-    if( zIn==0 ){
-      fprintf(stderr, "cannot allocate space for file \"%s\"\n", argv[i]);
-      fclose(in);
-      continue;
-    }
-    sz = fread(zIn, 1, sz, in);
-    fclose(in);
-    zIn[sz] = 0;
+    zIn = readFile(argv[i]);
+    if( zIn==0 ) continue;
     zOut = pikchr(zIn, "pikchr", mFlags, &w, &h);
     if( w<0 ) exitCode = 1;
     if( zOut==0 ){
