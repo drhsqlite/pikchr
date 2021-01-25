@@ -364,7 +364,8 @@ struct Pik {
   char samePath;           /* aTPath copied by "same" */
   const char *zClass;      /* Class name for the <svg> */
   int wSVG, hSVG;          /* Width and height of the <svg> */
-  int fgcolor;             /* fgcolor value, or -1 for none */
+  int fgcolor;             /* foreground color value, or -1 for none */
+  int bgcolor;             /* background color value, or -1 for none */
   /* Paths for lines are constructed here first, then transferred into
   ** the PObj object at the end: */
   int nTPath;              /* Number of entries on aTPath[] */
@@ -2063,6 +2064,8 @@ static void pik_append_clr(Pik *p,const char *z1,PNum v,const char *z2,int bg){
   int r, g, b;
   if( x==0 && p->fgcolor>0 && !bg ){
     x = p->fgcolor;
+  }else if( bg && x>=0xffffff && p->bgcolor>0 ){
+    x = p->bgcolor;
   }else if( p->mFlags & PIKCHR_DARK_MODE ){
     x = pik_color_to_dark_mode(x,bg);
   }
@@ -4334,12 +4337,21 @@ static void pik_render(Pik *p, PList *pList){
     margin = pik_value(p,"margin",6,0);
     margin += thickness;
     wArrow = p->wArrow*thickness;
+    miss = 0;
     p->fgcolor = (int)pik_value(p,"fgcolor",7,&miss);
     if( miss ){
       PToken t;
       t.z = "fgcolor";
       t.n = 7;
       p->fgcolor = (int)pik_lookup_color(0, &t);
+    }
+    miss = 0;
+    p->bgcolor = (int)pik_value(p,"bgcolor",7,&miss);
+    if( miss ){
+      PToken t;
+      t.z = "bgcolor";
+      t.n = 7;
+      p->bgcolor = (int)pik_lookup_color(0, &t);
     }
 
     /* Compute a bounding box over all objects so that we can know
