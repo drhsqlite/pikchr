@@ -1309,7 +1309,7 @@ a container continue to be in effect after the container.
 
 Though based on the decades-old PIC language, Pikchr itself is a relatively
 new system.  However it has already proven itself to be amazingly useful for
-helping to illustrate concepts in technical documentation writhin using Markdown.
+helping to illustrate concepts in technical documentation written using Markdown.
 
 This document has provided an overview of how Pikchr works.  For more
 details and other perspectives, see the following resources:
