@@ -48,6 +48,8 @@ Pikchr scripts cause no harm (apart from generating ugly diagrams).
 ## Demos
 
   *  [Example Pikchr Scripts](./doc/examples.md)
+     ([light-mode](/skn_default/doc/trunk/doc/examples.md) or
+      [dark-mode](/skn_ardoise/doc/trunk/doc/examples.md))
   *  [](/pikchrshow) &larr; Enter Pikchr text and see the result on-line
   *  [Source text for this page](./homepage.md?mimetype=text/plain)
 
