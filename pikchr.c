@@ -7754,7 +7754,7 @@ static char *readFile(const char *zFilename){
     }
     nUsed += n;
   }
-  if( in!=stderr ) fclose(in);
+  if( in!=stdin ) fclose(in);
   z[nUsed] = 0;
   return z;
 }
