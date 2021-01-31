@@ -1254,6 +1254,11 @@ static void cylinderRender(Pik *p, PObj *pObj){
   PNum rad = pObj->rad;
   PPoint pt = pObj->ptAt;
   if( pObj->sw>0.0 ){
+    if( rad>h2 ){
+      rad = h2;
+    }else if( rad<0 ){
+      rad = 0;
+    }
     pik_append_xy(p,"<path d=\"M", pt.x-w2,pt.y+h2-rad);
     pik_append_xy(p,"L", pt.x-w2,pt.y-h2+rad);
     pik_append_arc(p,w2,rad,pt.x+w2,pt.y-h2+rad);
