@@ -7,7 +7,7 @@ available from the following link:
 
   *  <https://pikchr.org/home/file/pikchr.c?ci=trunk>
 
-This is everything you need if you just want ot build the Pikchr
+This is everything you need if you just want to build the Pikchr
 command-line tool, or use the Pikchr library in another application.
 Compile this file using commands like these:
 
