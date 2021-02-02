@@ -2444,7 +2444,7 @@ static void pik_error_context(Pik *p, PToken *pErr, int nContext){
   char zLineno[20];     /* Buffer in which to generate line numbers */
 
   iErrPt = (int)(pErr->z - p->sIn.z);
-  if( iErrPt>=p->sIn.n ){
+  if( iErrPt>=(int)p->sIn.n ){
     iErrPt = p->sIn.n-1;
     iBump = 1;
   }else{
@@ -5156,7 +5156,7 @@ static char *readFile(const char *zFilename){
   size_t n;
   size_t nUsed = 0;
   size_t nAlloc = 0;
-  char *z = 0, *zNew;
+  char *z = 0, *zNew = 0;
   in = strcmp(zFilename,"-")==0 ? stdin : fopen(zFilename, "rb");
   if( in==0 ){
     fprintf(stderr, "cannot open \"%s\" for reading\n", zFilename);
