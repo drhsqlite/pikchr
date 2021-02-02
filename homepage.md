@@ -70,6 +70,12 @@ Pikchr scripts cause no harm (apart from generating ugly diagrams).
   *  [DPIC Documentation](/uv/dpic-doc.pdf)
   *  [ESR GnuPIC Docs](/uv/gpic.pdf)
 
+## Source Code
+
+  *  [Download](./doc/download.md)
+  *  [How To Build Pikchr From Source](./doc/build.md)
+  *  [How To Integrate Pikchr Into Other Applications][integ]
+
 
 ## Source-Code License: 0-clause BSD
 
