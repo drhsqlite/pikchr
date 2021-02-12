@@ -13,7 +13,7 @@ Compile this file using commands like these:
 
   *  `gcc -c pikchr.c`  &larr; to build the Pikchr library
 
-  *  `gcc -DPIKCHR_SHELL -o pikchr pikchr.c` &larr; to build the
+  *  `gcc -DPIKCHR_SHELL -o pikchr pikchr.c -lm` &larr; to build the
      pikchr command-line tool
 
 See the [How To Compile Pikchr](./build.md) and the
