@@ -726,6 +726,7 @@ object(A) ::= objectname(A).
 object(A) ::= nth(N).                     {A = pik_find_nth(p,0,&N);}
 object(A) ::= nth(N) OF|IN object(B).     {A = pik_find_nth(p,B,&N);}
 
+objectname(A) ::= THIS.                   {A = p->cur;}
 objectname(A) ::= PLACENAME(N).           {A = pik_find_byname(p,0,&N);}
 objectname(A) ::= objectname(B) DOT_U PLACENAME(N).
                                           {A = pik_find_byname(p,B,&N);}
@@ -4507,6 +4508,7 @@ static const PikWord pik_keywords[] = {
   { "thick",      5,   T_THICK,     0,         0        },
   { "thickness",  9,   T_THICKNESS, 0,         0        },
   { "thin",       4,   T_THIN,      0,         0        },
+  { "this",       4,   T_THIS,      0,         0        },
   { "to",         2,   T_TO,        0,         0        },
   { "top",        3,   T_TOP,       0,         CP_N     },
   { "until",      5,   T_UNTIL,     0,         0        },
