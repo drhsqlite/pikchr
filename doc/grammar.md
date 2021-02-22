@@ -132,7 +132,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **text**
 
 ## *attribute*:
-  * *path-element*                [&#9654;info](./pathattr.md)
+  * *path-attribute*              [&#9654;info](./pathattr.md)
   * *location-attribute*          [&#9654;info](./locattr.md)
   * STRING *text-attribute*\*     [&#9654;info](./annotate.md)
   * **same**
@@ -184,7 +184,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **rjust**
   * **small**
 
-## *path-element*:   [&#9654;info](./pathattr.md)
+## *path-attribute*:   [&#9654;info](./pathattr.md)
   * **from** *position*
   * **then**? **to** *position*
   * **then**? **go**? *direction* *line-length*?
