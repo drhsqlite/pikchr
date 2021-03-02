@@ -65,9 +65,10 @@ that can be passed into the pikchr() function as the 3rd argument, "mFlags".
    *  `PIKCHR_DARK_MODE` &rarr;
       When this flag is used,  Pikchr inverts the colors in the diagram
       to make them suitable for "dark mode" pages.  The main Pikchr
-      website has a
-      [dark-mode counterpart](./homepage.md?skin=darkmode)
-      that you can visit to see the effects of this flag on Pikchr diagrams.
+      website can be switched between
+      [dark-mode](./integrate.md?skin=darkmode) and
+      [light-mode](./integrate.md?skin=) so
+      that you can see the effects of this flag on Pikchr diagrams.
 
 ## Example use of pikchr()
 
