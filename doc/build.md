@@ -73,8 +73,8 @@ that reads Pikchr scripts and emits HTML with embedded SVG.  Or
 it can be integrated into a larger application which invokes the
 "`pikchr()`" C-API to do conversions from Pikchr to SVG.
 
-As the Lemon tool is not widely deployed, its sources for 
-Lemon are included in the Pikchr source tree for convenience.
+As the Lemon tool is not widely deployed, the source code for 
+Lemon is included in the Pikchr source tree for convenience.
 Compile the "`lemon.c`" source program into an executable using
 any ordinary C-compiler.
 
