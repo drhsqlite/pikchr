@@ -15,7 +15,7 @@ box color red wid 2.6in \
             filewid *= 1.2
   Src:      file "pikchr.y"; move
   LemonSrc: file "lemon.c"; move
-  Lempar:   file "lempar.y"; move
+  Lempar:   file "lempar.c"; move
             arrow down from LemonSrc.s
   CC1:      oval "C-Compiler" ht 50%
             arrow " generates" ljust above
