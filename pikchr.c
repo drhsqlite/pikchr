@@ -7084,8 +7084,10 @@ static const PikWord pik_keywords[] = {
   { "invis",      5,   T_INVIS,     0,         0        },
   { "invisible",  9,   T_INVIS,     0,         0        },
   { "italic",     6,   T_ITALIC,    0,         0        },
+  { "larr",       4,   T_LARROW,    0,         0        },
   { "last",       4,   T_LAST,      0,         0        },
   { "left",       4,   T_LEFT,      DIR_LEFT,  CP_W     },
+  { "leftrightarrow", 14, T_LRARROW,0,         0,       },
   { "ljust",      5,   T_LJUST,     0,         0        },
   { "max",        3,   T_FUNC2,     FN_MAX,    0        },
   { "min",        3,   T_FUNC2,     FN_MIN,    0        },
@@ -7098,6 +7100,7 @@ static const PikWord pik_keywords[] = {
   { "print",      5,   T_PRINT,     0,         0        },
   { "rad",        3,   T_RADIUS,    0,         0        },
   { "radius",     6,   T_RADIUS,    0,         0        },
+  { "rarr",       4,   T_RARROW,    0,         0        },
   { "right",      5,   T_RIGHT,     DIR_RIGHT, CP_E     },
   { "rjust",      5,   T_RJUST,     0,         0        },
   { "s",          1,   T_EDGEPT,    0,         CP_S     },
@@ -7962,4 +7965,4 @@ int Pikchr_Init(Tcl_Interp *interp){
 #endif /* PIKCHR_TCL */
 
 
-#line 7990 "pikchr.c"
+#line 7993 "pikchr.c"

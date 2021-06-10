@@ -4,9 +4,13 @@ C: circle "Center" rad 150%
    circle "N"  at 1.0 n  of C; arrow from C to last chop ->
    circle "NE" at 1.0 ne of C; arrow from C to last chop <-
    circle "E"  at 1.0 e  of C; arrow from C to last chop <->
-   circle "SE" at 1.0 se of C; arrow from C to last chop ->
-   circle "S"  at 1.0 s  of C; arrow from C to last chop <-
-   circle "SW" at 1.0 sw of C; arrow from C to last chop <->
+#                         alternative spellings   -------vvvvvvvvvvvvvvv
+   circle "SE" at 1.0 se of C; arrow from C to last chop rarr
+   circle "S"  at 1.0 s  of C; arrow from C to last chop larr
+   circle "SW" at 1.0 sw of C; arrow from C to last chop leftrightarrow
+#   The alternative arrow spellings provide  ------------^^^^^^^^^^^^^^^
+#   work-arounds for when Pikchr text is
+#   embedded within HTML
    circle "W"  at 1.0 w  of C; arrow from C to last chop ->
    circle "NW" at 1.0 nw of C; arrow from C to last chop <-
    arrow from 2nd circle to 3rd circle chop
