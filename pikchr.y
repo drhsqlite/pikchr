@@ -5383,11 +5383,18 @@ static int pik_tcl_command(
   return TCL_OK;
 }
 
+#ifndef PACKAGE_NAME
+# define PACKAGE_NAME "pikchr"
+#endif
+#ifndef PACKAGE_VERSION
+# define PACKAGE_VERSION "1.0"
+#endif
+
 /* Invoke this routine to register the "pikchr" command with the interpreter
 ** given in the argument */
 int Pikchr_Init(Tcl_Interp *interp){
   Tcl_CreateObjCommand(interp, "pikchr", pik_tcl_command, 0, 0);
-  Tcl_PkgProvide (interp, PACKAGE_NAME, PACKAGE_VERSION);
+  Tcl_PkgProvide(interp, PACKAGE_NAME, PACKAGE_VERSION);
   return TCL_OK;
 }
 
