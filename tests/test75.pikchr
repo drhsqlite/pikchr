@@ -1,12 +1,9 @@
-box "Alternative spellings" ljust "for arrow tokens" ljust \
-     "<-, ->, and <->" ljust invis
-boxwid *= 1.5
-box "rarr" with .nw at 3mm below previous box.sw; line &rarr;
-box "rightarrow" with .nw at 3mm below previous box.sw; line &rightarrow;
-box "→" big big with .nw at 3mm below previous box.sw; line →
-box "larr" with .nw at 3mm below previous box.sw; line &larr;
-box "leftarrow" with .nw at 3mm below previous box.sw; line &leftarrow;
-box "←" big big with .nw at 3mm below previous box.sw; line ←
-box "leftrightarrow" with .nw at 3mm below previous box.sw;
-   line &leftrightarrow;
-box "↔" big big with .nw at 3mm below previous box.sw; line ↔
+box "Alternative spellings for arrow tokens <-, ->, and <->" invis fit
+line &rarr; "&amp;rarr;" above from (previous.s.x-1.5cm,previous.s.y-0.75cm) right 3cm;
+line &rightarrow; "&amp;rightarrow;" above from 0.75cm below previous.start right 3cm;
+line → "→" above from 0.75cm below previous.start right 3cm;
+line &larr; "&amp;larr;" above from 0.75cm below previous.start right 3cm;
+line &leftarrow; "&amp;leftarrow;" above from 0.75cm below previous.start right 3cm;
+line ← "←" above from 0.75cm below previous.start right 3cm;
+line &leftrightarrow; "&amp;leftrightarrow;" above from 0.75cm below previous.start right 3cm;
+line ↔ "↔" above from 0.75cm below previous.start right 3cm;
