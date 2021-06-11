@@ -1,0 +1,12 @@
+box "Alternative spellings" ljust "for arrow tokens" ljust \
+     "<-, ->, and <->" ljust invis
+boxwid *= 1.5
+box "rarr" with .nw at 3mm below previous box.sw; line &rarr;
+box "rightarrow" with .nw at 3mm below previous box.sw; line &rightarrow;
+box "→" big big with .nw at 3mm below previous box.sw; line →
+box "larr" with .nw at 3mm below previous box.sw; line &larr;
+box "leftarrow" with .nw at 3mm below previous box.sw; line &leftarrow;
+box "←" big big with .nw at 3mm below previous box.sw; line ←
+box "leftrightarrow" with .nw at 3mm below previous box.sw;
+   line &leftrightarrow;
+box "↔" big big with .nw at 3mm below previous box.sw; line ↔
