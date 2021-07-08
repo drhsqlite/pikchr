@@ -429,6 +429,7 @@ static void pik_set_direction(Pik*,int);
 static void pik_elem_setname(Pik*,PObj*,PToken*);
 static void pik_set_var(Pik*,PToken*,PNum,PToken*);
 static PNum pik_value(Pik*,const char*,int,int*);
+static int pik_value_int(Pik*,const char*,int,int*);
 static PNum pik_lookup_color(Pik*,PToken*);
 static PNum pik_get_var(Pik*,PToken*);
 static PNum pik_atof(PToken*);
@@ -2785,7 +2786,7 @@ static PObj *pik_elem_new(Pik *p, PToken *pId, PToken *pStr,PList *pSublist){
   p->aTPath[0] = pNew->ptAt;
   pNew->with = pNew->ptAt;
   pNew->outDir = pNew->inDir = p->eDir;
-  pNew->iLayer = (int)pik_value(p, "layer", 5, &miss);
+  pNew->iLayer = pik_value_int(p, "layer", 5, &miss);
   if( miss ) pNew->iLayer = 1000;
   if( pNew->iLayer<0 ) pNew->iLayer = 0;
   if( pSublist ){
@@ -3653,6 +3654,12 @@ static PNum pik_value(Pik *p, const char *z, int n, int *pMiss){
   if( pMiss ) *pMiss = 1;
   return 0.0;
 }
+static int pik_value_int(Pik *p, const char *z, int n, int *pMiss){
+  PNum v = pik_value(p,z,n,pMiss);
+  if( v <= -2147483648 ) return -2147483648;
+  if( v >= 2147483647 ) return 2147483647;
+  return (int)v;
+}
 
 /*
 ** Look up a color-name.  Unlike other names in this program, the
@@ -4236,7 +4243,7 @@ void pik_elist_render(Pik *p, PList *pList){
   int iThisLayer;
   int bMoreToDo;
   int miss = 0;
-  int mDebug = (int)pik_value(p, "debug", 5, 0);
+  int mDebug = pik_value_int(p, "debug", 5, 0);
   PNum colorLabel;
   do{
     bMoreToDo = 0;
@@ -4354,7 +4361,7 @@ static void pik_render(Pik *p, PList *pList){
     margin += thickness;
     wArrow = p->wArrow*thickness;
     miss = 0;
-    p->fgcolor = (int)pik_value(p,"fgcolor",7,&miss);
+    p->fgcolor = pik_value_int(p,"fgcolor",7,&miss);
     if( miss ){
       PToken t;
       t.z = "fgcolor";
@@ -4362,7 +4369,7 @@ static void pik_render(Pik *p, PList *pList){
       p->fgcolor = (int)pik_lookup_color(0, &t);
     }
     miss = 0;
-    p->bgcolor = (int)pik_value(p,"bgcolor",7,&miss);
+    p->bgcolor = pik_value_int(p,"bgcolor",7,&miss);
     if( miss ){
       PToken t;
       t.z = "bgcolor";
