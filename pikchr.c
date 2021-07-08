@@ -6566,22 +6566,24 @@ static PPoint pik_nth_vertex(Pik *p, PToken *pNth, PToken *pErr, PObj *pObj){
 */
 static PNum pik_property_of(PObj *pObj, PToken *pProp){
   PNum v = 0.0;
-  switch( pProp->eType ){
-    case T_HEIGHT:    v = pObj->h;            break;
-    case T_WIDTH:     v = pObj->w;            break;
-    case T_RADIUS:    v = pObj->rad;          break;
-    case T_DIAMETER:  v = pObj->rad*2.0;      break;
-    case T_THICKNESS: v = pObj->sw;           break;
-    case T_DASHED:    v = pObj->dashed;       break;
-    case T_DOTTED:    v = pObj->dotted;       break;
-    case T_FILL:      v = pObj->fill;         break;
-    case T_COLOR:     v = pObj->color;        break;
-    case T_X:         v = pObj->ptAt.x;       break;
-    case T_Y:         v = pObj->ptAt.y;       break;
-    case T_TOP:       v = pObj->bbox.ne.y;    break;
-    case T_BOTTOM:    v = pObj->bbox.sw.y;    break;
-    case T_LEFT:      v = pObj->bbox.sw.x;    break;
-    case T_RIGHT:     v = pObj->bbox.ne.x;    break;
+  if( pObj ){
+    switch( pProp->eType ){
+      case T_HEIGHT:    v = pObj->h;            break;
+      case T_WIDTH:     v = pObj->w;            break;
+      case T_RADIUS:    v = pObj->rad;          break;
+      case T_DIAMETER:  v = pObj->rad*2.0;      break;
+      case T_THICKNESS: v = pObj->sw;           break;
+      case T_DASHED:    v = pObj->dashed;       break;
+      case T_DOTTED:    v = pObj->dotted;       break;
+      case T_FILL:      v = pObj->fill;         break;
+      case T_COLOR:     v = pObj->color;        break;
+      case T_X:         v = pObj->ptAt.x;       break;
+      case T_Y:         v = pObj->ptAt.y;       break;
+      case T_TOP:       v = pObj->bbox.ne.y;    break;
+      case T_BOTTOM:    v = pObj->bbox.sw.y;    break;
+      case T_LEFT:      v = pObj->bbox.sw.x;    break;
+      case T_RIGHT:     v = pObj->bbox.ne.x;    break;
+    }
   }
   return v;
 }
@@ -8017,4 +8019,4 @@ int Pikchr_Init(Tcl_Interp *interp){
 #endif /* PIKCHR_TCL */
 
 
-#line 8045 "pikchr.c"
+#line 8047 "pikchr.c"
