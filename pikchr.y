@@ -427,6 +427,7 @@ static PList *pik_elist_append(Pik*,PList*,PObj*);
 static PObj *pik_elem_new(Pik*,PToken*,PToken*,PList*);
 static void pik_set_direction(Pik*,int);
 static void pik_elem_setname(Pik*,PObj*,PToken*);
+static int pik_round(PNum);
 static void pik_set_var(Pik*,PToken*,PNum,PToken*);
 static PNum pik_value(Pik*,const char*,int,int*);
 static int pik_value_int(Pik*,const char*,int,int*);
@@ -2031,14 +2032,14 @@ static int pik_color_to_dark_mode(int x, int isBg){
 static void pik_append_x(Pik *p, const char *z1, PNum v, const char *z2){
   char buf[200];
   v -= p->bbox.sw.x;
-  snprintf(buf, sizeof(buf)-1, "%s%d%s", z1, (int)(p->rScale*v), z2);
+  snprintf(buf, sizeof(buf)-1, "%s%d%s", z1, pik_round(p->rScale*v), z2);
   buf[sizeof(buf)-1] = 0;
   pik_append(p, buf, -1);
 }
 static void pik_append_y(Pik *p, const char *z1, PNum v, const char *z2){
   char buf[200];
   v = p->bbox.ne.y - v;
-  snprintf(buf, sizeof(buf)-1, "%s%d%s", z1, (int)(p->rScale*v), z2);
+  snprintf(buf, sizeof(buf)-1, "%s%d%s", z1, pik_round(p->rScale*v), z2);
   buf[sizeof(buf)-1] = 0;
   pik_append(p, buf, -1);
 }
@@ -2047,7 +2048,7 @@ static void pik_append_xy(Pik *p, const char *z1, PNum x, PNum y){
   x = x - p->bbox.sw.x;
   y = p->bbox.ne.y - y;
   snprintf(buf, sizeof(buf)-1, "%s%d,%d", z1,
-       (int)(p->rScale*x), (int)(p->rScale*y));
+       pik_round(p->rScale*x), pik_round(p->rScale*y));
   buf[sizeof(buf)-1] = 0;
   pik_append(p, buf, -1);
 }
@@ -2067,7 +2068,7 @@ static void pik_append_dis(Pik *p, const char *z1, PNum v, const char *z2){
 */
 static void pik_append_clr(Pik *p,const char *z1,PNum v,const char *z2,int bg){
   char buf[200];
-  int x = (int)v;
+  int x = pik_round(v);
   int r, g, b;
   if( x==0 && p->fgcolor>0 && !bg ){
     x = p->fgcolor;
@@ -2093,8 +2094,8 @@ static void pik_append_arc(Pik *p, PNum r1, PNum r2, PNum x, PNum y){
   x = x - p->bbox.sw.x;
   y = p->bbox.ne.y - y;
   snprintf(buf, sizeof(buf)-1, "A%d %d 0 0 0 %d %d", 
-     (int)(p->rScale*r1), (int)(p->rScale*r2),
-     (int)(p->rScale*x), (int)(p->rScale*y));
+     pik_round(p->rScale*r1), pik_round(p->rScale*r2),
+     pik_round(p->rScale*x), pik_round(p->rScale*y));
   buf[sizeof(buf)-1] = 0;
   pik_append(p, buf, -1);
 }
@@ -3617,6 +3618,15 @@ static void pik_set_var(Pik *p, PToken *pId, PNum val, PToken *pOp){
 }
 
 /*
+** Round a PNum into the nearest integer
+*/
+static int pik_round(PNum v){
+  if( v <= -2147483648 ) return -2147483648;
+  if( v >= 2147483647 ) return 2147483647;
+  return (int)v;
+}
+
+/*
 ** Search for the variable named z[0..n-1] in:
 **
 **   * Application defined variables
@@ -3655,10 +3665,7 @@ static PNum pik_value(Pik *p, const char *z, int n, int *pMiss){
   return 0.0;
 }
 static int pik_value_int(Pik *p, const char *z, int n, int *pMiss){
-  PNum v = pik_value(p,z,n,pMiss);
-  if( v <= -2147483648 ) return -2147483648;
-  if( v >= 2147483647 ) return 2147483647;
-  return (int)v;
+  return pik_round(pik_value(p,z,n,pMiss));
 }
 
 /*
@@ -4368,7 +4375,7 @@ static void pik_render(Pik *p, PList *pList){
       PToken t;
       t.z = "fgcolor";
       t.n = 7;
-      p->fgcolor = (int)pik_lookup_color(0, &t);
+      p->fgcolor = pik_round(pik_lookup_color(0, &t));
     }
     miss = 0;
     p->bgcolor = pik_value_int(p,"bgcolor",7,&miss);
@@ -4376,7 +4383,7 @@ static void pik_render(Pik *p, PList *pList){
       PToken t;
       t.z = "bgcolor";
       t.n = 7;
-      p->bgcolor = (int)pik_lookup_color(0, &t);
+      p->bgcolor = pik_round(pik_lookup_color(0, &t));
     }
 
     /* Compute a bounding box over all objects so that we can know
@@ -4400,14 +4407,14 @@ static void pik_render(Pik *p, PList *pList){
     }
     w = p->bbox.ne.x - p->bbox.sw.x;
     h = p->bbox.ne.y - p->bbox.sw.y;
-    p->wSVG = (int)(p->rScale*w);
-    p->hSVG = (int)(p->rScale*h);
+    p->wSVG = pik_round(p->rScale*w);
+    p->hSVG = pik_round(p->rScale*h);
     pikScale = pik_value(p,"scale",5,0);
     if( pikScale>=0.001 && pikScale<=1000.0
      && (pikScale<0.99 || pikScale>1.01)
     ){
-      p->wSVG = (int)(p->wSVG*pikScale);
-      p->hSVG = (int)(p->hSVG*pikScale);
+      p->wSVG = pik_round(p->wSVG*pikScale);
+      p->hSVG = pik_round(p->hSVG*pikScale);
       pik_append_num(p, " width=\"", p->wSVG);
       pik_append_num(p, "\" height=\"", p->hSVG);
       pik_append(p, "\"", 1);
@@ -5152,11 +5159,12 @@ char *pikchr(
 int LLVMFuzzerTestOneInput(const uint8_t *aData, size_t nByte){
   int w,h;
   char *zIn, *zOut;
+  unsigned int mFlags = nByte & 3;
   zIn = malloc( nByte + 1 );
   if( zIn==0 ) return 0;
   memcpy(zIn, aData, nByte);
   zIn[nByte] = 0;
-  zOut = pikchr(zIn, "pikchr", 0, &w, &h);
+  zOut = pikchr(zIn, "pikchr", mFlags, &w, &h);
   free(zIn);
   free(zOut);
   return 0;
