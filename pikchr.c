@@ -4513,7 +4513,7 @@ static void pik_append(Pik *p, const char *zText, int n){
       return;
     }
     p->zOut = z;
-    p->nOutAlloc = n;
+    p->nOutAlloc = nNew;
   }
   memcpy(p->zOut+p->nOut, zText, n);
   p->nOut += n;
