@@ -6229,6 +6229,7 @@ static void pik_set_var(Pik *p, PToken *pId, PNum val, PToken *pOp){
 ** Round a PNum into the nearest integer
 */
 static int pik_round(PNum v){
+  if( isnan(v) ) return 0;
   if( v <= -2147483648 ) return -2147483648;
   if( v >= 2147483647 ) return 2147483647;
   return (int)v;
@@ -8027,4 +8028,4 @@ int Pikchr_Init(Tcl_Interp *interp){
 #endif /* PIKCHR_TCL */
 
 
-#line 8055 "pikchr.c"
+#line 8056 "pikchr.c"
