@@ -1210,7 +1210,7 @@ static PPoint circleChop(Pik *p, PObj *pObj, PPoint *pPt){
   PNum dx = pPt->x - pObj->ptAt.x;
   PNum dy = pPt->y - pObj->ptAt.y;
   PNum dist = hypot(dx,dy);
-  if( dist<pObj->rad ) return pObj->ptAt;
+  if( dist<pObj->rad || dist<=0 ) return pObj->ptAt;
   chop.x = pObj->ptAt.x + dx*pObj->rad/dist;
   chop.y = pObj->ptAt.y + dy*pObj->rad/dist;
   UNUSED_PARAMETER(p);
