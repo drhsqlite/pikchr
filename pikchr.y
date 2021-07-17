@@ -318,6 +318,7 @@ struct PObj {
   int inDir, outDir;       /* Entry and exit directions */
   int nPath;               /* Number of path points */
   PPoint *aPath;           /* Array of path points */
+  PObj *pFrom, *pTo;       /* End-point objects of a path */
   PBox bbox;               /* Bounding box */
 };
 
@@ -348,6 +349,7 @@ struct Pik {
   unsigned char eDir;      /* Current direction */
   unsigned int mFlags;     /* Flags passed to pikchr() */
   PObj *cur;               /* Object under construction */
+  PObj *lastRef;           /* Last object references by "place" */
   PList *list;             /* Object list under construction */
   PMacro *pMacros;         /* List of all defined macros */
   PVar *pVar;              /* Application-defined variables */
@@ -3246,6 +3248,34 @@ static void pik_evenwith(Pik *p, PToken *pDir, PPoint *pPlace){
   pObj->outDir = pDir->eCode;
 }
 
+/* If the last referenced object is centered at point pPt then return
+** a pointer to that object.  If there is no prior object reference,
+** or if the points are not the same, return NULL.
+**
+** This is a side-channel hack used to find the objects at which a
+** line begins and ends.  For example, in
+**
+**        arrow from OBJ1 to OBJ2 chop
+**
+** The arrow object is normally just handed the coordinates of the
+** centers for OBJ1 and OBJ2.  But we also want to know the specific
+** object named in case there are multiple objects centered at the
+** same point.
+**
+** See forum post 1d46e3a0bc
+*/
+static PObj *pik_last_ref_object(Pik *p, PPoint *pPt){
+  PObj *pRes = 0;
+  if( p->lastRef==0 ) return 0;
+  if( p->lastRef->ptAt.x==pPt->x
+   && p->lastRef->ptAt.y==pPt->y
+  ){
+    pRes = p->lastRef;
+  }
+  p->lastRef = 0;
+  return pRes;
+}
+
 /* Set the "from" of an object
 */
 static void pik_set_from(Pik *p, PObj *pObj, PToken *pTk, PPoint *pPt){
@@ -3273,6 +3303,7 @@ static void pik_set_from(Pik *p, PObj *pObj, PToken *pTk, PPoint *pPt){
   p->aTPath[0] = *pPt;
   p->mTPath = 3;
   pObj->mProp |= A_FROM;
+  pObj->pFrom = pik_last_ref_object(p, pPt);
 }
 
 /* Set the "to" of an object
@@ -3293,6 +3324,7 @@ static void pik_add_to(Pik *p, PObj *pObj, PToken *pTk, PPoint *pPt){
   }
   p->aTPath[n] = *pPt;
   p->mTPath = 3;
+  pObj->pTo = pik_last_ref_object(p, pPt);
 }
 
 static void pik_close_path(Pik *p, PToken *pErr){
@@ -3834,6 +3866,7 @@ static PObj *pik_find_byname(Pik *p, PObj *pBasis, PToken *pName){
   for(i=pList->n-1; i>=0; i--){
     PObj *pObj = pList->a[i];
     if( pObj->zName && pik_token_eq(pName,pObj->zName)==0 ){
+      p->lastRef = pObj;
       return pObj;
     }
   }
@@ -3844,6 +3877,7 @@ static PObj *pik_find_byname(Pik *p, PObj *pBasis, PToken *pName){
     for(j=0; j<pObj->nTxt; j++){
       if( pObj->aTxt[j].n==pName->n+2
        && memcmp(pObj->aTxt[j].z+1,pName->z,pName->n)==0 ){
+        p->lastRef = pObj;
         return pObj;
       }
     }
@@ -4072,8 +4106,10 @@ static PObj *pik_find_chopper(PList *pList, PPoint *pCenter, PPoint *pOther){
 ** then adjust pTo by the appropriate amount in the direction
 ** of pFrom.
 */
-static void pik_autochop(Pik *p, PPoint *pFrom, PPoint *pTo){
-  PObj *pObj = pik_find_chopper(p->list, pTo, pFrom);
+static void pik_autochop(Pik *p, PPoint *pFrom, PPoint *pTo, PObj *pObj){
+  if( pObj==0 || pObj->type->xChop==0 ){
+    pObj = pik_find_chopper(p->list, pTo, pFrom);
+  }
   if( pObj ){
     *pTo = pObj->type->xChop(p, pObj, pFrom);
   }
@@ -4172,8 +4208,8 @@ static void pik_after_adding_attributes(Pik *p, PObj *pObj){
     */
     if( pObj->bChop && pObj->nPath>=2 ){
       int n = pObj->nPath;
-      pik_autochop(p, &pObj->aPath[n-2], &pObj->aPath[n-1]);
-      pik_autochop(p, &pObj->aPath[1], &pObj->aPath[0]);
+      pik_autochop(p, &pObj->aPath[n-2], &pObj->aPath[n-1], pObj->pTo);
+      pik_autochop(p, &pObj->aPath[1], &pObj->aPath[0], pObj->pFrom);
     }
 
     pObj->ptEnter = pObj->aPath[0];
