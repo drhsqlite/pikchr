@@ -453,6 +453,7 @@ static PObj *pik_find_nth(Pik*,PObj*,PToken*);
 static PObj *pik_find_byname(Pik*,PObj*,PToken*);
 static PPoint pik_place_of_elem(Pik*,PObj*,PToken*);
 static int pik_bbox_isempty(PBox*);
+static int pik_bbox_contains_point(PBox*,PPoint*);
 static void pik_bbox_init(PBox*);
 static void pik_bbox_addbox(PBox*,PBox*);
 static void pik_bbox_add_xy(PBox*,PNum,PNum);
@@ -2638,6 +2639,17 @@ static int pik_bbox_isempty(PBox *p){
   return p->sw.x>p->ne.x;
 }
 
+/* Return true if point pPt is contained within the bounding box pBox
+*/
+static int pik_bbox_contains_point(PBox *pBox, PPoint *pPt){
+  if( pik_bbox_isempty(pBox) ) return 0;
+  if( pPt->x < pBox->sw.x ) return 0;
+  if( pPt->x > pBox->ne.x ) return 0;
+  if( pPt->y < pBox->sw.y ) return 0;
+  if( pPt->y > pBox->ne.y ) return 0;
+  return 1;
+}
+
 /* Initialize a bounding box to an empty container
 */
 static void pik_bbox_init(PBox *p){
@@ -4029,10 +4041,12 @@ static void pik_elem_setname(Pik *p, PObj *pObj, PToken *pName){
 }
 
 /*
-** Search for object located at *pCenter that has an xChop method.
+** Search for object located at *pCenter that has an xChop method and
+** that does not enclose point pOther.
+**
 ** Return a pointer to the object, or NULL if not found.
 */
-static PObj *pik_find_chopper(PList *pList, PPoint *pCenter){
+static PObj *pik_find_chopper(PList *pList, PPoint *pCenter, PPoint *pOther){
   int i;
   if( pList==0 ) return 0;
   for(i=pList->n-1; i>=0; i--){
@@ -4040,10 +4054,11 @@ static PObj *pik_find_chopper(PList *pList, PPoint *pCenter){
     if( pObj->type->xChop!=0
      && pObj->ptAt.x==pCenter->x
      && pObj->ptAt.y==pCenter->y
+     && !pik_bbox_contains_point(&pObj->bbox, pOther)
     ){
       return pObj;
     }else if( pObj->pSublist ){
-      pObj = pik_find_chopper(pObj->pSublist,pCenter);
+      pObj = pik_find_chopper(pObj->pSublist,pCenter,pOther);
       if( pObj ) return pObj;
     }
   }
@@ -4058,7 +4073,7 @@ static PObj *pik_find_chopper(PList *pList, PPoint *pCenter){
 ** of pFrom.
 */
 static void pik_autochop(Pik *p, PPoint *pFrom, PPoint *pTo){
-  PObj *pObj = pik_find_chopper(p->list, pTo);
+  PObj *pObj = pik_find_chopper(p->list, pTo, pFrom);
   if( pObj ){
     *pTo = pObj->type->xChop(p, pObj, pFrom);
   }
