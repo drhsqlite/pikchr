@@ -349,7 +349,7 @@ struct Pik {
   unsigned char eDir;      /* Current direction */
   unsigned int mFlags;     /* Flags passed to pikchr() */
   PObj *cur;               /* Object under construction */
-  PObj *lastRef;           /* Last object references by "place" */
+  PObj *lastRef;           /* Last object references by name */
   PList *list;             /* Object list under construction */
   PMacro *pMacros;         /* List of all defined macros */
   PVar *pVar;              /* Application-defined variables */
@@ -4102,9 +4102,13 @@ static PObj *pik_find_chopper(PList *pList, PPoint *pCenter, PPoint *pOther){
 /*
 ** There is a line traveling from pFrom to pTo.
 **
-** If point pTo is the exact enter of a choppable object,
-** then adjust pTo by the appropriate amount in the direction
-** of pFrom.
+** If pObj is not null and is a choppable object, then chop at
+** the boundary of pObj - where the line crosses the boundary
+** of pObj.
+**
+** If pObj is NULL or has no xChop method, then search for some
+** other object centered at pTo that is choppable and use it
+** instead.
 */
 static void pik_autochop(Pik *p, PPoint *pFrom, PPoint *pTo, PObj *pObj){
   if( pObj==0 || pObj->type->xChop==0 ){
