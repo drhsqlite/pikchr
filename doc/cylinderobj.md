@@ -2,7 +2,7 @@
 
 A cylinder is a stylized projection of a cylinder into the 2-D space of
 the diagram.  Cylinders are commonly used to represent bulk data storage in
-architecture diagrams, as legacy disk packs were cylindrical in shape.
+software architecture diagrams, as legacy disk packs were cylindrical in shape.
 
 The shape of a cylinder is defined by the width, height, and radius.
 The radius is the minor axis of the ellipse that forms the top of the

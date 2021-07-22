@@ -1,4 +1,4 @@
-# The `fit` attribute
+# The "fit" attribute
 
 The "`fit`" attribute causes an object to automatically adjust its
 "`width`", "`height`", and/or "`radius`" so that it will enclose its

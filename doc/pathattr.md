@@ -27,7 +27,7 @@ is used.
 
 The "from" can occur
 either before or after the various "to" subclauses.  That does not
-matter.  But the order of the various "to" subclauses do matter, of course.
+matter.  But the order is important for the various "to" subclauses.
 
 If there are two consecutive *direction* clauses (*direction* is
 always one of "`up`", "`down`", "`left`", or "`right`") then
