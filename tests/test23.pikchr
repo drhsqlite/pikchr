@@ -27,3 +27,5 @@ move to start of first arrow down 3in;
 right
 box "first above" above "second above" above "third" fit
 dot color red at last box
+move 2cm
+box "    3 leading spaces" "&" "3 trailing spaces   " fit
