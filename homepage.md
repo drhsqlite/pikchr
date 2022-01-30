@@ -76,6 +76,11 @@ Pikchr scripts cause no harm (apart from generating ugly diagrams).
   *  [How To Build Pikchr From Source](./doc/build.md)
   *  [How To Integrate Pikchr Into Other Applications][integ]
 
+## External Links
+
+  *  [Go port of pikchr](https://github.com/gopikchr/gopikchr) and
+     a [blog post](https://zellyn.com/gopikchr-a-yakshave/) about how
+     that port came to be, both by Zellyn Hunter.
 
 ## Source-Code License: 0-clause BSD
 
