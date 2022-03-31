@@ -1112,7 +1112,7 @@ but this means there is no easy way to left justify multiple lines of
 text within a "box" or "file", so the behavior was changed for
 Pikchr.
 
-Pikchr allows three separate text objects inside another object by combining
+Pikchr allows five separate text objects inside another object by combining
 "`ljust`", "`rjust`", and the default text centering:
 
 ~~~~ pikchr indent toggle
