@@ -126,6 +126,15 @@
 # define M_PI 3.1415926535897932385
 #endif
 
+/* Limit the number of tokens in a single script to avoid run-away
+** macro expansion attacks.  See forum post
+**    https://pikchr.org/home/forumpost/ef8684c6955a411a
+*/
+#ifndef PIKCHR_TOKEN_LIMIT
+# define PIKCHR_TOKEN_LIMIT 100000
+#endif
+
+
 /* Tag intentionally unused parameters with this macro to prevent
 ** compiler warnings with -Wextra */
 #define UNUSED_PARAMETER(X)  (void)(X)
@@ -342,6 +351,7 @@ struct PMacro {
 */
 struct Pik {
   unsigned nErr;           /* Number of errors seen */
+  unsigned nToken;         /* Number of tokens parsed */
   PToken sIn;              /* Input Pikchr-language text */
   char *zOut;              /* Result accumulates here */
   unsigned int nOut;       /* Bytes written to zOut[] so far */
@@ -5138,6 +5148,10 @@ void pik_tokenize(Pik *p, PToken *pIn, yyParser *pParser, PToken *aParam){
              (int)(isspace(token.z[0]) ? 0 : sz), token.z);
 #endif
       token.n = (unsigned short)(sz & 0xffff);
+      if( p->nToken++ > PIKCHR_TOKEN_LIMIT ){
+        pik_error(p, &token, "script is too complex");
+        break;
+      }
       pik_parser(pParser, token.eType, token);
     }
   }
