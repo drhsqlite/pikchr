@@ -1201,6 +1201,7 @@ static void circleNumProp(Pik *p, PObj *pObj, PToken *pId){
   /* For a circle, the width must equal the height and both must
   ** be twice the radius.  Enforce those constraints. */
   switch( pId->eType ){
+    case T_DIAMETER:
     case T_RADIUS:
       pObj->w = pObj->h = 2.0*pObj->rad;
       break;
