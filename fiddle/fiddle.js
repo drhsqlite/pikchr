@@ -21,16 +21,16 @@
        overwritten, refers to the global window or worker object. */
 
     /**
-       The SqliteFiddle object is intended to be the primary
+       The PikchrFiddle object is intended to be the primary
        app-level object for the main-thread side of the sqlite
        fiddle application. It uses a worker thread to load the
        sqlite WASM module and communicate with it.
     */
-    const SF/*local convenience alias*/
-    = window.SqliteFiddle/*canonical name*/ = {
+    const PF/*local convenience alias*/
+    = window.PikchrFiddle/*canonical name*/ = {
         /* Config options. */
         config: {
-            /* If true, SqliteFiddle.echo() will echo its output to
+            /* If true, PikchrFiddle.echo() will echo its output to
                the console, in addition to its normal output widget.
                That slows it down but is useful for testing. */
             echoToConsole: false,
@@ -80,10 +80,10 @@
         }
     };
 
-    SF.worker = new Worker('fiddle-worker.js');
-    SF.worker.onmessage = (ev)=>SF.runMsgHandlers(ev.data);
-    SF.addMsgHandler('stdout', console.log.bind(console));
-    SF.addMsgHandler('stderr', console.error.bind(console));
+    PF.worker = new Worker('fiddle-worker.js');
+    PF.worker.onmessage = (ev)=>PF.runMsgHandlers(ev.data);
+    PF.addMsgHandler('stdout', console.log.bind(console));
+    PF.addMsgHandler('stderr', console.error.bind(console));
 
     /* querySelectorAll() proxy */
     const EAll = function(/*[element=document,] cssSelector*/){
@@ -97,7 +97,7 @@
     };
 
     /** Handles status updates from the Module object. */
-    SF.addMsgHandler('module', function f(ev){
+    PF.addMsgHandler('module', function f(ev){
         ev = ev.data;
         if('status'!==ev.type){
             console.warn("Unexpected module-type message:",ev);
@@ -141,9 +141,9 @@
        The 'fiddle-ready' event is fired (with no payload) when the
        wasm module has finished loading. Interestingly, that happens
        _before_ the final module:status event */
-    SF.addMsgHandler('fiddle-ready', function(){
-        SF.clearMsgHandlers('fiddle-ready');
-        self.onSFLoaded();
+    PF.addMsgHandler('fiddle-ready', function(){
+        PF.clearMsgHandlers('fiddle-ready');
+        self.onPFLoaded();
     });
 
     /**
@@ -151,8 +151,8 @@
        worker module is loaded. This function removes itself when it's
        called.
     */
-    self.onSFLoaded = function(){
-        delete this.onSFLoaded;
+    self.onPFLoaded = function(){
+        delete this.onPFLoaded;
         // Unhide all elements which start out hidden
         EAll('.initially-hidden').forEach((e)=>e.classList.remove('initially-hidden'));
         const taInput = E('#input');
@@ -178,7 +178,7 @@
             }else{
                 text = taInput.value.trim();
             }
-            if(text) SF.render(text);
+            if(text) PF.render(text);
         },false);
 
         /** To be called immediately before work is sent to the
@@ -205,20 +205,20 @@
         /**
            Submits the current input text to pikchr and renders the
            result. */
-        SF.render = function f(txt){
+        PF.render = function f(txt){
             preStartWork();
             this.wMsg('pikchr',txt);
         };
 
         const eOut = E('#pikchr-output');
         const eOutWrapper = E('#pikchr-output-wrapper');
-        SF.addMsgHandler('pikchr', function(ev){
+        PF.addMsgHandler('pikchr', function(ev){
             const m = ev.data;
             eOut.classList[m.isError ? 'add' : 'remove']('error');
             eOut.dataset.pikchr = m.pikchr;
             let content;
             let sz;
-            switch(SF.renderMode){
+            switch(PF.renderMode){
                 case 'text':
                     content = '<textarea>'+m.result+'</textarea>';
                     eOut.classList.add('text');
@@ -231,31 +231,34 @@
                     break;
             }
             eOut.innerHTML = content;
-            if(!SF.config.renderAutoScale
-               && !m.isError && 'html'===SF.renderMode){
+            let vw = null, vh = null;
+            if(!PF.config.renderAutoScale
+               && !m.isError && 'html'===PF.renderMode){
                 const svg = E(eOut,':scope > svg');
-                const vh = svg.getAttribute('viewBox').split(' ');
-                eOut.style.width = (+vh[2] + 10)+'px';
-                eOut.style.height = (+vh[3] + 10)+'px';
-                console.log('vh',vh);
-            }else{
-                eOut.style.width = null;
-                eOut.style.height = null;
+                const vb = svg ? svg.getAttribute('viewBox').split(' ') : false;
+                if(vb && 4===vb.length){
+                    vw = (+vb[2] + 10)+'px';
+                    vh = (+vb[3] + 10)+'px';
+                }else if(svg){
+                    console.warn("SVG element is missing viewBox attribute.");
+                }
             }
+            eOut.style.width = vw;
+            eOut.style.height = vh;
         });
 
         E('#btn-render-mode').addEventListener('click',function(){
-            let mode = SF.renderMode;
+            let mode = PF.renderMode;
             const modes = ['text','html'];
             let ndx = modes.indexOf(mode) + 1;
             if(ndx>=modes.length) ndx = 0;
-            SF.renderMode = modes[ndx];
+            PF.renderMode = modes[ndx];
             if(eOut.dataset.pikchr){
-                SF.render(eOut.dataset.pikchr);
+                PF.render(eOut.dataset.pikchr);
             }
         });
 
-        SF.addMsgHandler('working',function f(ev){
+        PF.addMsgHandler('working',function f(ev){
             switch(ev.data){
                 case 'start': /* See notes in preStartWork(). */; return;
                 case 'end':
@@ -282,11 +285,11 @@
                 }, false);
             });
         /* For each checkbox with data-config=X, set up a binding to
-           SF.config[X]. These must be set up AFTER data-csstgt
+           PF.config[X]. These must be set up AFTER data-csstgt
            checkboxes so that those two states can be synced properly. */
         EAll('input[type=checkbox][data-config]')
             .forEach(function(e){
-                const confVal = !!SF.config[e.dataset.config];
+                const confVal = !!PF.config[e.dataset.config];
                 if(e.checked !== confVal){
                     /* Ensure that data-csstgt mappings (if any) get
                        synced properly. */
@@ -294,19 +297,19 @@
                     e.dispatchEvent(new Event('change'));
                 }
                 e.addEventListener('change', function(){
-                    SF.config[this.dataset.config] = this.checked;
+                    PF.config[this.dataset.config] = this.checked;
                 }, false);
             });
         E('#opt-cb-autoscale').addEventListener('change',function(){
-            /* SF.config.renderAutoScale was set by the data-config
+            /* PF.config.renderAutoScale was set by the data-config
                event handler. */
-            if('html'==SF.renderMode && eOut.dataset.pikchr){
-                SF.render(eOut.dataset.pikchr);
+            if('html'==PF.renderMode && eOut.dataset.pikchr){
+                PF.render(eOut.dataset.pikchr);
             }
         });
         /* For each button with data-cmd=X, map a click handler which
-           calls SF.render(X). */
-        const cmdClick = function(){SF.render(this.dataset.cmd);};
+           calls PF.render(X). */
+        const cmdClick = function(){PF.render(this.dataset.cmd);};
         EAll('button[data-cmd]').forEach(
             e => e.addEventListener('click', cmdClick, false)
         );
@@ -320,16 +323,16 @@
             const status = {loaded: 0, total: 0};
             this.setAttribute('disabled','disabled');
             r.addEventListener('loadstart', function(){
-                SF.echo("Loading",f.name,"...");
+                PF.echo("Loading",f.name,"...");
             });
             r.addEventListener('progress', function(ev){
-                SF.echo("Loading progress:",ev.loaded,"of",ev.total,"bytes.");
+                PF.echo("Loading progress:",ev.loaded,"of",ev.total,"bytes.");
             });
             const that = this;
             r.addEventListener('load', function(){
                 that.removeAttribute('disabled');
                 stdout("Loaded",f.name+". Opening pikchr...");
-                SF.wMsg('open',{
+                PF.wMsg('open',{
                     filename: f.name,
                     buffer: this.result
                 });
@@ -460,5 +463,5 @@
 
         delete ForceResizeKludge.$disabled;
         ForceResizeKludge();
-    }/*onSFLoaded()*/;
+    }/*onPFLoaded()*/;
 })();
