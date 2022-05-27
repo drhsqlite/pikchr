@@ -52,20 +52,25 @@
     the module loading is complete, a message with a text value of
     null is posted.
 
-  - pikchr-out: data=pikchr, isError=true if the output is an error
-    report.
+  - pikchr: 
 
-  Main-to-Worker types:
+    {type: 'pikchr', data:{
+     text: input text,
+     pikchr: rendered result (SVG on success, HTML on error),
+     isError: bool, true if .pikchr holds an error report
+    }
 
-  - exec: data=pikchr text.
+  Main-to-Worker message types:
+
+  - pikchr: data=pikchr-format text to render.
 
 */
 
 "use strict";
 (function(){
     /**
-       Posts a message in the form {type,data} unless passed more than 2
-       args, in which case it posts {type, data:[arg1...argN]}.
+       Posts a message in the form {type,data} unless passed more than
+       2 args, in which case it posts {type, data:[arg1...argN]}.
     */
     const wMsg = function(type,data){
         postMessage({
@@ -76,14 +81,13 @@
         });
     };
 
-    const stdout = function(){wMsg('stdout', Array.prototype.slice.call(arguments));};
     const stderr = function(){wMsg('stderr', Array.prototype.slice.call(arguments));};
 
     self.onerror = function(/*message, source, lineno, colno, error*/) {
         const err = arguments[4];
         if(err && 'ExitStatus'==err.name){
-            /* This is relevant for the sqlite3 shell binding but not the
-               lower-level binding. */
+            /* This "cannot happen" for this wasm binding, but just in
+               case... */
             pikchrModule.isDead = true;
             stderr("FATAL ERROR:", err.message);
             stderr("Restarting the app requires reloading the page.");
@@ -92,51 +96,41 @@
         pikchrModule.setStatus('Exception thrown, see JavaScript console: '+err);
     };
 
-    const PikchrWorker = {
-        /**
-           Runs the given text through pikchr and emits a 'pikchr'
-           message with the result:
-
-           {type:'pikchr', data:{
-             pikchr: input text,
-             result: result text,
-             isError: true if result holds an error
-           }}
-
-
-           Fires a working/start event before
-           it starts and working/end event when it finishes.
-        */
-        render: function f(text){
-            if(!f._) f._ = pikchrModule.cwrap('pikchr', 'string', ['string']);
-            if(pikchrModule.isDead){
-                stderr("wasm module has exit()ed. Cannot pikchr.");
-                return;
-            }
-            wMsg('working','start');
-            try {
-                if(f._running){
-                    stderr('Cannot run multiple commands concurrently.');
-                }else{
-                    f._running = true;
-                    const msg = {
-                        pikchr: text,
-                        result: (f._(text) || "").trim()
-                    };
-                    msg.isError = !!(msg.result && msg.result.startsWith('<div'));
-                    wMsg('pikchr', msg);
-                }
-            } finally {
-                delete f._running;
-                wMsg('working','end');
-            }
-        }
-    };
-
     self.onmessage = function f(ev){
         ev = ev.data;
         switch(ev.type){
-            case 'pikchr': PikchrWorker.render(ev.data); return;
+            /**
+               Runs the given text through pikchr and emits a 'pikchr'
+               message with the result:
+
+               {type:'pikchr', data:{
+                 pikchr: input text,
+                 result: result text,
+                 isError: true if result holds an error
+               }}
+
+               Fires a working/start event before it starts and
+               working/end event when it finishes.
+            */
+            case 'pikchr':
+                if(pikchrModule.isDead){
+                    stderr("wasm module has exit()ed. Cannot pikchr.");
+                    return;
+                }
+                if(!f._) f._ = pikchrModule.cwrap('pikchr', 'string', ['string']);
+                wMsg('working','start');
+                try {
+                    const msg = {
+                        pikchr: ev.data,
+                        result: (f._(ev.data) || "").trim()
+                    };
+                    msg.isError = !!(msg.result && msg.result.startsWith('<div'));
+                    console.log(msg);
+                    wMsg('pikchr', msg);
+                } finally {
+                    wMsg('working','end');
+                }
+                return;
         };
         console.warn("Unknown fiddle-worker message type:",ev);
     };
@@ -145,7 +139,7 @@
        emscripten module for use with build mode -sMODULARIZE.
     */
     const pikchrModule = {
-        print: stdout,
+        print: function(){wMsg('stdout', Array.prototype.slice.call(arguments));},
         printErr: stderr,
         /**
            Intercepts status updates from the emscripting module init

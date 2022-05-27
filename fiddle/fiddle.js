@@ -22,9 +22,9 @@
 
     /**
        The PikchrFiddle object is intended to be the primary
-       app-level object for the main-thread side of the sqlite
-       fiddle application. It uses a worker thread to load the
-       sqlite WASM module and communicate with it.
+       app-level object for the main-thread side of the pikchr
+       fiddle application. It uses a worker thread to load its
+       WASM module and communicate with it.
     */
     const PF/*local convenience alias*/
     = window.PikchrFiddle/*canonical name*/ = {
