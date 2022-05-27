@@ -40,8 +40,8 @@
             swapInOut: true,
             /* If true, the SVG is allowed to resize to fit the
                parent content area, else the parent is resized to
-               fit the SVG. */
-            renderAutoScale: true,
+               fit the rendered SVG. */
+            renderAutoScale: false
         },
         renderMode: 'html'/*one of: 'text','html'*/,
         _msgMap: {},
@@ -231,17 +231,13 @@
                     break;
             }
             eOut.innerHTML = content;
-            if(!SF.config.renderAutoScale){
-                if(!m.isError && 'html'===SF.renderMode){
-                    const svg = E(eOut,':scope > svg');
-                    const vh = svg.getAttribute('viewBox').split(' ');
-                    eOut.style.width = (+vh[2] + 10)+'px';
-                    eOut.style.height = (+vh[3] + 10)+'px';
-                    console.log('vh',vh);
-                }else{
-                    eOut.style.width = null;
-                    eOut.style.height = null;
-                }
+            if(!SF.config.renderAutoScale
+               && !m.isError && 'html'===SF.renderMode){
+                const svg = E(eOut,':scope > svg');
+                const vh = svg.getAttribute('viewBox').split(' ');
+                eOut.style.width = (+vh[2] + 10)+'px';
+                eOut.style.height = (+vh[3] + 10)+'px';
+                console.log('vh',vh);
             }else{
                 eOut.style.width = null;
                 eOut.style.height = null;
