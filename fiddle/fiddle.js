@@ -211,7 +211,10 @@
             /* If true, the SVG is allowed to resize to fit the
                parent content area, else the parent is resized to
                fit the rendered SVG. */
-            renderAutoScale: false
+            renderAutoScale: false,
+            /* If true, automatically render while the user is
+               typing. */
+            renderWhileTyping: false
         },
         renderMode: 'html'/*one of: 'text','html'*/,
         _msgMap: {},
@@ -250,7 +253,6 @@
         },
         /** Stores this object's config in the browser's storage. */
         storeConfig: function(){
-            console.debug("Storing:",this.config);
             storage.setJSON(configStorageKey,this.config);
         }
     };
@@ -350,25 +352,24 @@
         btnClearIn.addEventListener('click',function(){
             taInput.value = '';
         },false);
-        // Ctrl-enter and shift-enter both run the current input
-        taInput.addEventListener('keydown',function(ev){
-            if((ev.ctrlKey || ev.shiftKey) && 13 === ev.keyCode){
-                ev.preventDefault();
-                ev.stopPropagation();
-                btnRender.click();
-            }
-        }, false);
         const taOutput = E('#output');
         const btnRender = E('#btn-render');
-        btnRender.addEventListener('click',function(ev){
+        const getCurrentText = function(){
             let text;
-            ev.preventDefault();
             if(taInput.selectionStart<taInput.selectionEnd){
                 text = taInput.value.substring(taInput.selectionStart,taInput.selectionEnd).trim();
             }else{
                 text = taInput.value.trim();
             }
+            return text;;
+        }
+        const renderCurrentText = function(){
+            const text = getCurrentText();
             if(text) PF.render(text);
+        };
+        btnRender.addEventListener('click',function(ev){
+            ev.preventDefault();
+            renderCurrentText();
         },false);
 
         /** To be called immediately before work is sent to the
@@ -435,7 +436,7 @@
             }
             eOut.style.width = vw;
             eOut.style.height = vh;
-        });
+        })/*'pikchr' msg handler*/;
 
         E('#btn-render-mode').addEventListener('click',function(){
             let mode = PF.renderMode;
@@ -609,6 +610,44 @@
         };
         debounce.$defaultDelay = 500 /*arbitrary*/;
 
+        /** Debounce handler for auto-rendering while typing. */
+        const debounceAutoRender = debounce(function f(){
+            if(!PF._isDirty) return;
+            const text = getCurrentText();
+            if(f._ === text){
+                PF._isDirty = false;
+                return;
+            }
+            f._ = text;
+            PF._isDirty = false;
+            PF.render(text || '');
+        }, 800, false);
+
+        taInput.addEventListener('keyup',function f(ev){
+            if((ev.ctrlKey || ev.shiftKey) && 13 === ev.keyCode){
+                // Ctrl-enter and shift-enter both run the current input
+                PF._isDirty = false/*prevent a pending debounce from re-rendering*/;
+                ev.preventDefault();
+                ev.stopPropagation();
+                renderCurrentText();
+                return;
+            }
+            if(!PF.config.renderWhileTyping) return;
+            /* Auto-render while typing... */
+            switch(ev.keyCode){
+                case (ev.keyCode<32): /*any ctrl char*/
+                    /* ^^^ w/o that, simply tapping ctrl is enough to
+                       force a re-render. Similarly, TAB-ing focus away
+                       should not re-render. */
+                case 33: case 34: /* page up/down */
+                case 35: case 36: /* home/end */
+                case 37: case 38: case 39: case 40: /* arrows */
+                    return;
+            }
+            PF._isDirty = true;
+            debounceAutoRender();
+        }, false);
+
         const ForceResizeKludge = (function(){
             /* Workaround for Safari mayhem regarding use of vh CSS
                units....  We cannot use vh units to set the main view
@@ -644,7 +683,7 @@
             resized.$disabled = true/*gets deleted when setup is finished*/;
             window.addEventListener('resize', debounce(resized, 250), false);
             return resized;
-        })();
+        })()/*ForceResizeKludge*/;
 
         delete ForceResizeKludge.$disabled;
         ForceResizeKludge();
