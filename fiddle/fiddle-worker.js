@@ -125,7 +125,6 @@
                         result: (f._(ev.data) || "").trim()
                     };
                     msg.isError = !!(msg.result && msg.result.startsWith('<div'));
-                    console.log(msg);
                     wMsg('pikchr', msg);
                 } finally {
                     wMsg('working','end');
