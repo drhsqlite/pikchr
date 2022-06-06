@@ -11,7 +11,7 @@
   ***********************************************************************
 
   This is the main entry point for the pikchr fiddle app. It sets up the
-  various UI bits, loads a Worker for the db connection, and manages the
+  various UI bits, loads a Worker for the pikchr process, and manages the
   communication between the UI and worker.
 */
 (function(){

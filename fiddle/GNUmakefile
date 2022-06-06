@@ -22,7 +22,8 @@ $(fiddle_module_js): $(pikchr_c) GNUmakefile
         -sEXPORTED_FUNCTIONS=_pikchr $(pikchr_c) \
         -sENVIRONMENT=web \
         -sMODULARIZE \
-        -sEXPORT_NAME=initPikchrModule;
+        -sEXPORT_NAME=initPikchrModule \
+        --minify 0;
 	gzip -c < $@ > $@.gz
 	gzip -c < fiddle-module.wasm > fiddle-module.wasm.gz
 fiddle-module.wasm: $(fiddle_module_js)

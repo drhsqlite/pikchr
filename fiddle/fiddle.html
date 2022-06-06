@@ -154,11 +154,6 @@
           white-space: nowrap;
           background: #0002;
       }
-      #notes-caveats {
-          border-top: 1px dotted;
-          padding-top: 0.25em;
-          margin-top: 0.5em;
-      }
       .center { text-align: center; }
       .app-view {
           flex: 20 1 auto;
@@ -191,7 +186,7 @@
     </figure>
     <div class="emscripten" id="module-status">Downloading...</div>
     <div class="emscripten">
-      <progress value="0" max="100" id="module-progress" hidden='1'></progress>  
+      <progress value="0" max="100" id="module-progress" hidden='1'></progress>
     </div><!-- /emscripten bits -->
     <div id='view-split' class='app-view initially-hidden'>
       <div class='fieldset options collapsible'>
@@ -248,7 +243,7 @@ box rad 10px "Markdown" "Formatter" "(markdown.c)" fit
 arrow right 200% "HTML+SVG" "Output"
 arrow <-> down from last box.s
 box same "Pikchr" "Formatter" "(pikchr.c)" fit
-</textarea>        
+</textarea>
           <div class='button-bar'>
             <button id='btn-render'>Render</button>
             <button id='btn-clear'>Clear Input</button>
