@@ -112,13 +112,7 @@
         switch(ev.type){
             /**
                Runs the given text through pikchr and emits a 'pikchr'
-               message with the result:
-
-               {type:'pikchr', data:{
-                 pikchr: input text,
-                 result: result text,
-                 isError: true if result holds an error
-               }}
+               message result (output format documented above).
 
                Fires a working/start event before it starts and
                working/end event when it finishes.
