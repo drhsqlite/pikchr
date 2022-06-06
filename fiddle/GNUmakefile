@@ -7,10 +7,6 @@ fiddle_module_wasm := fiddle-module.wasm
 fiddle_generated := $(fiddle_module_js) $(fiddle_module_wasm)
 pikchr_c := ../pikchr.c
 
-clean:
-	rm -f $(fiddle_generated)
-disclean: clean
-
 ifneq (,$(wildcard /home/stephan))
   emcc_opt ?= -O0
 else
@@ -26,13 +22,27 @@ $(fiddle_module_js): $(pikchr_c) GNUmakefile
         -sEXPORTED_FUNCTIONS=_pikchr $(pikchr_c) \
         -sENVIRONMENT=web \
         -sMODULARIZE \
-        -sEXPORT_NAME=initPikchrModule \
+        -sEXPORT_NAME=initPikchrModule;
+	gzip -c < $@ > $@.gz
+	gzip -c < fiddle-module.wasm > fiddle-module.wasm.gz
+fiddle-module.wasm: $(fiddle_module_js)
+fiddle-module.js.gz: $(fiddle_module_js)
+fiddle-module.wasm.gz: $(fiddle_module_js)
+fiddle.js:
+fiddle.js.gz: fiddle.js
+	gzip -c < $< > $@
 
-fiddle: $(fiddle_module_js)
-
+fiddle_compressed := fiddle-module.js.gz fiddle-module.wasm.gz fiddle.js.gz
+fiddle_generated += $(fiddle_compressed)
 fiddle_files = emscripten.css fiddle.html \
              fiddle.js fiddle-module.js \
-             fiddle-module.wasm fiddle-worker.js
+             fiddle-module.wasm fiddle-worker.js \
+             $(fiddle_compressed)
+
+fiddle: $(fiddle_compressed)
+clean:
+	rm -f $(fiddle_generated)
+disclean: clean
 
 # fiddle_remote is the remote destination for the fiddle app. It
 # must be a [user@]HOST:/path for rsync.
