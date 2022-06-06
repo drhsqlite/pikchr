@@ -623,7 +623,7 @@
             PF.render(text || '');
         }, 800, false);
 
-        taInput.addEventListener('keyup',function f(ev){
+        taInput.addEventListener('keydown',function f(ev){
             if((ev.ctrlKey || ev.shiftKey) && 13 === ev.keyCode){
                 // Ctrl-enter and shift-enter both run the current input
                 PF._isDirty = false/*prevent a pending debounce from re-rendering*/;

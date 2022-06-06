@@ -18,7 +18,7 @@ $(pikchr_c):
 
 $(fiddle_module_js): $(pikchr_c) GNUmakefile
 	emcc -o $@ $(emcc_opt) --no-entry \
-        -sEXPORTED_RUNTIME_METHODS=cwrap \
+        -sEXPORTED_RUNTIME_METHODS=cwrap,setValue,getValue,stackSave,stackRestore \
         -sEXPORTED_FUNCTIONS=_pikchr $(pikchr_c) \
         -sENVIRONMENT=web \
         -sMODULARIZE \
