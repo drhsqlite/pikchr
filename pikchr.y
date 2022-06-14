@@ -1928,6 +1928,35 @@ static void pik_append(Pik *p, const char *zText, int n){
 }
 
 /*
+** Given a string and its length, returns true if the string begins
+** with a construct which syntactically matches an HTML entity escape
+** sequence (without checking for whether it's a known entity). Always
+** returns false if zText[0] is false or n<4. Entities match the
+** equivalent of the regexes `&#[0-9]+;` and `&[a-zA-Z]+;`.
+*/
+static int pik_isentity(char const * zText, int n){
+  int i = 0;
+  if( n<4 || '&'!=zText[0] ) return 0;
+  n--;
+  zText++;
+  if( '#'==zText[0] ){
+    zText++;
+    n--;
+    for(i=0; i<n; i++){
+      if( i>1 && ';'==zText[i] ) return 1;
+      else if( zText[i]<'0' || zText[i]>'9' ) return 0;
+    }
+  }else{
+    for( i=0; i<n; i++ ){
+      if( i>1 && ';'==zText[i] ) return 1;
+      else if( zText[i]<'A' || zText[i]>'z'
+               || (zText[i]>'Z' && zText[i]<'a') ) return 0;
+    }
+  }
+  return 0;
+}
+
+/*
 ** Append text to zOut with HTML characters escaped.
 **
 **   *  The space character is changed into non-breaking space (U+00a0)
@@ -1958,8 +1987,10 @@ static void pik_append_text(Pik *p, const char *zText, int n, int mFlags){
     switch( c ){
       case '<': {  pik_append(p, "&lt;", 4);  break;  }
       case '>': {  pik_append(p, "&gt;", 4);  break;  }
-      case '&': {  pik_append(p, "&amp;", 5);  break;  }
       case ' ': {  pik_append(p, "\302\240;", 2);  break;  }
+      case '&':
+        if( pik_isentity(zText+i, n-i) ){ pik_append(p, "&", 1); }
+        else { pik_append(p, "&amp;", 5); }
     }
     i++;
     n -= i;
