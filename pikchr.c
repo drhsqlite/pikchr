@@ -4540,7 +4540,7 @@ static void pik_append(Pik *p, const char *zText, int n){
 ** with a construct which syntactically matches an HTML entity escape
 ** sequence (without checking for whether it's a known entity). Always
 ** returns false if zText[0] is false or n<4. Entities match the
-** equivalent of the regexes `&#[0-9]+;` and `&[a-zA-Z]+;`.
+** equivalent of the regexes `&#[0-9]{2,};` and `&[a-zA-Z]{2,};`.
 */
 static int pik_isentity(char const * zText, int n){
   int i = 0;
@@ -4555,7 +4555,7 @@ static int pik_isentity(char const * zText, int n){
       else if( zText[i]<'0' || zText[i]>'9' ) return 0;
     }
   }else{
-    for( i=0; i<n; i++ ){
+    for(i=0; i<n; i++){
       if( i>1 && ';'==zText[i] ) return 1;
       else if( zText[i]<'A' || zText[i]>'z'
                || (zText[i]>'Z' && zText[i]<'a') ) return 0;
