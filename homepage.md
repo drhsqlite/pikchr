@@ -85,6 +85,8 @@ Pikchr scripts cause no harm (apart from generating ugly diagrams).
      IDEs](https://github.com/YannCebron/IntelliPikchr/) by Yann Cébron.
   *  pikchr has been integrated into the [kroki.io](https://kroki.io/)
      diagram-rendering service.
+  *  The 8th programming language added pikchr support [in version
+     22.04](https://8th-dev.com/forum/index.php/topic,2473.0.html).
 
 ## Source-Code License: 0-clause BSD
 
