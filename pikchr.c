@@ -5838,10 +5838,7 @@ static void pik_move_hdg(
     n = pik_next_rpath(p, pErr);
   }while( n<1 );
   if( pHeading ){
-    if( rHdg<0.0 || rHdg>360.0 ){
-      pik_error(p, pHeading, "headings should be between 0 and 360");
-      return;
-    }
+    rHdg = fmod(rHdg,360.0);
   }else if( pEdgept->eEdge==CP_C ){
     pik_error(p, pEdgept, "syntax error");
     return;
@@ -8134,4 +8131,4 @@ int Pikchr_Init(Tcl_Interp *interp){
 #endif /* PIKCHR_TCL */
 
 
-#line 8162 "pikchr.c"
+#line 8159 "pikchr.c"
