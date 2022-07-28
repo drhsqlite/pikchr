@@ -330,11 +330,11 @@
     });
 
     /**
-       The 'fiddle-ready' event is fired (with no payload) when the
+       The 'pikchr-ready' event is fired (with no payload) when the
        wasm module has finished loading. Interestingly, that happens
        _before_ the final module:status event */
-    PF.addMsgHandler('fiddle-ready', function(){
-        PF.clearMsgHandlers('fiddle-ready');
+    PF.addMsgHandler('pikchr-ready', function(){
+        PF.clearMsgHandlers('pikchr-ready');
         self.onPFLoaded();
     });
 
