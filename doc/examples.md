@@ -424,3 +424,237 @@ Paper:  CRT + 1.05,0.75
         circle rad 0.05 at Paper + (0.055, -0.25)
         "   rollers" ljust at Paper + (0.1, -0.25)
 ~~~
+
+-----
+
+From [forum post 1b58e4bf9f717dbe](/forumpost/1b58e4bf9f717dbe) by
+Ryan Smith:
+
+~~~ pikchr toggle
+CP:   dot;
+
+      $h = 10;
+      line from CP go 0.7cm heading $h; DA1: dot;
+      line         go 1cm heading $h; DA2: dot;
+      line         go 1cm heading $h; DA3: dot;
+      line         go 1cm heading $h; DA4: dot;
+      line         go 1cm heading $h; DA5: dot;
+      line         go 1cm heading $h; DA6: dot;
+      line         go 1cm heading $h;
+
+      $h = $h+20;
+      line from CP go 0.8cm heading $h; DB1: dot;
+      line         go 1cm heading $h; DB2: dot;
+      line         go 1cm heading $h; DB3: dot;
+      line         go 1cm heading $h; DB4: dot;
+      line         go 1cm heading $h; DB5: dot;
+      line         go 1cm heading $h; DB6: dot;
+      line         go 1cm heading $h;
+
+      $h = $h+22;
+      line from CP go 0.9cm heading $h; DC1: dot;
+      line         go 1cm heading $h; DC2: dot;
+      line         go 1cm heading $h; DC3: dot;
+      line         go 1cm heading $h; DC4: dot;
+      line         go 1cm heading $h; DC5: dot;
+      line         go 1cm heading $h; DC6: dot;
+      line         go 1cm heading $h;
+
+      $h = $h+20;
+      line from CP go 0.9cm heading $h; DD1: dot;
+      line         go 1cm heading $h; DD2: dot;
+      line         go 1cm heading $h; DD3: dot;
+      line         go 1cm heading $h; DD4: dot;
+      line         go 1cm heading $h; DD5: dot;
+      line         go 1cm heading $h; DD6: dot;
+      line         go 1cm heading $h;
+
+      $h = $h+19;
+      line from CP go 1cm heading $h; DE1: dot;
+      line         go 1cm heading $h; DE2: dot;
+      line         go 1cm heading $h; DE3: dot;
+      line         go 1cm heading $h; DE4: dot;
+      line         go 1cm heading $h; DE5: dot;
+      line         go 1cm heading $h; DE6: dot;
+      line         go 1cm heading $h;
+
+      $h = $h+19;
+      line from CP go 1cm heading $h; DF1: dot;
+      line         go 1cm heading $h; DF2: dot;
+      line         go 1cm heading $h; DF3: dot;
+      line         go 1cm heading $h; DF4: dot;
+      line         go 1cm heading $h; DF5: dot;
+      line         go 1cm heading $h; DF6: dot;
+      line         go 1cm heading $h;
+
+      $h = $h+20;
+      line from CP go 1cm heading $h; DG1: dot;
+      line         go 1cm heading $h; DG2: dot;
+      line         go 1cm heading $h; DG3: dot;
+      line         go 1cm heading $h; DG4: dot;
+      line         go 1cm heading $h; DG5: dot;
+      line         go 1cm heading $h; DG6: dot;
+      line         go 1cm heading $h;
+
+      $h = $h+20;
+      line from CP go 1cm heading $h; DH1: dot;
+      line         go 1.1cm heading $h; DH2: dot;
+      line         go 1.1cm heading $h; DH3: dot;
+      line         go 1cm heading $h; DH4: dot;
+      line         go 1cm heading $h; DH5: dot;
+      line         go 1cm heading $h; DH6: dot;
+      line         go 1cm heading $h;
+
+      $h = $h+24;
+      line from CP go 1cm heading $h; DI1: dot;
+      line         go 1cm heading $h; DI2: dot;
+      line         go 1cm heading $h; DI3: dot;
+      line         go 1cm heading $h; DI4: dot;
+      line         go 1cm heading $h; DI5: dot;
+      line         go 1cm heading $h; DI6: dot;
+      line         go 1cm heading $h;
+
+      $h = $h+20;
+      line from CP go 0.9cm heading $h; DJ1: dot;
+      line         go 1cm heading $h; DJ2: dot;
+      line         go 1cm heading $h; DJ3: dot;
+      line         go 1cm heading $h; DJ4: dot;
+      line         go 1cm heading $h; DJ5: dot;
+      line         go 1cm heading $h; DJ6: dot;
+      line         go 1cm heading $h;
+
+      $h = $h+18;
+      line from CP go 1cm heading $h; DK1: dot;
+      line         go 1cm heading $h; DK2: dot;
+      line         go 1cm heading $h; DK3: dot;
+      line         go 1cm heading $h; DK4: dot;
+      line         go 1cm heading $h; DK5: dot;
+      line         go 1cm heading $h; DK6: dot;
+      line         go 1cm heading $h;
+
+      $h = $h+20;
+      line from CP go 1cm heading $h; DL1: dot;
+      line         go 1cm heading $h; DL2: dot;
+      line         go 1cm heading $h; DL3: dot;
+      line         go 1cm heading $h; DL4: dot;
+      line         go 1cm heading $h; DL5: dot;
+      line         go 1cm heading $h; DL6: dot;
+      line         go 1cm heading $h;
+
+      $h = $h+19;
+      line from CP go 1cm heading $h; DM1: dot;
+      line         go 1cm heading $h; DM2: dot;
+      line         go 1cm heading $h; DM3: dot;
+      line         go 1cm heading $h; DM4: dot;
+      line         go 1cm heading $h; DM5: dot;
+      line         go 1cm heading $h; DM6: dot;
+      line         go 1cm heading $h;
+
+      $h = $h+20;
+      line from CP go 1cm heading $h; DN1: dot;
+      line         go 1cm heading $h; DN2: dot;
+      line         go 1cm heading $h; DN3: dot;
+      line         go 1cm heading $h; DN4: dot;
+      line         go 1cm heading $h; DN5: dot;
+      line         go 1cm heading $h; DN6: dot;
+      line         go 1cm heading $h;
+
+      $h = $h+16;
+      line from CP go 1.1cm heading $h; DO1: dot;
+      line         go 1cm heading $h; DO2: dot;
+      line         go 1cm heading $h; DO3: dot;
+      line         go 1cm heading $h; DO4: dot;
+      line         go 1cm heading $h; DO5: dot;
+      line         go 1cm heading $h; DO6: dot;
+      line         go 1cm heading $h;
+
+      $h = $h+20;
+      line from CP go 1.2cm heading $h; DP1: dot;
+      line         go 1cm heading $h; DP2: dot;
+      line         go 1cm heading $h; DP3: dot;
+      line         go 1cm heading $h; DP4: dot;
+      line         go 1cm heading $h; DP5: dot;
+      line         go 1cm heading $h; DP6: dot;
+      line         go 1cm heading $h;
+
+      $h = $h+22;
+      line from CP go 1.3cm heading $h; DQ1: dot;
+      line         go 1cm heading $h; DQ2: dot;
+      line         go 1cm heading $h; DQ3: dot;
+      line         go 1cm heading $h; DQ4: dot;
+      line         go 1cm heading $h; DQ5: dot;
+      line         go 1cm heading $h; DQ6: dot;
+      line         go 1cm heading $h;
+
+      $h = $h+20;
+      line from CP go 1.5cm heading $h; DR1: dot;
+      line         go 1cm heading $h; DR2: dot;
+      line         go 1cm heading $h; DR3: dot;
+      line         go 1cm heading $h; DR4: dot;
+      line         go 1cm heading $h; DR5: dot;
+      line         go 1cm heading $h; DR6: dot;
+      line         go 0.4cm heading $h;
+
+      line from DA1 to DB1 then to DC1 then to DD1 \
+               then to DE1 then to DF1 then to DG1 \
+               then to DH1 then to DI1 then to DJ1 \
+               then to DK1 then to DL1 then to DM1 \
+               then to DN1 then to DO1 then to DP1 \
+               then to DQ1 then to DR1 then to DA2 thin;
+
+      line          to DB2 then to DC2 then to DD2 \
+               then to DE2 then to DF2 then to DG2 \
+               then to DH2 then to DI2 then to DJ2 \
+               then to DK2 then to DL2 then to DM2 \
+               then to DN2 then to DO2 then to DP2 \
+               then to DQ2 then to DR2 then to DA3 thin;
+
+      line          to DB3 then to DC3 then to DD3 \
+               then to DE3 then to DF3 then to DG3 \
+               then to DH3 then to DI3 then to DJ3 \
+               then to DK3 then to DL3 then to DM3 \
+               then to DN3 then to DO3 then to DP3 \
+               then to DQ3 then to DR3 then to DA4 thin;
+
+      line          to DB4 then to DC4 then to DD4 \
+               then to DE4 then to DF4 then to DG4 \
+               then to DH4 then to DI4 then to DJ4 \
+               then to DK4 then to DL4 then to DM4 \
+               then to DN4 then to DO4 then to DP4 \
+               then to DQ4 then to DR4 then to DA5 thin;
+
+      line          to DB5 then to DC5 then to DD5 \
+               then to DE5 then to DF5 then to DG5 \
+               then to DH5 then to DI5 then to DJ5 \
+               then to DK5 then to DL5 then to DM5 \
+               then to DN5 then to DO5 then to DP5 \
+               then to DQ5 then to DR5 then to DA6 thin;
+
+      line          to DB6 then to DC6 then to DD6 \
+               then to DE6 then to DF6 then to DG6 \
+               then to DH6 then to DI6 then to DJ6 \
+               then to DK6 then to DL6 then to DM6 \
+               then to DN6 then to DO6 then to DP6 \
+               then to DQ6 then to DR6 thin;
+
+BODY: ellipse width 0.3cm height 0.4cm fill black at 2cm heading 340 from CP;
+RDT:  ellipse width 0.2cm height 0.2cm fill red at last ellipse.c;
+      ellipse width 0.2cm height 0.1cm fill black at RDT.n;
+      ellipse width 0.2cm height 0.1cm fill black at RDT.s;
+HEAD: ellipse with .s at BODY.n width 0.14cm height 0.12cm;
+      line thin thin from HEAD.nw go 0.08cm heading 155;
+      line thin thin from HEAD.ne go 0.08cm heading 205;
+SPIN: ellipse thin at BODY.s width 0.06cm height 0.08cm;
+      line thin from SPIN.s go 1.2cm heading 142;
+
+  $h=340; line from RDT thin thin chop go 0.8cm heading $h then go 0.5cm heading $h- 70 then go 0.2cm heading $h-150;
+  $h=306; line from RDT thin thin chop go 0.8cm heading $h then go 0.5cm heading $h-108 then go 0.2cm heading $h-150;
+  $h=260; line from RDT thin thin chop go 0.8cm heading $h then go 0.5cm heading $h- 70 then go 0.2cm heading $h-110;
+  $h=210; line from RDT thin chop      go 0.8cm heading $h then go 0.5cm heading $h-115 then go 0.2cm heading $h-130;
+
+  $h= 22; line from RDT thin thin chop go 0.8cm heading $h then go 0.5cm heading $h+ 52 then go 0.2cm heading $h+130;
+  $h= 45; line from RDT thin thin chop go 0.8cm heading $h then go 0.5cm heading $h+ 74 then go 0.2cm heading $h+130;
+  $h= 68; line from RDT thin thin chop go 0.8cm heading $h then go 0.5cm heading $h+ 70 then go 0.2cm heading $h+134;
+  $h= 92; line from RDT thin chop      go 0.8cm heading $h then go 0.5cm heading $h+100 then go 0.2cm heading $h+130;
+
+~~~
