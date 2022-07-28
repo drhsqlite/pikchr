@@ -208,7 +208,7 @@
         }
     };
 
-    importScripts('fiddle-module.js');
+    importScripts('pikchr.js');
     /**
        initPikchrModule() is installed via fiddle-module.js due to
        building with:

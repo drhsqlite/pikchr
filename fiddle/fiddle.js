@@ -272,7 +272,7 @@
         }
     }
 
-    PF.worker = new Worker('fiddle-worker.js');
+    PF.worker = new Worker('pikchr-worker.js');
     PF.worker.onmessage = (ev)=>PF.runMsgHandlers(ev.data);
     PF.addMsgHandler('stdout', console.log.bind(console));
     PF.addMsgHandler('stderr', console.error.bind(console));

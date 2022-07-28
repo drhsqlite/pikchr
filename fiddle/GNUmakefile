@@ -2,8 +2,8 @@
 # from emacs. It is not part of the canonical build process.
 default: fiddle
 
-fiddle_module_js := fiddle-module.js
-fiddle_module_wasm := fiddle-module.wasm
+fiddle_module_js := pikchr.js
+fiddle_module_wasm := pikchr.wasm
 fiddle_generated := $(fiddle_module_js) $(fiddle_module_wasm)
 pikchr_c := ../pikchr.c
 
@@ -25,19 +25,19 @@ $(fiddle_module_js): $(pikchr_c) GNUmakefile
         -sEXPORT_NAME=initPikchrModule \
         --minify 0;
 	gzip -c < $@ > $@.gz
-	gzip -c < fiddle-module.wasm > fiddle-module.wasm.gz
-fiddle-module.wasm: $(fiddle_module_js)
-fiddle-module.js.gz: $(fiddle_module_js)
-fiddle-module.wasm.gz: $(fiddle_module_js)
+	gzip -c < pikchr.wasm > pikchr.wasm.gz
+pikchr.wasm: $(fiddle_module_js)
+pikchr.js.gz: $(fiddle_module_js)
+pikchr.wasm.gz: $(fiddle_module_js)
 fiddle.js:
 fiddle.js.gz: fiddle.js
 	gzip -c < $< > $@
 
-fiddle_compressed := fiddle-module.js.gz fiddle-module.wasm.gz fiddle.js.gz
+fiddle_compressed := pikchr.js.gz pikchr.wasm.gz fiddle.js.gz
 fiddle_generated += $(fiddle_compressed)
 fiddle_files = emscripten.css fiddle.html \
-             fiddle.js fiddle-module.js \
-             fiddle-module.wasm fiddle-worker.js \
+             fiddle.js pikchr.js \
+             pikchr.wasm pikchr-worker.js \
              $(fiddle_compressed)
 
 fiddle: $(fiddle_compressed)
