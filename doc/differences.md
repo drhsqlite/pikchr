@@ -407,6 +407,27 @@ line thin color gray <-> from X2 to X1 "distance" aligned above small \
     "C2 to C4" aligned below small
 ```
 
+### Limit on the number of input tokens
+
+Pikchr is designed to operate safely in a hostile environment on the 
+open internet.  For that reason, it deliberately limits
+the number of tokens that will be processed in a single script.
+If more tokens than the limit are seen, the script aborts with an error.
+
+The input token limit was added to prevent a denial-of-service (DoS)
+attack based on deeply nested macros.  Each time a macro is invoked, it
+is rescanned and all of the tokens within the macro are added to the
+running total.  Without the token limit, an attacker could devise a
+script that contained nested macros that generates billions and billions
+of glyphs in the final image, consuming large amounts of memory and
+CPU time in the process.
+
+The token limit is determined by the PIKCHR_TOKEN_LIMIT proprocessor
+macro in the source code.  The default token limit is 100000, which
+should be more than enough for any reasonable script.  The limit
+can be increased (or decreased) at compile-time by redefining that
+macro.
+
 ## Discontinued Features
 
 Pikchr deliberately omits some features of legacy PIC for security

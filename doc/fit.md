@@ -45,4 +45,4 @@ like:
 
 You can cause all boxes to scale to enclose their text annotations.
 (Caution:  boxes without any text annotations go to zero height and width
-and thus disappear when auto-fit.)
+and thus disappear when auto-fit is enabled.)
