@@ -87,6 +87,8 @@ Pikchr scripts cause no harm (apart from generating ugly diagrams).
      diagram-rendering service.
   *  The 8th programming language added pikchr support [in version
      22.04](https://8th-dev.com/forum/index.php/topic,2473.0.html).
+  *  [Node.js pikchr module](https://github.com/tenuki/pikchr) by
+     David Weil.
 
 ## Source-Code License: 0-clause BSD
 
