@@ -30,6 +30,7 @@ the latest version, use:
 
 ```
 $ git pull
+$ ./emsdk install latest
 $ ./emsdk activate latest
 ```
 
