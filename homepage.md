@@ -81,6 +81,8 @@ Pikchr scripts cause no harm (apart from generating ugly diagrams).
   *  [Go port of pikchr](https://github.com/gopikchr/gopikchr) and
      a [blog post](https://zellyn.com/gopikchr-a-yakshave/) about how
      that port came to be, both by Zellyn Hunter.
+  *  [mdbook-pikchr](https://crates.io/crates/mdbook-pikchr), by
+     Konstantin Podsvirov, is a pikchr-aware preprocessor for mdBook.
   *  Support for pikchr in [IntelliJ-based
      IDEs](https://github.com/YannCebron/IntelliPikchr/) by Yann Cébron.
   *  pikchr has been integrated into the [kroki.io](https://kroki.io/)
