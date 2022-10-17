@@ -130,6 +130,11 @@ move
 box thick thick "thick" "thick"
 ~~~
 
+## The "`behind`" attribute
+
+The new ["`behind`" attribute](./behind.md) can be used to control
+object stacking order.
+
 ## Enhanced ability to control text alignment and display
 
 There are new modifiers for text labels:

@@ -1305,6 +1305,20 @@ and variable values are restored.  Pikchr does not work this way.  In
 Pikchr, layout direction changes and variable definitions that occur within
 a container continue to be in effect after the container.
 
+# Object Stacking Order
+
+Objects are normally drawn in the order in which they are defined.  Thus
+objects that are toward the end of the script that overlap with objects
+near the beginning will appear to be on top.
+
+Sometimes it is desirable for a later object to appear to be behind an
+early object.  This is useful, for example, when using a box to form a
+colored background for a group of prior objects.  The
+["`behind`" attribute](./behind.md) with a argument that is the label
+for any prior object can be added to cause the object that holds the
+behind attribute to be drawn before the object that the behind
+attribute references.
+
 # Summary And Conclusion
 
 Though based on the decades-old PIC language, Pikchr itself is a relatively
