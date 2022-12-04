@@ -91,6 +91,9 @@ Pikchr scripts cause no harm (apart from generating ugly diagrams).
      22.04](https://8th-dev.com/forum/index.php/topic,2473.0.html).
   *  [Node.js pikchr module](https://github.com/tenuki/pikchr) by
      David Weil.
+  *  A [pikchr filter for
+     pandoc](https://code.jboy.space/pikchr-filter/doc/trunk/README.md)
+     implemented in Lua.
 
 ## Source-Code License: 0-clause BSD
 
