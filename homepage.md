@@ -94,6 +94,8 @@ Pikchr scripts cause no harm (apart from generating ugly diagrams).
   *  A [pikchr filter for
      pandoc](https://code.jboy.space/pikchr-filter/doc/trunk/README.md)
      implemented in Lua.
+  *  [Adamantine Pick](https://github.com/notlibrary/obsidian-adamantine-pick)
+     adds pikchr support to the Obsidian knowledge-base app.
 
 ## Source-Code License: 0-clause BSD
 
