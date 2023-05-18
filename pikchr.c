@@ -4989,7 +4989,7 @@ static void pik_append_txt(Pik *p, PObj *pObj, PBox *pBox){
       PNum cw = pik_text_length(t, t->eCode & TP_MONO)*p->charWidth*xtraFontScale*0.01;
       PNum ch = p->charHeight*0.5*xtraFontScale;
       PNum x0, y0, x1, y1;  /* Boundary of text relative to pObj->ptAt */
-      if( t->eCode & TP_BOLD ){
+      if( (t->eCode & (TP_BOLD|TP_MONO))==TP_BOLD ){
         cw *= 1.1;
       }
       if( t->eCode & TP_RJUST ){
@@ -5049,6 +5049,7 @@ static void pik_append_txt(Pik *p, PObj *pObj, PBox *pBox){
     }
     if( t->eCode & TP_MONO ){
       pik_append(p, " font-family=\"monospace\"", -1);
+      xtraFontScale *= 1.28;
     }
     if( pObj->color>=0.0 ){
       pik_append_clr(p, " fill=\"", pObj->color, "\"",0);
@@ -8142,4 +8143,4 @@ int Pikchr_Init(Tcl_Interp *interp){
 #endif /* PIKCHR_TCL */
 
 
-#line 8170 "pikchr.c"
+#line 8171 "pikchr.c"
