@@ -140,7 +140,7 @@ object stacking order.
 There are new modifiers for text labels:
 
 ~~~ pikchr indent
-box "bold" bold "italic" italic "big" big "small" small fit
+box "bold" bold "italic" italic "big" big "small" small "monospace" mono fit
 line from 1cm right of previous.se to 3cm right of previous.ne \
    "aligned" above aligned
 ~~~

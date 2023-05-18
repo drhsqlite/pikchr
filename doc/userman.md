@@ -1032,6 +1032,8 @@ that appear after each string literal.  The following modifiers are supported:
   * **below**
   * **big**
   * **bold**
+  * **mono**
+  * **monospace**
   * **center**
   * **italic**
   * **ljust**
@@ -1136,6 +1138,15 @@ italic font.  Fonts can be both bold and italic at the same time:
 
 ~~~~ pikchr indent toggle
   box "bold" bold "italic" italic "bold-italic" bold italic fit
+~~~~
+
+### Monospace Font Family <a id="font-family"></a>
+
+The "`mono`" or "`monospace`" attributes cause the text object to use a
+monospace font.
+
+~~~~ pikchr indent toggle
+  box "monospace" monospace fit
 ~~~~
 
 ### Aligned Text <a id="text-align"></a>

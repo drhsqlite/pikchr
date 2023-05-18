@@ -1,7 +1,8 @@
 ALL: [
 file "ljust" italic "*.md" ljust "*.txt" ljust "*.wiki" ljust rad 20%
 arrow
-box rad 10px "Markdown" "Interpreter"
+box rad 10px "Markdown" mono ljust "Interpreter" monospace ljust \
+   "(monospace)" mono ljust fit
 arrow right 200% "above" above "rjust " rjust below " ljust" ljust below
 file "rjust" italic "*.htm" rjust "*.js" rjust
 arrow down from first box.s "rjust " rjust " ljust" ljust

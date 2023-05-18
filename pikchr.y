@@ -60,7 +60,7 @@
 ** Add -DPIKCHR_SHELL to add a main() routine that reads input files
 ** and sends them through Pikchr, for testing.  Add -DPIKCHR_FUZZ for
 ** -fsanitizer=fuzzer testing.
-** 
+**
 ****************************************************************************
 ** IMPLEMENTATION NOTES (for people who want to understand the internal
 ** operation of this software, perhaps to extend the code or to fix bugs):
@@ -204,8 +204,9 @@ static const PNum pik_hdg_angle[] = {
 #define TP_SZMASK  0x0700  /* Font size mask */
 #define TP_ITALIC  0x1000  /* Italic font */
 #define TP_BOLD    0x2000  /* Bold font */
-#define TP_FMASK   0x3000  /* Mask for font style */
-#define TP_ALIGN   0x4000  /* Rotate to align with the line */
+#define TP_MONO    0x4000  /* Monospace font family */
+#define TP_FMASK   0x7000  /* Mask for font style */
+#define TP_ALIGN   0x8000  /* Rotate to align with the line */
 
 /* An object to hold a position in 2-D space */
 struct PPoint {
@@ -471,7 +472,7 @@ static void pik_bbox_addbox(PBox*,PBox*);
 static void pik_bbox_add_xy(PBox*,PNum,PNum);
 static void pik_bbox_addellipse(PBox*,PNum x,PNum y,PNum rx,PNum ry);
 static void pik_add_txt(Pik*,PToken*,int);
-static int pik_text_length(const PToken *pToken);
+static int pik_text_length(const PToken *pToken, const int isMonospace);
 static void pik_size_to_fit(Pik*,PToken*,int);
 static int pik_text_position(int,PToken*);
 static PNum pik_property_of(PObj*,PToken*);
@@ -680,7 +681,7 @@ boolproperty ::= SOLID.       {p->cur->sw = pik_value(p,"thickness",9,0);
 
 textposition(A) ::= .   {A = 0;}
 textposition(A) ::= textposition(B) 
-   CENTER|LJUST|RJUST|ABOVE|BELOW|ITALIC|BOLD|ALIGNED|BIG|SMALL(F).
+   CENTER|LJUST|RJUST|ABOVE|BELOW|ITALIC|BOLD|MONO|ALIGNED|BIG|SMALL(F).
                         {A = (short int)pik_text_position(B,&F);}
 
 
@@ -2378,10 +2379,12 @@ static void pik_append_txt(Pik *p, PObj *pObj, PBox *pBox){
     if( pBox!=0 ){
       /* If pBox is not NULL, do not draw any <text>.  Instead, just expand
       ** pBox to include the text */
-      PNum cw = pik_text_length(t)*p->charWidth*xtraFontScale*0.01;
+      PNum cw = pik_text_length(t, t->eCode & TP_MONO)*p->charWidth*xtraFontScale*0.01;
       PNum ch = p->charHeight*0.5*xtraFontScale;
       PNum x0, y0, x1, y1;  /* Boundary of text relative to pObj->ptAt */
-      if( t->eCode & TP_BOLD ) cw *= 1.1;
+      if( t->eCode & TP_BOLD ){
+        cw *= 1.1;
+      }
       if( t->eCode & TP_RJUST ){
         x0 = nx;
         y0 = y-ch;
@@ -2436,6 +2439,9 @@ static void pik_append_txt(Pik *p, PObj *pObj, PBox *pBox){
     }
     if( t->eCode & TP_BOLD ){
       pik_append(p, " font-weight=\"bold\"", -1);
+    }
+    if( t->eCode & TP_MONO ){
+      pik_append(p, " font-family=\"monospace\"", -1);
     }
     if( pObj->color>=0.0 ){
       pik_append_clr(p, " fill=\"", pObj->color, "\"",0);
@@ -3444,8 +3450,9 @@ static int pik_text_position(int iPrev, PToken *pFlag){
     case T_ABOVE:    iRes = (iRes&~TP_VMASK) | TP_ABOVE;  break;
     case T_CENTER:   iRes = (iRes&~TP_VMASK) | TP_CENTER; break;
     case T_BELOW:    iRes = (iRes&~TP_VMASK) | TP_BELOW;  break;
-    case T_ITALIC:   iRes |= TP_ITALIC;                   break; 
-    case T_BOLD:     iRes |= TP_BOLD;                     break; 
+    case T_ITALIC:   iRes |= TP_ITALIC;                   break;
+    case T_BOLD:     iRes |= TP_BOLD;                     break;
+    case T_MONO:     iRes |= TP_MONO;                     break;
     case T_ALIGNED:  iRes |= TP_ALIGN;                    break;
     case T_BIG:      if( iRes & TP_BIG ) iRes |= TP_XTRA;
                      else iRes = (iRes &~TP_SZMASK)|TP_BIG;   break;
@@ -3580,11 +3587,13 @@ static const unsigned char awChar[] = {
 ** "&lt;" as a single character.  Multi-byte UTF8 characters count
 ** as a single character.
 **
-** Attempt to scale the answer by the actual characters seen.  Wide
-** characters count more than narrow characters.  But the widths are
-** only guesses.
+** Unless using a monospaced font, attempt to scale the answer by
+** the actual characters seen.  Wide characters count more than
+** narrow characters. But the widths are only guesses.
+**
 */
-static int pik_text_length(const PToken *pToken){
+static int pik_text_length(const PToken *pToken, const int isMonospace){
+  const int stdAvg=100, monoAvg=82;
   int n = pToken->n;
   const char *z = pToken->z;
   int cnt, j;
@@ -3596,18 +3605,20 @@ static int pik_text_length(const PToken *pToken){
       int k;
       for(k=j+1; k<j+7 && z[k]!=0 && z[k]!=';'; k++){}
       if( z[k]==';' ) j = k;
-      cnt += 150;
+      cnt += (isMonospace ? monoAvg : stdAvg) * 3 / 2;
       continue;
     }
     if( (c & 0xc0)==0xc0 ){
       while( j+1<n-1 && (z[j+1]&0xc0)==0x80 ){ j++; }
-      cnt += 100;
+      cnt += isMonospace ? monoAvg : stdAvg;
       continue;
     }
-    if( c>=0x20 && c<=0x7e ){
+    if( isMonospace ){
+      cnt += monoAvg;
+    }else if( c >= 0x20 && c <= 0x7e ){
       cnt += awChar[c-0x20];
     }else{
-      cnt += 100;
+      cnt += stdAvg;
     }
   }
   return cnt;
@@ -4595,6 +4606,8 @@ static const PikWord pik_keywords[] = {
   { "ljust",      5,   T_LJUST,     0,         0        },
   { "max",        3,   T_FUNC2,     FN_MAX,    0        },
   { "min",        3,   T_FUNC2,     FN_MIN,    0        },
+  { "mono",       4,   T_MONO,      0,         0        },
+  { "monospace",  9,   T_MONO,      0,         0        },
   { "n",          1,   T_EDGEPT,    0,         CP_N     },
   { "ne",         2,   T_EDGEPT,    0,         CP_NE    },
   { "north",      5,   T_EDGEPT,    0,         CP_N     },
