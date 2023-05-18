@@ -9,6 +9,8 @@ keywords, in any order:
   * **below**
   * **big**
   * **bold**
+  * **mono**
+  * **monospace**
   * **center**
   * **italic**
   * **ljust**
@@ -114,6 +116,15 @@ an italic font.  Fonts can be both bold and italic at the same time.
 
 ~~~~ pikchr indent
   box "bold" bold "italic" italic "bold-italic" bold italic fit
+~~~~
+
+### Monospace Font Family <a id="font-family"></a>
+
+The "`mono`" or "`monospace`" attributes cause the text object to use a
+monospace font.
+
+~~~~ pikchr indent toggle
+  box "monospace" monospace fit
 ~~~~
 
 ## Attribute "aligned"

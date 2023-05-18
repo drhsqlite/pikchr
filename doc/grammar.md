@@ -178,6 +178,8 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **below**
   * **big**
   * **bold**
+  * **mono**
+  * **monospace**
   * **center**
   * **italic**
   * **ljust**
