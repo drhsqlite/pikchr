@@ -109,7 +109,7 @@ have special properties:
 | leftmargin    | Extra border space added to the left of the diagram        |
 | margin        | Extra border space added to all four sides of the diagram  |
 | rightmargin   | Extra border space added to the right side of the diagram  |
-| topmargin     | Extra border space added to top top side of the diagram    |
+| topmargin     | Extra border space added to the top side of the diagram    |
 
 
 The "VARIABLE *assignment-op* *expr*" syntax is able to modify the value

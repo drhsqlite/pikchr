@@ -82,7 +82,7 @@ by adjusting some variable settings.
 Line 04 creates a circle sized to fit its label "C0".  We want
 all the circles in this diagram to be the same size, so after sizing
 the first one to fit the text, line 05 sets the new default circle radius
-for all subsequent circles to be same as the first circle.  This
+for all subsequent circles to be the same as the first circle.  This
 not only saves us from having to add a "fit" on every "circle" call, it means
 all circles will be of a uniform size despite containing
 varying amounts of text.
@@ -169,7 +169,7 @@ explicit labels "C3P" and "C5P".  Do not be bashful about adding
 labels to objects.  The use of labels often makes the script much
 easier to read and maintain.
 
-# Lines 22 through 26 - background color for trunk
+## Lines 22 through 26 - background color for trunk
 
 Lines 22 through 26 implement a single box object that provides background
 color for the trunk.  Note the use of backslash ("`\`") to continue the
@@ -208,7 +208,7 @@ Try commenting out the "`behind C0`" to see what happens!
 Finally, line 26 changes the fill color for the box to a light shade
 of blue and the border to be thin and gray.
 
-# Lines 27 through 29 - background color for the branches
+## Lines 27 through 29 - background color for the branches
 
 Lines 27 through 29 create a second box to provide background color
 to the upper branches.  The second box definition begins with the
@@ -257,7 +257,7 @@ and stacked directly on top of each other.
 
 Line 29 adjusts the background color to a darker shade of blue.
 
-# Lines 30 and 31 - labeling the branches
+## Lines 30 and 31 - labeling the branches
 
 Lines 30 and 31 create a pair of text objects to identify the two
 branches depicted in the diagram.  

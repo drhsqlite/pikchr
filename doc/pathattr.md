@@ -1,9 +1,9 @@
 # path-attribute
 
-A *path-attribute* is used provide the origin and direction of a line
-object (arc, arrow, line, move, or spline).  It is an error to use a
-*path-attribute* on
-a block object (box, circle, cylinder, dot, ellipse, file, oval, or text).
+A *path-attribute* is used to provide the origin and direction of a line
+object, that being an arc, arrow, line, move, or spline.  It is an error
+to use a *path-attribute* on a block object, that being a box, circle,
+cylinder, dot, ellipse, file, oval, or text.
 
 There are seven forms:
 
@@ -89,7 +89,7 @@ obstacles.  The phrase:
 
 Means to continue the line in the specified *direction* until the
 coordinate being changed matches the corresponding coordinate in
-*position* If the line is going up or down, then it continues until
+*position*. If the line is going up or down, then it continues until
 the Y coordinate matches the Y coordinate of *position*.  If the line
 is going left or right, then it continues until
 the X coordinate matches the X coordinate of *position*.

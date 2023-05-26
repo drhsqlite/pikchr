@@ -65,7 +65,7 @@ line from last oval.w left $r then up until even with 2nd last oval \
 
 ## Whitespace
 
-Whitespace other a newline is ignored.  If a backslash is followed
+Whitespace other than a newline is ignored.  If a backslash is followed
 by one or more whitespace characters ending in a newline, then the
 backslash and all of the spaces that follow, including the newline,
 are considered whitespace.  Thus, a backslash at the end of a line

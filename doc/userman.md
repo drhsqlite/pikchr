@@ -14,7 +14,7 @@ a practical and accessible tutorial on using Pikchr.
 # Running Pikchr Scripts <a id="running"></a>
 
 The design goal of Pikchr is to enable embedded line diagrams in Markdown or other
-simple markup languages.  The details on how to embedded Pikchr in Markdown is
+simple markup languages.  The details on how to embed Pikchr in Markdown is
 [covered separately][embed].  For the purpose of this tutorial, we will only write
 pure Pikchr scripts without the surrounding markup.  To experiment
 with Pikchr, visit the [](/pikchrshow) page on the website hosting
@@ -49,10 +49,10 @@ rendered diagram.
 The click-to-change-view behavior is a property of this one
 particular document and is not a general capability of Pikchr. On
 other documents containing Pikchr diagrams that are generated using Fossil
-you can use ctrl-click (alt-click on Macs) to toggle the view.
-That is, click on the diagram while holding down the Ctrl key or the Alt key.
+you can use Ctrl-click (Option-click on Macs) to toggle the view.
+That is, click on the diagram while holding down the Ctrl key or the Option key.
 This is not possible if
-you are on a tablet or phone, since you don't have a Ctrl or Alt key to hold
+you are on a tablet or phone, since you don't have a Ctrl or Option key to hold
 down there.  Other systems might not implement the view-swapping behavior
 at all.  This is a platform-depending feature that is one layer above
 Pikchr itself.
@@ -425,9 +425,9 @@ scheme:
 
   *  "`previous`" &larr; the previous object regardless of its class
   *  "`last circle`" &larr; the most recently created circle object
-  *  "`3rd last oval`" &larr; the antipenultimate oval object
+  *  "`3rd last oval`" &larr; the antepenultimate oval object
   *  "`17th ellipse`" &larr; the seventeenth ellipse object
-  *  ... and so forth
+  *  …and so forth
 
 These relative and ordinal references work, but they can be fragile.
 If you go back later and insert a new
@@ -1193,10 +1193,11 @@ so that the arrowhead is at the beginning rather than at the end:
 
 ### Adjusting The Font Size <a id="font-size"></a>
 
-The "`big`" and "`small`" attributes cause the text to be a little larger
-or a little smaller, respectively.  Two "`big`" attributes cause the
-text to be larger still, as do two "`small`" attributes. Text
-size does not increase or decrease beyond two "`big`" or "`small`" keywords.
+The "`big`" and "`small`" attributes cause the text to be a little
+larger or a little smaller, respectively.  Two "`big`" attributes cause
+the text to be larger still; similarly, two "`small`" attributes make it
+smaller-than-small. Text size does not increase or decrease beyond two
+"`big`" or "`small`" keywords.
 
 ~~~~ pikchr indent toggle
   box "small small" small small "small" small \

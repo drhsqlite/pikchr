@@ -1,6 +1,6 @@
-# Ellipse objects
+# Ellipse Objects
 
-The shape of an ellipse is determined by its height and width.
+The shape of an ellipse is determined solely by its height and width.
 
 ~~~~ pikchr indent
 A: ellipse thick
@@ -16,12 +16,11 @@ line thin color gray from previous text.w left until even with X1 ->
 line thin color gray from previous text.e right until even with X2 ->
 ~~~~
 
-Curiously, the "radius" has no effect on the shape of an ellipse.
-The ellipse is determine solely by the width and height.  If the
-width and height are equal, the ellipse degenerates into a circle.
+Unlike a circle, ellipses have no radius, but if the
+width and height are equal, it is visually identical to a circle.
 
 
-## Boundary points:
+## Boundary Points
 
 ~~~~ pikchr indent
 A: ellipse thin

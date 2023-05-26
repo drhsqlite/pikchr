@@ -10,12 +10,12 @@ line segment.  The value can be either absolute (ex: "`1.2cm`",
 
 If the percentage value is used, the basis is usually the
 value stored in the "`linewid`" variable.  However, for a case of
-either
+either:
 
   * **up** *expr* **%**
   * **down** *expr* **%**
 
-Then the percentage refers to the current "`lineht`" value instead.  The
+…then the percentage refers to the current "`lineht`" value instead.  The
 "`linewid`" value is always used for headings even if the heading
 is "`0`" or "`180`" or "`north`" or "`south`".
 

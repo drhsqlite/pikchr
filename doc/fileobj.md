@@ -4,7 +4,7 @@ A "file" is a stylized image of a piece of paper with the upper right
 corner folded over.  Similar images are commonly used to represent "files".
 The shape of a file object is defined by its width, height, and radius.
 The radius is the height and width of the folded corner.  The default values
-for height, radius, and width are control by variables
+for height, radius, and width are controlled by variables
 "`fileht`", "`filerad`", and "`filewid`".
 
 ~~~~ pikchr indent

@@ -427,7 +427,7 @@ script that contained nested macros that generates billions and billions
 of glyphs in the final image, consuming large amounts of memory and
 CPU time in the process.
 
-The token limit is determined by the PIKCHR_TOKEN_LIMIT proprocessor
+The token limit is determined by the `PIKCHR_TOKEN_LIMIT` preprocessor
 macro in the source code.  The default token limit is 100000, which
 should be more than enough for any reasonable script.  The limit
 can be increased (or decreased) at compile-time by redefining that

@@ -31,7 +31,7 @@ at the following links:
 With the complete source tree on your local machine, you can run
 "`make test`" to build and test Pikchr.
 
-## Clone The Fossil Repository
+## Clone the Fossil Repository
 
 Pikchr uses [Fossil](https://fossil-scm.org/home) for version control.
 You can clone the entire repository (which includes everything on
@@ -58,8 +58,7 @@ manage a Fossil repository.
 
 [fossil-doc]: https://fossil-scm.org/home/doc/trunk/www/permutedindex.html
 
-## Clone The GitHub Mirror
+## Clone the GitHub Mirror
 
-There is a (read-only) mirror of this repository on GitHub
-
-  *  <https://github.com/drhsqlite/pikchr>
+There is a (read-only) mirror of this repository
+[on GitHub](https://github.com/drhsqlite/pikchr).

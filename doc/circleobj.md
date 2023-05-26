@@ -1,13 +1,13 @@
 # Circle objects
 
-A is defined by one of:
+A circle is defined by one of:
 
    *  `radius`
    *  `diameter`
    *  `width`
    *  `height`
 
-Only one of these values can set for any particular circle.  The others 
+Only one of these values can set for any particular circle; the others 
 are determined automatically by the first.
 The default radius is value of the "`circlerad`" variable.
 
