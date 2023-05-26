@@ -7,7 +7,7 @@ A circle is defined by one of:
    *  `width`
    *  `height`
 
-Only one of these values can set for any particular circle; the others 
+Only one of these values can be set for any particular circle; the others 
 are determined automatically by the first.
 The default radius is value of the "`circlerad`" variable.
 
