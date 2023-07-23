@@ -33,7 +33,7 @@ an identifier that is the name of the macro and then the body of
 the macro contained within (possibly nested) curly braces.
 
 After a macro is defined, the body of the macro is substituted in
-place of any subsquent occurrence of the identifier that is the
+place of any subsequent occurrence of the identifier that is the
 macro name.  The macro name can occur anywhere.  The substitution
 is performed by the lexical analyzer, before tokens are identified
 and sent into the parser.  Note this distinction:  The "`define`"

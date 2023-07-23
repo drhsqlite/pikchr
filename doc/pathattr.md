@@ -132,12 +132,12 @@ line invis color gray from X.start to 2nd vertex of X \
     "1cm below Obstacle.s" aligned small
 line invis color gray from 2nd vertex of X to 3rd vertex of X \
     "right until even with Destination.s" aligned small above
-line invis color gray from 3nd vertex of X to 4rd vertex of X \
+line invis color gray from 3rd vertex of X to 4th vertex of X \
     "to Destination.s" aligned small above
 
 # Evidence that the alternative arrow is equivalent:
 assert( 2nd vertex of X == (Origin.s, 1cm below Obstacle.s) )
-assert( 3nd vertex of X == (Destination.s, 1cm below Obstacle.s) )
+assert( 3rd vertex of X == (Destination.s, 1cm below Obstacle.s) )
 ~~~
 
 The "**(** *position* **,** *position* **)**" syntax can be used
