@@ -96,6 +96,9 @@ Pikchr scripts cause no harm (apart from generating ugly diagrams).
      implemented in Lua.
   *  [Adamantine Pick](https://github.com/notlibrary/obsidian-adamantine-pick)
      adds pikchr support to the Obsidian knowledge-base app.
+  *  [pikchr-cmd](https://github.com/zenomt/pikchr-cmd), by Michael
+     Thornburgh, supports streaming markdown content to replace inline
+     pikchr images with their generated SVGs.
 
 ## Source-Code License: 0-clause BSD
 
