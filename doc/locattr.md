@@ -1,7 +1,7 @@
 # location-attribute
 
 A *location-attribute* is an attribute used to assign a location to
-a block object (box, circle, cylinder, dot, ellipse, file, oval, or text).
+a block object (box, circle, cylinder, diamond, dot, ellipse, file, oval, or text).
 If a *location-attribute* appears on a line object (arc, arrow, line, move,
 or spline) an error is issued and processing stops.
 

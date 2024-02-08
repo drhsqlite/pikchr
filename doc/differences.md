@@ -173,7 +173,7 @@ The "`chop`" attribute is completely redesigned.  It takes no
 argument and can only appear once.  If "`chop`" is specified on
 a line (or arrow or spline) then end-points of the line that
 would have landed on the center of a box-like object (box,
-circle, cylinder, ellipse, file, or oval) are shortened to
+circle, cylinder, diamond, ellipse, file, or oval) are shortened to
 land exactly on the border of that object.  
 
 ~~~ pikchr indent
