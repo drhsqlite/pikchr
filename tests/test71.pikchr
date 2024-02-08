@@ -2,11 +2,6 @@
       linerad = 15px
       leftmargin = 2cm
 
-      define diamond { \
-        box wid 150% invis
-        line from last.w to last.n to last.e to last.s close rad 0 $1
-      }
-
       oval "SUBMIT TICKET" width 150%
       down
       arrow 50%
@@ -18,19 +13,19 @@ DC:   box "Developer comments" fit
       arrow same
 FR:   box "Filer responds" fit
       arrow 100%
-REJ:  diamond("Reject?")
+REJ:  diamond "Reject?"
       right
       arrow 100% "Yes" above
       box "Mark ticket" "\"Rejected\" &" "\"Resolved\"" fit with .w at previous.e
       arrow right 50%
 REJF: file "Rejected" "ticket" fit
       arrow right 50%
-REOP: diamond("Reopen?")
+REOP: diamond "Reopen?"
       down
 REJA: arrow 75% from REJ.s "  No; fix it" ljust
 CHNG: box "Developer changes code" with .n at last arrow.s fit
       arrow 50%
-FIXD: diamond("Fixed?")
+FIXD: diamond "Fixed?"
       right
 FNO:  arrow "No" above
 RES:  box "Optional:" "Update ticket resolution:" "\"Partial Fix\", etc." fit
