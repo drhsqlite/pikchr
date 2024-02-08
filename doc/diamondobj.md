@@ -85,7 +85,7 @@ X4: line same from 2mm below (D.e,D.s)
     line thin color gray from previous text.w left  until even with X3 ->
     line thin color gray from previous text.e right until even with X4 ->
 
-    diamondht  = diamondht  * 1.25
-    diamondwid = diamondwid * 1.25
+    diamondht  *= 1.25
+    diamondwid *= 1.25
     diamond thick "Diamond" "Dimensions" at 1.5in right of D
 ~~~~
