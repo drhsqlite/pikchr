@@ -47,6 +47,8 @@ in PIC.
 ~~~ pikchr indent
 oval "oval"
 move
+diamond "diamond"
+move
 cylinder "cylinder"
 move
 file "file"
