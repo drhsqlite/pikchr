@@ -472,7 +472,7 @@ of block objects is easier: you just provide a single location to place
 the object.  Ideally, you should place the object relative to some other
 object, of course.
 
-Let's say you have box, and you want to position a circle 2 centimeters to the
+Let's say you have a box and you want to position a circle 2 centimeters to the
 right of that box.  You simply use an "`at`" attribute on the circle to tell it
 to position itself 2 cm to the right of the box:
 
