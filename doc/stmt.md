@@ -127,7 +127,7 @@ Some of the built-in variables have names that conflict with keywords:
 
 To access such variables as part of an expression, simply put them inside
 of parentheses.  For example, to set the thickness of a box to be twice
-the default thinkness:
+the default thickness:
 
 ~~~ pikchr center toggle source
    box "Normal"

@@ -26,7 +26,7 @@ The chop attribute in Pikchr differs from the chop attribute in legacy PIC.
 In PIC, the "`chop`" keyword can be followed by a distance and can appear
 twice.  The chop keyword causes the line to be shortened by the amount
 specified, or by `circlerad` if no distance is given.  The legacy "chop"
-works ok if you are drawing lines between circles, but it mostly pointless
+works okay if you are drawing lines between circles, but it mostly pointless
 for lines between all other kinds of objects.  The enhanced "chop" in
 Pikchr is intended to make the feature helpful on a wider variety of
 diagrams.

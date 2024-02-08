@@ -27,7 +27,7 @@ using a fiddly processing chain based on Tcl/Tk, Ghostscript, and ImageMagick.
      were installed.
 
   *  Pikchr provides additional flexibility in the formatting of
-     syntax digrams, so that the diagrams can be made easier to read
+     syntax diagrams, so that the diagrams can be made easier to read
      and understand.
 
 ## How It Works

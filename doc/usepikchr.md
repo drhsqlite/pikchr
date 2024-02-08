@@ -31,7 +31,7 @@ arrow; box "Hello!"; arrow
 
 ## Image Placement and Source Code Toggle Options
 
-By default, the Pikchr-generated image appears left-justifed.  If you
+By default, the Pikchr-generated image appears left-justified.  If you
 would prefer that the picture be centered, put the keyword "center"
 after the class tag.  Thus:
 
