@@ -37,7 +37,7 @@ line from last.w to last.n to last.e to last.s close
 
 A third advantage falls out of this fact: the “`fit`” attribute works as
 expected for Pikchr diamonds. It cannot with the manual PIC-compatible
-workaround due to the lack of a properly-calculated bounding box, taking
+workaround due to the lack of a properly-calculated bounding box, one taking
 into account the rotated cardinal points:
 
 ~~~~ pikchr indent
