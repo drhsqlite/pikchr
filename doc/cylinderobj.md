@@ -8,7 +8,7 @@ The shape of a cylinder is defined by the width, height, and radius.
 The radius is the minor axis of the ellipse that forms the top of the
 cylinder, and the semiellipse the forms the bottom.
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 A: cylinder thick rad 150%
 line thin color gray left 70% from 2mm left of (A.w,A.n)
 line same from 2mm left of (A.w,A.s)
@@ -29,7 +29,7 @@ line thin color gray from (previous text,X3) up 30% <-
 
 ## Boundary points:
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 A: cylinder thin rad 80%
 dot ".c" below at A
 dot ".n" above at A.n

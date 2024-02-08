@@ -2,7 +2,7 @@
 
 The shape of an ellipse is determined solely by its height and width.
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 A: ellipse thick
 line thin color gray left 70% from 2mm left of (A.w,A.n)
 line same from 2mm left of (A.w,A.s)
@@ -22,7 +22,7 @@ width and height are equal, it is visually identical to a circle.
 
 ## Boundary Points
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 A: ellipse thin
 dot ".c" below at A
 dot ".n" above at A.n

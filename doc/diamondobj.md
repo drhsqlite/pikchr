@@ -4,7 +4,7 @@ A diamond acts much like a [box](./boxobj.md) except that its corners
 are rotated around the center point such that they become the shape’s
 four primary cardinal points:
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 D: diamond "Cardinal" "Points"
    dot ".n" above at D.n
    dot " .e" ljust at D.e
@@ -16,7 +16,7 @@ Indeed, before Pikchr [got this primitive](/info/36751abee2), the
 workaround was to draw an invisible box to hold the text, then draw
 lines between its cardinal points:
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 box width 150% invis "“Diamond”" "Label"
 line from last.w to last.n to last.e to last.s close
 ~~~~
@@ -30,7 +30,7 @@ Another is the need for that 150% fudge factor to the invisible box’s
 width, without which the labels would be truncated by the dimensions
 Pikchr calculates for the invisible bounding box:
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 box invis "“Diamond”" "Label"
 line from last.w to last.n to last.e to last.s close
 ~~~~
@@ -40,7 +40,7 @@ expected for Pikchr diamonds. It cannot with the manual PIC-compatible
 workaround due to the lack of a properly-calculated bounding box, one taking
 into account the rotated cardinal points:
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 text "Unfitted:"
 diamond "D"
 text "Properly fitted:"
@@ -54,7 +54,7 @@ There’s a fourth, more subtle advantage to having this primtive built
 into the language: the location of the ordinal points is now
 well-defined:
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 D: diamond "Ordinal" "Points"
    dot " .ne" ljust above at D.ne
    dot " .se" ljust below at D.se
@@ -71,7 +71,7 @@ can, however, programmatically override the default height and width
 by redefining the `diamondht` and `diamondwid` variables. Here we show
 two different ways of making the diamond 25% larger:
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 D:  diamond thick "Diamond" "Dimensions" width 125% height 125%
 
 X1: line thin color gray left 70% from 4mm left of (D.w,D.n)

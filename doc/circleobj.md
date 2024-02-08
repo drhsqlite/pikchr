@@ -12,7 +12,7 @@ are determined automatically by the first.
 The default radius is value of the "`circlerad`" variable.
 
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 A: circle thick rad 120%
 line thin color gray left 70% from 2mm left of (A.w,A.n)
 line same from 2mm left of (A.w,A.s)
@@ -36,7 +36,7 @@ text " diameter" ljust at end of previous line
 
 ## Boundary points:
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 A: circle thin
 dot ".c" above at A
 dot ".n" above at A.n

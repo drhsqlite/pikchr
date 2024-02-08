@@ -7,7 +7,7 @@ The radius is the height and width of the folded corner.  The default values
 for height, radius, and width are controlled by variables
 "`fileht`", "`filerad`", and "`filewid`".
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 A: file thick rad 100%
 line thin color gray left 70% from 2mm left of (A.w,A.n)
 line same from 2mm left of (A.w,A.s)
@@ -28,7 +28,7 @@ line thin color gray from (previous text,X3) up 30% <-
 
 ## Boundary points:
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 A: file thin rad 80%
 dot ".c" below at A
 dot ".n" above at A.n

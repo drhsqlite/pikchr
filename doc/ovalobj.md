@@ -5,7 +5,7 @@ If the height is less than the width (the default) then the semicircles
 are on the left and right.  If the width is less than the height, then the
 semicircles are on the top and bottom:
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 A: oval thick
 X0: line thin color gray left 70% from 2mm left of (A.w,A.n)
 X1: line same from 2mm left of (A.w,A.s)
@@ -38,7 +38,7 @@ width and height are the same is a [circle](./circleobj.md)
 
 ## Boundary points:
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 A: oval thin
 dot ".c" below at A
 dot ".n" above at A.n
@@ -60,6 +60,4 @@ dot ".s" below at A.s
 dot ".sw " rjust below at A.sw
 dot ".w " rjust at A.w
 dot ".nw " rjust above at A.nw
-
-
 ~~~~

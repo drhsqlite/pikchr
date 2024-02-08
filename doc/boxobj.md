@@ -3,7 +3,7 @@
 A box is a rectangle with a specified width and height.  The default
 width and height are the values of the "`boxwid`" and "`boxht`" variables.
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 A: box thick
 line thin color gray left 70% from 2mm left of A.nw
 line same from 2mm left of A.sw
@@ -21,7 +21,7 @@ If a "`radius`" is specified, then the corners of the box are rounded using
 arcs of the given radius.  The default radius for each new box is the value
 of the "`boxrad`" variable which is initially 0.0.
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 A: box thick rad 0.3*boxht
 line thin color gray left 70% from 2mm left of (A.w,A.n)
 line same from 2mm left of (A.w,A.s)
@@ -42,7 +42,7 @@ line thin color gray from (previous text,X4) up 30% <-
 
 ## Boundary points:
 
-~~~~ pikchr indent
+~~~~ pikchr indent toggle
 A: box thin
 dot ".c" above at A
 dot ".n" above at A.n
