@@ -74,3 +74,13 @@ circle same "S" at $d s of C; arrow from last circle to C.s chop
 circle same "SW" at $d sw of C; arrow from last circle to C.sw chop
 circle same "W" at $d w of C; arrow from last circle to C.w chop
 circle same "NW" at $d nw of C; arrow from last circle to C.nw chop
+
+diamond "C" at 2.5*$d south of last oval
+circle rad 50% "N" at $d n of C; arrow from last circle to C.n chop
+circle same "NE" at $d ne of C; arrow from last circle to C.ne chop
+circle same "E" at $d e of C; arrow from last circle to C.e chop
+circle same "SE" at $d se of C; arrow from last circle to C.se chop
+circle same "S" at $d s of C; arrow from last circle to C.s chop
+circle same "SW" at $d sw of C; arrow from last circle to C.sw chop
+circle same "W" at $d w of C; arrow from last circle to C.w chop
+circle same "NW" at $d nw of C; arrow from last circle to C.nw chop
