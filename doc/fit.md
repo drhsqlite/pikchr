@@ -35,7 +35,7 @@ appropriate, to make the text fit like you want.
 
 If at the end of an objection definition the requested width or height of the
 object is less then or equal to zero, then that dimension is adjusted
-upwards to enclose the text annotations.	  Thus, by setting variables
+upwards to enclose the text annotations.  Thus, by setting variables
 like:
 
 ~~~
