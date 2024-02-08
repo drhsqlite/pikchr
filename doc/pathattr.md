@@ -3,7 +3,7 @@
 A *path-attribute* is used to provide the origin and direction of a line
 object, that being an arc, arrow, line, move, or spline.  It is an error
 to use a *path-attribute* on a block object, that being a box, circle,
-cylinder, dot, ellipse, file, oval, or text.
+cylinder, diamond, dot, ellipse, file, oval, or text.
 
 There are seven forms:
 
