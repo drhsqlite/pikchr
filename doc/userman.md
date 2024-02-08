@@ -5,7 +5,17 @@
 This is a guide to generating diagrams using Pikchr,
 pronounced "picture."  This guide is
 designed to teach you to use Pikchr in a more accessible manner than
-you get by reading the [grammar specification](./grammar.md).
+you get by reading the [grammar specification](./grammar.md). We leave
+discussion of the scope and purpose of Pikchr to a [separate
+document](./purpose.md).
+
+For more details and other perspectives, see the following resources:
+
+  *  [Step-by-step example of writing a Pikchr document](./teardown01.md)
+  *  [The original Kernighan paper on PIC](/uv/pic.pdf)
+  *  [Differences between PIC and Pikchr](./differences.md)
+  *  [ESR's documentation on GnuPIC](/uv/gpic.pdf)
+  *  [DPIC documentation](/uv/dpic-doc.pdf)
 
 # Running Pikchr Scripts <a id="running"></a>
 
@@ -1343,14 +1353,3 @@ attribute references.
 Though based on the decades-old PIC language, Pikchr itself is a relatively
 new system.  However, it has already proven itself to be amazingly useful for
 helping to illustrate concepts in technical documentation written using Markdown.
-
-This document has provided an overview of how Pikchr works.  For more
-details and other perspectives, see the following resources:
-
-  *  [The original Kernighan paper on PIC](/uv/pic.pdf)
-  *  [DPIC documentation](/uv/dpic-doc.pdf)
-  *  [ESR's documentation on GnuPIC](/uv/gpic.pdf)
-  *  [Pikchr Language Spec](./grammar.md)
-  *  [Differences between PIC and Pikchr](./differences.md)
-  *  [The scope and purpose of Pikchr](./purpose.md)
-  *  [Step-by-step example of writing a Pikchr document](./teardown01.md)
