@@ -306,8 +306,7 @@ dot same at A.c " .c" ljust
 As you can see, there is also a ninth point in the middle called ".c".
 Every block object has these anchor points; you can refer to them
 when positioning the object itself, or when positioning other objects
-relative to the block object.  In this case, we are starting the
-arrow at the ".s" anchor of the box.
+relative to the block object.
 
 The next phrase on the "arrow" statement is "`down 1cm`".  As you
 might guess, this phrase causes the arrow to move downward from its
