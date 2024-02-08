@@ -855,6 +855,16 @@ left and right, but if the width and height are modified so that the
 width is less than the height, then semicircles appear on the top and
 bottom instead.
 
+Although a `diamond` can in principle be rounded, same as Pikchr allows
+with a `box`, the current implementation does not respond to the radius
+parameter:
+
+~~~~ pikchr toggle indent
+diamond "Sharp" "diamond" height 150%
+move
+diamond same "“Rounded”" "diamond?" "Sorry; no." rad 150%
+~~~~
+
 
 ### Default Sizes <a id="def-size"></a>
 
