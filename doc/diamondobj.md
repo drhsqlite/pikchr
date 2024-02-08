@@ -24,8 +24,7 @@ line from last.w to last.n to last.e to last.s close
 This does work, and it has the advantage of being compatible with the
 original PIC and with GNU `dpic`, but it also has a number of
 weaknesses, one of which is evident in comparing the examples above: the
-labels aren’t as well-centered when manually drawing the diamond between
-the invisible bounding box’s cardinal points.
+labels aren’t as well-centered when manually drawing the diamond.
 
 Another is the need for that 150% fudge factor to the invisible box’s
 width, without which the labels would be truncated by the dimensions
