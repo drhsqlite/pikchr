@@ -122,6 +122,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
   * **box**          [&#9654;info](./boxobj.md)
   * **circle**       [&#9654;info](./circleobj.md)
   * **cylinder**     [&#9654;info](./cylinderobj.md)
+  * **diamond**      [&#9654;info](./diamondobj.md)
   * **dot**
   * **ellipse**      [&#9654;info](./ellipseobj.md)
   * **file**         [&#9654;info](./fileobj.md)
