@@ -102,10 +102,11 @@ object class-name.  The following classes are currently supported:
 box "box"
 circle "circle" at 1 right of previous
 ellipse "ellipse" at 1 right of previous
-oval "oval" at .8 below first box
-cylinder "cylinder" at 1 right of previous
+oval "oval" at 1 right of previous
+cylinder "cylinder" at .8 below first box
 file "file" at 1 right of previous
-line "line" above from .8 below last oval.w
+diamond "diamond" at 1 right of previous
+line "line" above from .8 below last cylinder.w
 arrow "arrow" above from 1 right of previous
 spline from previous+(1.8cm,-.2cm) \
    go right .15 then .3 heading 30 then .5 heading 160 then .4 heading 20 \
