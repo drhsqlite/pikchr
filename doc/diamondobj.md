@@ -50,7 +50,7 @@ box invis "D" fit
 line from last.w to last.n to last.e to last.s close
 ~~~~
 
-There’s a fourth, more subtle advantage to having this primtive built
+There’s a fourth, more subtle advantage to having this primitive built
 into the language: the location of the ordinal points is now
 well-defined:
 
