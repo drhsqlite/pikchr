@@ -51,3 +51,27 @@ D: diamond "Ordinal" "Points"
 To replicate that with the PIC-compatible hack above, you’d have to do
 the geometry to work out where those points land along the lines. It’s
 better to leave that bit of tedious math to the Pikchr renderer.
+
+Unlike a box, you cannot currently round the corners on a diamond. You
+can, however, programmatically override the default height and width
+by redefining the `diamondht` and `diamondwid` variables. Here we show
+two different ways of making the diamond 25% larger:
+
+~~~~ pikchr indent
+D:  diamond thick "Diamond" "Dimensions" width 125% height 125%
+
+X1: line thin color gray left 70% from 4mm left of (D.w,D.n)
+X2: line same from 4mm left of (D.w,D.s)
+    text "height" small at 1/2 way between X1 and X2
+    line thin color gray from previous text.n up   until even with X1 ->
+    line thin color gray from previous text.s down until even with X2 ->
+X3: line thin color gray down 50% from 2mm below (D.w,D.s)
+X4: line same from 2mm below (D.e,D.s)
+    text "width" small at 1/2 way between X3 and X4
+    line thin color gray from previous text.w left  until even with X3 ->
+    line thin color gray from previous text.e right until even with X4 ->
+
+    diamondht  = diamondht  * 1.25
+    diamondwid = diamondwid * 1.25
+    diamond thick "Diamond" "Dimensions" at 1.5in right of D
+~~~~
