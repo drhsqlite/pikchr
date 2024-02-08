@@ -2,14 +2,10 @@
 
 # Introduction
 
-This is a guide to generating diagrams using Pikchr
-(pronounced "Picture").  This guide is
-designed to teach you to use Pikchr.  It is not a reference for the
-Pikchr language (that is a [separate document][gram]) nor is it an explanation
-of why you might want to use Pikchr.  The goal here is to provide
-a practical and accessible tutorial on using Pikchr.
-
-[gram]: ./grammar.md
+This is a guide to generating diagrams using Pikchr,
+pronounced "picture."  This guide is
+designed to teach you to use Pikchr in a more accessible manner than
+you get by reading the [grammar specification](./grammar.md).
 
 # Running Pikchr Scripts <a id="running"></a>
 
