@@ -36,7 +36,22 @@ box invis "“Diamond”" "Label"
 line from last.w to last.n to last.e to last.s close
 ~~~~
 
-There’s a third, more subtle advantage to having this primtive built
+A third advantage falls out of this fact: the “`fit`” attribute works as
+expected for Pikchr diamonds. It cannot with the manual PIC-compatible
+workaround due to the lack of a properly-calculated bounding box, taking
+into account the rotated cardinal points:
+
+~~~~ pikchr indent
+text "Unfitted:"
+diamond "D"
+text "Properly fitted:"
+diamond "D" fit
+text "Badly fitted:"
+box invis "D" fit
+line from last.w to last.n to last.e to last.s close
+~~~~
+
+There’s a fourth, more subtle advantage to having this primtive built
 into the language: the location of the ordinal points is now
 well-defined:
 
