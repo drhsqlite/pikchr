@@ -207,7 +207,8 @@ whitespace in between them:
     box; move; circle; move; cylinder
 ~~~~~
 
-Implementation note:  A "move" is really just an invisible "line".  So
+Implementation note: a "move" is really just an invisible "`line`,"
+which is why
 the following script generates the same output as the previous.
 ([Try it!](/pikchrshow?content=box;line%20invisible;circle;line%20invisible;cylinder))
 
