@@ -12,7 +12,7 @@ D: diamond "Cardinal" "Points"
    dot ".w " rjust at D.w
 ~~~~
 
-Indeed, before Pikchr [got this primitive](/info/36751abee2), the
+Indeed, before Pikchr [acquired this primitive](/info/bc3bd914a3), the
 workaround was to draw an invisible box to hold the text, then draw
 lines between its cardinal points:
 
