@@ -1341,7 +1341,7 @@ attribute references.
 # Summary And Conclusion
 
 Though based on the decades-old PIC language, Pikchr itself is a relatively
-new system.  However it has already proven itself to be amazingly useful for
+new system.  However, it has already proven itself to be amazingly useful for
 helping to illustrate concepts in technical documentation written using Markdown.
 
 This document has provided an overview of how Pikchr works.  For more
