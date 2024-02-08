@@ -320,6 +320,7 @@ struct PObj {
   char rarrow;             /* Arrow at end  (-> or <->) */
   char bClose;             /* True if "close" is seen */
   char bChop;              /* True if "chop" is seen */
+  char bAltAutoFit;        /* Always send both h and w into xFit() */        
   unsigned char nTxt;      /* Number of text values */
   unsigned mProp;          /* Masks of properties set so far */
   unsigned mCalc;          /* Values computed from other constraints */
@@ -1358,6 +1359,7 @@ static void dotRender(Pik *p, PObj *pObj){
 static void diamondInit(Pik *p, PObj *pObj){
   pObj->w = pik_value(p, "diamondwid",10,0);
   pObj->h = pik_value(p, "diamondht",9,0);
+  pObj->bAltAutoFit = 1;
 }
 /* Return offset from the center of the box to the compass point 
 ** given by parameter cp */
@@ -1383,6 +1385,8 @@ static PPoint diamondOffset(Pik *p, PObj *pObj, int cp){
   return pt;
 }
 static void diamondFit(Pik *p, PObj *pObj, PNum w, PNum h){
+  if( pObj->w<=0 ) pObj->w = w*1.5;
+  if( pObj->h<=0 ) pObj->h = h*1.5;
   if( pObj->w>0 && pObj->h>0 ){
     PNum x = pObj->w*h/pObj->h + w;
     PNum y = pObj->h*x/pObj->w;
@@ -3729,8 +3733,12 @@ static void pik_size_to_fit(Pik *p, PToken *pFit, int eWhich){
   pik_bbox_init(&bbox);
   pik_compute_layout_settings(p);
   pik_append_txt(p, pObj, &bbox);
-  w = (eWhich & 1)!=0 ? (bbox.ne.x - bbox.sw.x) + p->charWidth : 0;
-  if( eWhich & 2 ){
+  if( (eWhich & 1)!=0 || pObj->bAltAutoFit ){
+    w = (bbox.ne.x - bbox.sw.x) + p->charWidth;
+  }else{
+    w = 0;
+  }
+  if( (eWhich & 2)!=0 || pObj->bAltAutoFit ){
     PNum h1, h2;
     h1 = (bbox.ne.y - pObj->ptAt.y);
     h2 = (pObj->ptAt.y - bbox.sw.y);

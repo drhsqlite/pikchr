@@ -67,3 +67,15 @@ move
 oval "manual" "fit" fit
 move
 oval "none"
+
+move to 1in below first oval.w
+right
+diamond "diamond" "autofit" "width" width 0
+move 50%
+diamond "autofit height" height 0
+move same
+diamond  "both" width 0 height 0
+move same
+diamond "fit" fit
+move same
+diamond "diamond" "wihtout autofit"
