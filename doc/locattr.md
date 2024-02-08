@@ -11,7 +11,7 @@ There are three forms:
   *  **with** *edgename* **at** *position*
   *  **with** *dot-edgename* **at** *position*
 
-The second and third forms are equivalent and only differ in the
+The second and third forms are equivalent and only differ in
 the "." that comes before the edge name.  PIC does not recognize
 the second form, only the first and third.
 
