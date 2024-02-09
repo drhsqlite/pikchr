@@ -16,10 +16,16 @@ TESTS = \
   tests\autochop05.pikchr \
   tests\autochop06.pikchr \
   tests\autochop07.pikchr \
+  tests\autochop08.pikchr \
+  tests\autochop09.pikchr \
+  tests\autochop10.pikchr \
   tests\colortest1.pikchr \
+  tests\diamond01.pikchr \
   tests\empty.pikchr \
   tests\expr.pikchr \
+  tests\fonts01.pikchr \
   tests\gridlines1.pikchr \
+  tests\narrow.pikchr \
   tests\test01.pikchr \
   tests\test02.pikchr \
   tests\test03.pikchr \
@@ -41,9 +47,9 @@ TESTS = \
   tests\test20.pikchr \
   tests\test21.pikchr \
   tests\test22.pikchr \
-  tests\test23.pikchr \
   tests\test23b.pikchr \
   tests\test23c.pikchr \
+  tests\test23.pikchr \
   tests\test24.pikchr \
   tests\test25.pikchr \
   tests\test26.pikchr \
@@ -58,8 +64,8 @@ TESTS = \
   tests\test35.pikchr \
   tests\test36.pikchr \
   tests\test37.pikchr \
-  tests\test38.pikchr \
   tests\test38b.pikchr \
+  tests\test38.pikchr \
   tests\test40.pikchr \
   tests\test41.pikchr \
   tests\test42.pikchr \
@@ -67,8 +73,8 @@ TESTS = \
   tests\test44.pikchr \
   tests\test45.pikchr \
   tests\test46.pikchr \
-  tests\test47.pikchr \
   tests\test47b.pikchr \
+  tests\test47.pikchr \
   tests\test48.pikchr \
   tests\test49.pikchr \
   tests\test50.pikchr \
@@ -98,8 +104,12 @@ TESTS = \
   tests\test72.pikchr \
   tests\test73.pikchr \
   tests\test74.pikchr \
-  tests\test75.pikchr
-  
+  tests\test75.pikchr \
+  tests\test76.pikchr \
+  tests\test77.pikchr \
+  tests\test78.pikchr \
+  tests\test79.pikchr
+
 
 all:	pikchr.exe
 
@@ -115,9 +125,9 @@ lemon.exe:	lemon.c
 	$(CC) $(CFLAGS) lemon.c
 
 test:	pikchr.exe
-	.\pikchr.exe $(TESTS) >out.html || true
+	.\pikchr.exe --dont-stop $(TESTS) >out.html
 	start out.html
-	.\pikchr.exe --dark-mode $(TESTS) >darkmode.html || true
+	.\pikchr.exe --dont-stop --dark-mode $(TESTS) >darkmode.html
 	start darkmode.html
 
 clean:	

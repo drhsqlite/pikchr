@@ -38,9 +38,9 @@ lemon:	lemon.c
 	$(CC) $(CFLAGS) lemon.c -o lemon
 
 test:	pikchr
-	./pikchr tests/*.pikchr >out.html || true
-	open out.html || true
-	./pikchr --dark-mode */*.pikchr >darkmode.html || true
+	./pikchr --dont-stop tests/*.pikchr >out.html
+	open out.html
+	./pikchr --dont-stop --dark-mode */*.pikchr >darkmode.html
 	open darkmode.html
 
 clean:	

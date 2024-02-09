@@ -5370,6 +5370,7 @@ static void usage(const char *argv0){
     "Convert Pikchr input files into SVG.  Filename \"-\" means stdin.\n"
     "All output goes to stdout.\n"
     "Options:\n"
+    "   --dark-mode      Generate \"dark mode\" output\n"
     "   --dont-stop      Process all files even if earlier files have errors\n"
     "   --svg-only       Emit raw SVG without the HTML wrapper\n"
   );
@@ -5508,7 +5509,7 @@ int main(int argc, char **argv){
     zIn = readFile(argv[i]);
     if( zIn==0 ) continue;
     zOut = pikchr(zIn, "pikchr", mFlags, &w, &h);
-    if( w<0 ) exitCode = 1;
+    if( w<0 && !bDontStop ) exitCode = 1;
     if( zOut==0 ){
       fprintf(stderr, "pikchr() returns NULL.  Out of memory?\n");
       if( !bDontStop ) exit(1);
