@@ -267,7 +267,7 @@ static int pik_token_eq(PToken *pToken, const char *z){
 ** tokenizer
 */
 #define T_PARAMETER  253     /* $1, $2, ..., $9 */
-#define T_WHITESPACE 254     /* Whitespace of comments */
+#define T_WHITESPACE 254     /* Whitespace or comments */
 #define T_ERROR      255     /* Any text that is not a valid token */
 
 /* Directions of movement */
@@ -4807,7 +4807,7 @@ static int pik_token_length(PToken *pToken, int bAllowCodeBlock){
     case '\t':
     case '\f':
     case '\r': {
-      for(i=1; (c = z[i])==' ' || c=='\t' || c=='\r' || c=='\t'; i++){}
+      for(i=1; (c = z[i])==' ' || c=='\t' || c=='\r' || c=='\f'; i++){}
       pToken->eType = T_WHITESPACE;
       return i;
     }
