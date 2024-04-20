@@ -45,9 +45,10 @@ The following special token classes are recognized:
      double-quotes (U+0022).  Within the string literal, a double-quote
      character can be escaped using backslash (U+005c).  A backslash
      can also be used to escape a backslash.  No other escape sequences
-     are recognized.
+     are recognized and standalone backslashes are elided from the output.
+     Newlines are permitted in strings.
 
-  *  COLORNAME &rarr;  One of the 140 official HTML color names, in 
+  *  COLORNAME &rarr;  One of the 140 official HTML color names, in
      any mixture of upper and lower cases.  The value of a COLORNAME is
      an integer which is the 24-bit RGB value of that color.  Two
      additional color names of "None" and "Off" are also recognized and
