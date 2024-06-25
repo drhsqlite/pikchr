@@ -6124,7 +6124,7 @@ static void pik_set_at(Pik *p, PToken *pEdge, PPoint *pAt, PToken *pErrTok){
   pObj->mProp |= A_AT;
   pObj->eWith = pEdge ? pEdge->eEdge : CP_C;
   if( pObj->eWith>=CP_END ){
-    int dir = pObj->eWith==CP_END ? pObj->outDir : pObj->inDir;
+    int dir = pObj->eWith==CP_END ? pObj->outDir : (pObj->inDir+2)%4;
     pObj->eWith = eDirToCp[dir];
   }
   pObj->with = *pAt;
