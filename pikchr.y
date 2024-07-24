@@ -4584,7 +4584,8 @@ static void pik_render(Pik *p, PList *pList){
     p->bbox.sw.y -= margin + pik_value(p,"bottommargin",12,0);
 
     /* Output the SVG */
-    pik_append(p, "<svg xmlns='http://www.w3.org/2000/svg'",-1);
+    pik_append(p, "<svg xmlns='http://www.w3.org/2000/svg'"
+                  " style='font-size:100%'",-1);
     if( p->zClass ){
       pik_append(p, " class=\"", -1);
       pik_append(p, p->zClass, -1);
