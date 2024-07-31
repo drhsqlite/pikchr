@@ -66,7 +66,8 @@ six:
   *  *attribute* &rarr;  Each graphic object is configured with zero or
      more attributes.
 
-  *  *object* &rarr;  A reference to a prior graphic object.
+  *  *object* &rarr;  A reference to a prior graphic object, or `this` to
+     refer to the current object.
 
   *  *place* &rarr;  A specific point associated with an *object*.
 
@@ -275,6 +276,7 @@ A complete input file to Pikchr consists of a single *statement-list*.
   *  ORDINAL **vertex of** *object*
 
 ## *object*:
+
   *  LABEL
   *  *object* **.** LABEL
   *  *nth-object* **of**|**in** *object*

@@ -362,6 +362,13 @@ name appears on the left-hand size of an assignment.  You still do:
      thickness *= 1.5
 ~~~~
 
+## Scales work differently in Pikchr
+
+In pikchr, scale-related variables like `scale` and `fontscale` work
+differently: they are multipliers to apply to values. This is in
+contrast to PIC, where diminsions are divided by the `scale`.
+
+
 ## The "`arc`" object does not actually draw an arc.
 
 The behavior of the "`arc`" object is underspecified in the original
@@ -414,9 +421,9 @@ line thin color gray <-> from X2 to X1 "distance" aligned above small \
     "C2 to C4" aligned below small
 ```
 
-### Limit on the number of input tokens
+## Limit on the number of input tokens
 
-Pikchr is designed to operate safely in a hostile environment on the 
+Pikchr is designed to operate safely in a hostile environment on the
 open internet.  For that reason, it deliberately limits
 the number of tokens that will be processed in a single script.
 If more tokens than the limit are seen, the script aborts with an error.
@@ -434,6 +441,25 @@ macro in the source code.  The default token limit is 100000, which
 should be more than enough for any reasonable script.  The limit
 can be increased (or decreased) at compile-time by redefining that
 macro.
+
+## Pikchr does not restore variables when leaving `[]` blocks
+
+When a `[...]` block is exited, any variables set in that block
+retain the values set in that block, rather than being reset to
+their pre-block values.
+
+## Pikchr does not have the "`Here`" keyword
+
+PIC's `Here` keyword, to refer to the current position, is not
+available in pikchr.
+
+## Pikchr adds the `this` keyword
+
+In pikchr, `this` may be used to refer to the current object. For example:
+
+~~~~
+     box "Some" "Text" fit height max(this.height, OtherElement.height)
+~~~~
 
 ## Discontinued Features
 
@@ -486,3 +512,10 @@ to simply omit it.
 ### Pikchr omits "`{...}`" subblocks
 
 The "`[...]`" style subblocks are supported and they work just as well.
+
+### Pikchr omits the "`arrowhead`" variable
+
+Pikchr does not support the `arrowhead` variable. Instead, use
+`arrowht` and `arrowwid` to set the height and width, respectively,
+of arrowheads.
+
