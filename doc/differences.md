@@ -366,7 +366,7 @@ name appears on the left-hand size of an assignment.  You still do:
 
 In pikchr, scale-related variables like `scale` and `fontscale` work
 differently: they are multipliers to apply to values. This is in
-contrast to PIC, where diminsions are divided by the `scale`.
+contrast to PIC, where dimensions are divided by the `scale`.
 
 
 ## The "`arc`" object does not actually draw an arc.
