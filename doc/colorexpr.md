@@ -1,7 +1,8 @@
 # color-expr
 
-Pikchr tracks colors as 24-bit RGB values.  Black is 0.  White is
-16777215.  Other color values are in between these two extremes.
+Pikchr tracks colors as 24-bit RGB values.  Black is 0.
+White is 16777215. Other color values are in between these
+two extremes.
 
 Pikchr understands C-style hexadecimal numeric literals.  So it is
 often convenient to express colors using 6-digit hex constants
