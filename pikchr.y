@@ -486,7 +486,7 @@ static void pik_bbox_add_xy(PBox*,PNum,PNum);
 static void pik_bbox_addellipse(PBox*,PNum x,PNum y,PNum rx,PNum ry);
 static void pik_add_txt(Pik*,PToken*,int);
 static int pik_text_length(const PToken *pToken, const int isMonospace);
-static void pik_size_to_fit(Pik*,PToken*,int);
+static void pik_size_to_fit(Pik*,PObj*,PToken*,int);
 static int pik_text_position(int,PToken*);
 static PNum pik_property_of(PObj*,PToken*);
 static PNum pik_func(Pik*,PToken*,PNum,PNum);
@@ -657,7 +657,7 @@ attribute ::= WITH withclause.
 attribute ::= SAME(E).                          {pik_same(p,0,&E);}
 attribute ::= SAME(E) AS object(X).             {pik_same(p,X,&E);}
 attribute ::= STRING(T) textposition(P).        {pik_add_txt(p,&T,P);}
-attribute ::= FIT(E).                           {pik_size_to_fit(p,&E,3); }
+attribute ::= FIT(E).                           {pik_size_to_fit(p,0,&E,3); }
 attribute ::= BEHIND object(X).                 {pik_behind(p,X);}
 
 go ::= GO.
@@ -1721,7 +1721,7 @@ static PPoint textOffset(Pik *p, PObj *pObj, int cp){
   ** statements so that the bounding box tightly encloses the text,
   ** then get boxOffset() to do the offset computation.
   */
-  pik_size_to_fit(p, &pObj->errTok,3);
+  pik_size_to_fit(p, pObj, &pObj->errTok,3);
   return boxOffset(p, pObj, cp);
 }
 static void textRender(Pik *p, PObj *pObj){
@@ -3730,12 +3730,11 @@ static int pik_text_length(const PToken *pToken, const int isMonospace){
 **    2:   Fit vertically only
 **    3:   Fit both ways
 */
-static void pik_size_to_fit(Pik *p, PToken *pFit, int eWhich){
-  PObj *pObj;
+static void pik_size_to_fit(Pik *p, PObj *pObj, PToken *pFit, int eWhich){
   PNum w, h;
   PBox bbox;
   if( p->nErr ) return;
-  pObj = p->cur;
+  if( pObj==0 ) pObj = p->cur;
 
   if( pObj->nTxt==0 ){
     pik_error(0, pFit, "no text to fit to");
@@ -4279,16 +4278,16 @@ static void pik_after_adding_attributes(Pik *p, PObj *pObj){
       if( pObj->nTxt==0 ){
         pObj->h = 0.0;
       }else if( pObj->w<=0.0 ){
-        pik_size_to_fit(p, &pObj->errTok, 3);
+        pik_size_to_fit(p, pObj, &pObj->errTok, 3);
       }else{
-        pik_size_to_fit(p, &pObj->errTok, 2);
+        pik_size_to_fit(p, pObj, &pObj->errTok, 2);
       }
     }
     if( pObj->w<=0.0 ){
       if( pObj->nTxt==0 ){
         pObj->w = 0.0;
       }else{
-        pik_size_to_fit(p, &pObj->errTok, 1);
+        pik_size_to_fit(p, pObj, &pObj->errTok, 1);
       }
     }
     ofst = pik_elem_offset(p, pObj, pObj->eWith);

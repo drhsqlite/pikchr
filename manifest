@@ -1,5 +1,5 @@
-C Ensure\sthat\sall\sarguments\sto\sctype.h\smacros\sare\sunsigned,\sfor\sCygwin.
-D 2025-02-28T18:16:59.065
+C Fix\sa\sbug\s(reported\sby\s[forumpost/f9f5d90f33|forum\spost\sf9f5d90f33])\sin\nwhich\sthe\s"with\sEDGE\sat\sPOSITION"\slayout\scauses\sthe\sobject\sto\sbe\s"fit"\nif\sPOSITION\srefers\sto\sa\s"text"\sobject.
+D 2025-03-03T20:27:41.409
 F Makefile bcc08b98199aad322944744d1886d755d3980ec68ea7f15f2b6ee3bd4e62ecdb
 F Makefile.msc c4442e692647a8293437fb5f7abd194ed4fbc47368139799d34a5bb310b8e82e
 F README.md a4b8e465ae8897812ef7698103483e0bd7806fba7075351167f55ee81686b056
@@ -62,10 +62,10 @@ F grammar/gram04.pikchr f3012f0af5e8ee8b0391c0bd8622d5f5762114a0d200c14fe70be811
 F homepage.md 5e4c0944f3ad4adfe06b8cbda3f3b56733dff935cc75e37101577721cc21671b
 F lemon.c 7f264d5d06450f929a20fa63a1b7e8f2df47dfaa6d7f80e4afef3639157497a4
 F lempar.c e6b649778e5c027c8365ff01d7ef39297cd7285fa1f881cce31792689541e79f
-F pikchr.c 53969edfdb0b46d6d238689b20c10455e286c3686e776f330742cb2217eef844
+F pikchr.c ecf3afe8ff9dd94beee920ffed3123932559599bde9ec9731146d3d5b71d3124
 F pikchr.h e69a1f1be1dfdedf5e44a99193ee2b17b269ed1b3c4f963209cf164135211978
 F pikchr.h.in e69a1f1be1dfdedf5e44a99193ee2b17b269ed1b3c4f963209cf164135211978
-F pikchr.y 0186b996d310f239e2bb216d76c1d8e3b0b005813efe4da5128be4f80d1c1299
+F pikchr.y 816cbaebf12e6ff0c0147024dd18ab1614310df10ce12ccb0b7b246d811b4c91
 F tests/autochop01.pikchr ed70028e588dc9f2f28ab13bedfaeadb09cd51fae300250d6e747f1b1cd3951f
 F tests/autochop02.pikchr ba0f7ddb85495420da0804831cb8094d511488e72271a66467b8e0fa33ffa9f4
 F tests/autochop03.pikchr 12c1a604cd0766aabbf73f5f3a93d8719a498460ef294cafb811d41e2a347e2f
@@ -168,8 +168,9 @@ F tests/test77.pikchr 0b27bbbdbeda1355630bdc3067f6f48b8f47342c2365c84ab7ac6d1493
 F tests/test78.pikchr a4d490acada6a269b4cb8a243f86cdfded2268126305289ca75f49d66b1ae969
 F tests/test79.pikchr 98561bb7d0b015a1cf2d69c35a312e1c780f2e114bb9809bfe6d1f6695564b91
 F tests/test80.pikchr 7b54e2af03e6189deeaad7df410fe8a14c1636a13711ecbe676abcc5258c5007
-P 28916ba1df976bf9d43e6e2da46c2c34eb6aeec9e177f93a6c33a43acc718fc7
-R 40333f7ef14758008e8025dba25ed5da
+F tests/test81.pikchr 5e1d863651dda20e34c72b5b25b396a95622e0beafa594ab07a019b97779f61a
+P b7fbd56c4eb82ab98cadb8cbe3aee4bc401cb2fbf3f0ab60349efd24ab443f4e
+R c7fd33b218cb91e69ee2c59d28258476
 U drh
-Z c6163f4d4b217aef2a4f7a9f75de0ec1
+Z a374d795a28af65a9aad91338fe5ab20
 # Remove this line to create a well-formed Fossil manifest.
