@@ -1,3 +1,4 @@
+%include <VERSION.h>
 %include {
 /*
 ** Zero-Clause BSD license:
@@ -121,7 +122,6 @@
 #include <ctype.h>
 #include <math.h>
 #include <assert.h>
-#include "VERSION.h"
 #define count(X) (sizeof(X)/sizeof(X[0]))
 #ifndef M_PI
 # define M_PI 3.1415926535897932385
