@@ -63,6 +63,7 @@ Pikchr scripts cause no harm (apart from generating ugly diagrams).
   *  [Invoking Pikchr From Markdown](./doc/usepikchr.md)
   *  [How To Build Pikchr From Source](./doc/build.md)
   *  [Use Case: SQLite Syntax Diagrams](./doc/sqlitesyntax.md)
+  *  [Release History](./doc/changelog.md)
 
 ## Copies Of Historical PIC Documentation
 

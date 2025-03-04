@@ -604,8 +604,11 @@ pritem ::= FILL(X).        {pik_append_num(p,"",pik_value(p,X.z,X.n,0));}
 pritem ::= COLOR(X).       {pik_append_num(p,"",pik_value(p,X.z,X.n,0));}
 pritem ::= THICKNESS(X).   {pik_append_num(p,"",pik_value(p,X.z,X.n,0));}
 pritem ::= rvalue(X).      {pik_append_num(p,"",X);}
-pritem ::= STRING(S). {pik_append_text(p,S.z+1,S.n-2,0);}
-prsep  ::= COMMA. {pik_append(p, " ", 1);}
+pritem ::= STRING(S).      {pik_append_text(p,S.z+1,S.n-2,0);}
+pritem ::= PIKCHRISODATE. {
+   pik_append_text(p,MANIFEST_ISODATE,sizeof(MANIFEST_ISODATE),0);
+}
+prsep  ::= COMMA.          {pik_append(p, " ", 1);}
 
 unnamed_statement(A) ::= basetype(X) attribute_list.  
                           {A = X; pik_after_adding_attributes(p,A);}
@@ -4703,6 +4706,7 @@ static const PikWord pik_keywords[] = {
   { "north",      5,   T_EDGEPT,    0,         CP_N     },
   { "nw",         2,   T_EDGEPT,    0,         CP_NW    },
   { "of",         2,   T_OF,        0,         0        },
+  { "pikchr_isodate",14,T_PIKCHRISODATE,0,     0,       },
   { "previous",   8,   T_LAST,      0,         0,       },
   { "print",      5,   T_PRINT,     0,         0        },
   { "rad",        3,   T_RADIUS,    0,         0        },
