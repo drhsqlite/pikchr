@@ -1,5 +1,5 @@
-C Add\sthe\spikchr_version()\sinterface\swhich\sreturns\sa\sstring\sconstant\sthat\ndescribe\sthe\srelease\sversion\snumber\sand\sthe\sdate/time\sof\sthe\scheck-in.
-D 2025-03-04T17:32:19.730
+C Include\sthe\scheck-in\sdate\sas\sa\sdata-*\sfield\son\sthe\s&lt;svg&gt;\selement.
+D 2025-03-04T17:48:51.427
 F .fossil-settings/manifest 4598ba9e1e19cdadf19aa4881b2cb5a74fe4813ceea9bfe7e2fe382904cd14fe
 F Makefile 51601c00a57003e0fbcbdf2ecd59b6e939187aa03a711b1e9600fa1586846d3f
 F Makefile.msc 139ce5c50583f26313e100492faa0a652ad1a15ac868d519ef3e2c45dbffa6ca
@@ -65,10 +65,10 @@ F homepage.md 5e4c0944f3ad4adfe06b8cbda3f3b56733dff935cc75e37101577721cc21671b
 F lemon.c 7bcb2260da613323718746469e314025b46f33ccb8c6753dbc39eb76bed756c8
 F lempar.c bdffd3b233a4e4e78056c9c01fadd2bb3fe902435abde3bce3d769fdf0d5cca2
 F mkversion.c 74f96b457af2df1bd861fca4e60d2f67b07827f6f2e456fe4421b48a30292aa7
-F pikchr.c 812cd5b3e9f27249b51538c4ac85a471712705c3d595907440a15ba8b79ff9fc
+F pikchr.c 7ce24b9198f25e63bbab68a30c448ca9e0080965965d1f84ad56d65c9484e8f8
 F pikchr.h dd74b7dcb1a673476284d6dfdecc6a3fd890f1d32527c287ddbe71ad97c91bd3
 F pikchr.h.in dd74b7dcb1a673476284d6dfdecc6a3fd890f1d32527c287ddbe71ad97c91bd3
-F pikchr.y b79d0218fc3671e2d01c8131f4e67b81c85930da90786563825839296ee0722d
+F pikchr.y cc5bdffb38c96aeca8d522d856a1e0cd6b7115f47b9f57cb4a4302adfb0f7ac0
 F tests/autochop01.pikchr ed70028e588dc9f2f28ab13bedfaeadb09cd51fae300250d6e747f1b1cd3951f
 F tests/autochop02.pikchr ba0f7ddb85495420da0804831cb8094d511488e72271a66467b8e0fa33ffa9f4
 F tests/autochop03.pikchr 12c1a604cd0766aabbf73f5f3a93d8719a498460ef294cafb811d41e2a347e2f
@@ -172,8 +172,8 @@ F tests/test78.pikchr a4d490acada6a269b4cb8a243f86cdfded2268126305289ca75f49d66b
 F tests/test79.pikchr 98561bb7d0b015a1cf2d69c35a312e1c780f2e114bb9809bfe6d1f6695564b91
 F tests/test80.pikchr 7b54e2af03e6189deeaad7df410fe8a14c1636a13711ecbe676abcc5258c5007
 F tests/test81.pikchr 5e1d863651dda20e34c72b5b25b396a95622e0beafa594ab07a019b97779f61a
-P 88102ebf8cd6813e43627a3e1df1dbf33b01da37df237315e8a0f7ee98b308b2
-R aa2564964967f6ed29bec3465a50fa23
+P 7ba88e2dd73c92ad933bfd0dbe098b9bf795fa76b3efa2edd9bdd1a684ab84c7
+R abcfa08958d394b79287fa878172b2d9
 U drh
-Z 058f1e5f4809be8f97453444e10ec186
+Z c3839015c9730337af817136558bccd6
 # Remove this line to create a well-formed Fossil manifest.

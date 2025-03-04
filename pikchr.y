@@ -4618,7 +4618,8 @@ static void pik_render(Pik *p, PList *pList){
       pik_append(p, "\"", 1);
     }
     pik_append_dis(p, " viewBox=\"0 0 ",w,"");
-    pik_append_dis(p, " ",h,"\">\n");
+    pik_append_dis(p, " ",h,"\"");
+    pik_append(p, " data-pikchr-date=\"" MANIFEST_ISODATE "\">\n", -1);
     pik_elist_render(p, pList);
     pik_append(p,"</svg>\n", -1);
   }else{
