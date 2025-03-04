@@ -31,3 +31,7 @@ char *pikchr(
 ** argument to pikchr() to render the image in dark mode.
 */
 #define PIKCHR_DARK_MODE        0x0002
+
+/* Return a static string that describes the current version of pikchr
+*/
+const char *pikchr_version(void);

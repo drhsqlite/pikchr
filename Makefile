@@ -17,9 +17,13 @@ pikchrfuzz:	pikchr.c
 	clang -g -O3 -fsanitize=fuzzer,undefined,address -o pikchrfuzz \
 	  -DPIKCHR_FUZZ pikchr.c $(LIBS)
 
-pikchr.c:	pikchr.y pikchr.h.in lempar.c lemon
+pikchr.c:	pikchr.y pikchr.h.in lempar.c lemon VERSION.h
 	./lemon pikchr.y
 	cat pikchr.h.in >pikchr.h
+
+VERSION.h:	VERSION manifest manifest.uuid mkversion.c
+	$(CC) -o mkversion mkversion.c
+	./mkversion manifest.uuid manifest VERSION >VERSION.h
 
 piktcl: pikchr.c
 	mkdir -p piktcl

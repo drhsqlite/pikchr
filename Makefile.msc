@@ -117,9 +117,13 @@ pikchr.exe:	pikchr.c
 	$(CC) $(CFLAGS) -DPIKCHR_SHELL pikchr.c $(LIBS)
 
 
-pikchr.c:	pikchr.y pikchr.h.in lempar.c lemon.exe
+pikchr.c:	pikchr.y pikchr.h.in lempar.c lemon.exe VERSION.h
 	.\lemon.exe pikchr.y
 	cat pikchr.h.in >pikchr.h
+
+VERSION.h:	VERSION manifest manifest.uuid mkversion.c
+	$(CC) mkversion.c
+	.\mkversion.exe manifest.uuid manifest VERSION >VERSION.h
 
 lemon.exe:	lemon.c
 	$(CC) $(CFLAGS) lemon.c

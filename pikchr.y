@@ -121,6 +121,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <assert.h>
+#include "VERSION.h"
 #define count(X) (sizeof(X)/sizeof(X[0]))
 #ifndef M_PI
 # define M_PI 3.1415926535897932385
@@ -5291,6 +5292,13 @@ void pik_tokenize(Pik *p, PToken *pIn, yyParser *pParser, PToken *aParam){
 }
 
 /*
+** Return the version name.
+*/
+const char *pikchr_version(void){
+  return RELEASE_VERSION " " MANIFEST_DATE;
+}
+
+/*
 ** Parse the PIKCHR script contained in zText[].  Return a rendering.  Or
 ** if an error is encountered, return the error text.  The error message
 ** is HTML formatted.  So regardless of what happens, the return text
@@ -5511,6 +5519,10 @@ int main(int argc, char **argv){
         }
         bSvgOnly = 1;
         mFlags |= PIKCHR_PLAINTEXT_ERRORS;
+      }else
+      if( strcmp(z,"version")==0 || strcmp(z,"v")==0 ){
+        printf("pikchr %s\n", pikchr_version());
+        return 0;
       }else
       {
         fprintf(stderr,"unknown option: \"%s\"\n", argv[i]);
