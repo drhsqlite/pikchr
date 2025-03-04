@@ -1,5 +1,6 @@
-C Fix\sa\sbug\s(reported\sby\s[forumpost/f9f5d90f33|forum\spost\sf9f5d90f33])\sin\nwhich\sthe\s"with\sEDGE\sat\sPOSITION"\slayout\scauses\sthe\sobject\sto\sbe\s"fit"\nif\sPOSITION\srefers\sto\sa\s"text"\sobject.
-D 2025-03-03T20:27:41.409
+C Activate\sthe\s"manifest"\ssetting.
+D 2025-03-04T16:56:31.265
+F .fossil/manifest 4598ba9e1e19cdadf19aa4881b2cb5a74fe4813ceea9bfe7e2fe382904cd14fe
 F Makefile bcc08b98199aad322944744d1886d755d3980ec68ea7f15f2b6ee3bd4e62ecdb
 F Makefile.msc c4442e692647a8293437fb5f7abd194ed4fbc47368139799d34a5bb310b8e82e
 F README.md a4b8e465ae8897812ef7698103483e0bd7806fba7075351167f55ee81686b056
@@ -169,8 +170,8 @@ F tests/test78.pikchr a4d490acada6a269b4cb8a243f86cdfded2268126305289ca75f49d66b
 F tests/test79.pikchr 98561bb7d0b015a1cf2d69c35a312e1c780f2e114bb9809bfe6d1f6695564b91
 F tests/test80.pikchr 7b54e2af03e6189deeaad7df410fe8a14c1636a13711ecbe676abcc5258c5007
 F tests/test81.pikchr 5e1d863651dda20e34c72b5b25b396a95622e0beafa594ab07a019b97779f61a
-P b7fbd56c4eb82ab98cadb8cbe3aee4bc401cb2fbf3f0ab60349efd24ab443f4e
-R c7fd33b218cb91e69ee2c59d28258476
+P d34295b192c40f935113cb764f9f6c39b124d845952aac82fdff67915f7d17c4
+R a64dbe77043334771d1fc742b2b6c552
 U drh
-Z a374d795a28af65a9aad91338fe5ab20
+Z d2083e5d729fcf09ddb31d4ca18eb061
 # Remove this line to create a well-formed Fossil manifest.
