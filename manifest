@@ -1,5 +1,5 @@
-C Change\sthe\soutput\sof\spikchr_version()\sto\somit\sall\spunctuation\sfrom\sthe\ndate,\sso\sthat\sthe\sdate\sis\sjust\sa\s14-digit\sinteger.
-D 2025-03-05T10:44:08.285
+C Update\sthe\schange\slog\sto\sshow\sthat\sversion\s1.1\sis\sstill\spending.\s\sAdd\nother\sdetails\sto\sthe\schange\slog.
+D 2025-03-05T10:47:11.572
 F .fossil-settings/manifest 4598ba9e1e19cdadf19aa4881b2cb5a74fe4813ceea9bfe7e2fe382904cd14fe
 F Makefile 51601c00a57003e0fbcbdf2ecd59b6e939187aa03a711b1e9600fa1586846d3f
 F Makefile.msc 139ce5c50583f26313e100492faa0a652ad1a15ac868d519ef3e2c45dbffa6ca
@@ -10,7 +10,7 @@ F doc/arrowdir.md 6f23d80fe2376e6cbca9196f4c6a13aeb36f9c0892a5fa890186bea66de865
 F doc/behind.md 63b691975b84c754cbb40324343b699541bf8c49e9c65b250a8338869038df88
 F doc/boxobj.md 55704d657fde242d6f45acd4584b2438dd50ea611a7e163fd11e02aa5b09baa8
 F doc/build.md 272725c03375f9950d2c9e8b88e30a34c4b059220d09c13b8e6f72bdad6dc1f3
-F doc/changelog.md 4616e6fc569a4e459c1baa41eea68f326ccd07e3bf3257fc6d36518522d4bb2d
+F doc/changelog.md 744e17980408d62a4898d38f435d7405cca28572f530b5e3aef5163747f86656
 F doc/chop.md d2bf37a797a0a7db27b73ef01c623a31c1a89c5ee461a5edfe92f3ea0c3e8c7a
 F doc/circleobj.md 47339cbbd8eaf642c3ac4d69c040995365a12357702e13065b173c9b3230612c
 F doc/colorexpr.md 7ed7c894d7adb4e857b95d714373163214f2f470817dc8666c7b6c770a5679f9
@@ -172,8 +172,8 @@ F tests/test78.pikchr a4d490acada6a269b4cb8a243f86cdfded2268126305289ca75f49d66b
 F tests/test79.pikchr 98561bb7d0b015a1cf2d69c35a312e1c780f2e114bb9809bfe6d1f6695564b91
 F tests/test80.pikchr 7b54e2af03e6189deeaad7df410fe8a14c1636a13711ecbe676abcc5258c5007
 F tests/test81.pikchr 5e1d863651dda20e34c72b5b25b396a95622e0beafa594ab07a019b97779f61a
-P 02218e6098a6ba3d9f1fc3addc90da430815b68519feabe6e6f8b63cab179cd7
-R 13eabb07c090e6a32ed312583d3ef882
+P bb99465bd126646c031c7426f05e8b85c6f170a4af76d603b25d3aaeb749de31
+R 8bc1f0a25e58ffcfab2dc7b6cec8c876
 U drh
-Z f1f6f56b63cce07912b3b53a4eb8eaa5
+Z 5ea04120c59a06ce3d12b8b1996fd5f3
 # Remove this line to create a well-formed Fossil manifest.
