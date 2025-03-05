@@ -1,5 +1,5 @@
-C Import\sthe\stext\sof\sthe\sVERSION.h\sfile\sinto\spikchr.c\sso\sthat\sVERSION.h\ndoes\snot\sbecome\sa\sdependency\sin\sthe\sclient\sapplication.\s\sThis\sinvolves\nenhancing\sLemon\sso\sthat\s"<tt>%include\s&lt;</tt><i>filename</i><tt>&gt;</tt>"\nwith\sthe\s'&lt;...&gt;'\sdelimiters\saround\sthe\scontent\sinstead\sof\s{...}\sor\n"..."\scauses\scontent\sto\sbe\sread\sfrom\sthe\snamed\sfile.
-D 2025-03-04T23:52:29.349
+C The\smagic\s"pikchr_date"\stoken\sbehaves\slike\sa\sstring\swhich\sexpands\sto\sthe\nISO\sdate\sof\sthe\scheck-in.\s\sUseful\sfor\sdebugging\sand\sto\sdetermine\sexactly\nwhich\spikchr\sversion\sis\srunning.
+D 2025-03-05T00:29:51.052
 F .fossil-settings/manifest 4598ba9e1e19cdadf19aa4881b2cb5a74fe4813ceea9bfe7e2fe382904cd14fe
 F Makefile 51601c00a57003e0fbcbdf2ecd59b6e939187aa03a711b1e9600fa1586846d3f
 F Makefile.msc 139ce5c50583f26313e100492faa0a652ad1a15ac868d519ef3e2c45dbffa6ca
@@ -66,10 +66,10 @@ F homepage.md b5dfe3ca8aad3e8d3bcd37bc50fbbdd500c11b3d8ff5c5d9fa260d9d4e911998
 F lemon.c 5f999ac3801e8b585149a5fd5c7c2bbdde3baca98985ebe68e1a41b8e19d19a4
 F lempar.c bdffd3b233a4e4e78056c9c01fadd2bb3fe902435abde3bce3d769fdf0d5cca2
 F mkversion.c 74f96b457af2df1bd861fca4e60d2f67b07827f6f2e456fe4421b48a30292aa7
-F pikchr.c c36b1647ed4b4e3c1e21371e0b03fe7a8feccf0afc51fcb12b0c7c7b920407fe
+F pikchr.c 157276b22395ca1423bce1532e07d56fc3597cc813bf5cd46294c32181bbe1dc
 F pikchr.h dd74b7dcb1a673476284d6dfdecc6a3fd890f1d32527c287ddbe71ad97c91bd3
 F pikchr.h.in dd74b7dcb1a673476284d6dfdecc6a3fd890f1d32527c287ddbe71ad97c91bd3
-F pikchr.y 22eaa5e8bb2088004236931320dd163e066e3dc8edc4ea0945b63c39a9b2c471
+F pikchr.y 7d6228aff115da4077c210a9b0be178f11369769a9707ea456fddbc3ada903db
 F tests/autochop01.pikchr ed70028e588dc9f2f28ab13bedfaeadb09cd51fae300250d6e747f1b1cd3951f
 F tests/autochop02.pikchr ba0f7ddb85495420da0804831cb8094d511488e72271a66467b8e0fa33ffa9f4
 F tests/autochop03.pikchr 12c1a604cd0766aabbf73f5f3a93d8719a498460ef294cafb811d41e2a347e2f
@@ -173,8 +173,8 @@ F tests/test78.pikchr a4d490acada6a269b4cb8a243f86cdfded2268126305289ca75f49d66b
 F tests/test79.pikchr 98561bb7d0b015a1cf2d69c35a312e1c780f2e114bb9809bfe6d1f6695564b91
 F tests/test80.pikchr 7b54e2af03e6189deeaad7df410fe8a14c1636a13711ecbe676abcc5258c5007
 F tests/test81.pikchr 5e1d863651dda20e34c72b5b25b396a95622e0beafa594ab07a019b97779f61a
-P 918b2b57f20b9836d88ce1dd6fd86d231ec9193151215583b8728d72c3caa9e5
-R 6c52987dd82e8376795843eb2d6bc016
+P 3da2c679e47fa0ab45f19f697c42fbec63af739d81e4fef07818c0229b631245
+R 7b8de878a28cc6ed4a141b3f339c9393
 U drh
-Z fdef5c3cc1a95c8d2d7569aee810df03
+Z fbb95dd500cdcd01902c03bf9b7e570c
 # Remove this line to create a well-formed Fossil manifest.
