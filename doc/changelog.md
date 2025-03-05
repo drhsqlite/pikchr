@@ -14,6 +14,11 @@
      like a string literal that contains the check-in date of the source code.
      So another way to find the specific version of Pikchr that is running is
      to render a pikchr script like: "`box pikchr_date fit;`"
+  *  The `pikchr.c` and `pikchr.h` sources are build products.  They were
+     formerly under source code management, for convenience.  But as they now
+     contain version-dependent information (such as the source code check-in
+     timestamp) they are no longer versioned.  You need to run the Makefile
+     to generate those files from canonical sources.
 
 ## Version 1.0 (2024-04-01) [20240401101739](/info/20240401101739)
 
