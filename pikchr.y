@@ -5308,7 +5308,7 @@ const char *pikchr_version(void)
   /* Emscripten workaround, else it chokes on the inlined version */;
 
 const char *pikchr_version(void){
-  return RELEASE_VERSION " " MANIFEST_DATE;
+  return RELEASE_VERSION " " MANIFEST_ISODATE;
 }
 
 /*
