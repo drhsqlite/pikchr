@@ -5304,6 +5304,9 @@ void pik_tokenize(Pik *p, PToken *pIn, yyParser *pParser, PToken *aParam){
 /*
 ** Return the version name.
 */
+const char *pikchr_version(void)
+  /* Emscripten workaround, else it chokes on the inlined version */;
+
 const char *pikchr_version(void){
   return RELEASE_VERSION " " MANIFEST_DATE;
 }
