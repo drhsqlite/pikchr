@@ -8,9 +8,6 @@
   *  Compile "`pikchr.c`" into an object file, or add the
      "`-DPIKCHR_SHELL`" command-line option to generate a stand-alone
      executable.
-  *  A pre-processed "[`pikchr.c`][src]" source file is stored in the
-     source tree for the convenience of integrators who do not want to
-     figure out how to build and run Lemon.
 
 [src]: /file/pikchr.c
 
@@ -84,9 +81,14 @@ in the Pikchr source repository for convenience.
 
 [lemon]: https://www.sqlite.org/lemon.html
 
-## Preprocessed Sources Available For Download.
+## Preprocessed Sources: `pikchr.c` and `pikchr.h`
 
-As a convenience to integrators, the pre-processed "`pikchr.c`" C-code
-file is normally checked into the Pikchr source tree.  Hence, to build
-Pikchr into another system, just grab a copy of that one file and add
-it to the project.
+Prior to version 1.1, the pre-processed "`pikchr.c`" C-code
+file was checked into the Pikchr source tree, as a convenience
+to programmers.  However, beginning with version 1.1, the check-in
+name is stored in the "`pikchr.c`" file itself, so that file
+cannot be checked in itself.
+
+If you want to work with Pikchr, and want the pikchr.c and pikchr.h
+source files, just download the canonical source tree and
+run "`make pikchr.c`" or on Windows "`nmake /f Makefile.msc pikchr.c`".
