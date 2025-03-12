@@ -1,6 +1,5 @@
-C Update\sthe\sbuild\sdocumentation\snow\sthat\spikchr.c\sand\spikchr.h\sare\sno\slonger\nprovided\sas\smanaged\sfiles.
-D 2025-03-06T12:54:47.816
-F .fossil-settings/manifest 4598ba9e1e19cdadf19aa4881b2cb5a74fe4813ceea9bfe7e2fe382904cd14fe
+C The\s"manifest"\ssetting,\swhile\sadvertised\sas\sbeing\sversioned,\snever\sactually\nworked\sthat\sway.\s\sSo\swe\smight\sas\swell\sremove\sthe\ssetting\sfile.
+D 2025-03-12T18:26:15.333
 F Makefile 51601c00a57003e0fbcbdf2ecd59b6e939187aa03a711b1e9600fa1586846d3f
 F Makefile.msc 139ce5c50583f26313e100492faa0a652ad1a15ac868d519ef3e2c45dbffa6ca
 F README.md a4b8e465ae8897812ef7698103483e0bd7806fba7075351167f55ee81686b056
@@ -171,8 +170,8 @@ F tests/test78.pikchr a4d490acada6a269b4cb8a243f86cdfded2268126305289ca75f49d66b
 F tests/test79.pikchr 98561bb7d0b015a1cf2d69c35a312e1c780f2e114bb9809bfe6d1f6695564b91
 F tests/test80.pikchr 7b54e2af03e6189deeaad7df410fe8a14c1636a13711ecbe676abcc5258c5007
 F tests/test81.pikchr 5e1d863651dda20e34c72b5b25b396a95622e0beafa594ab07a019b97779f61a
-P 052f07296e76ab2312caf2a4bf6237e574b3e533c7a36ee8f34db833baa3efb4
-R d6b92ea0e6bae91fc194e0f5ebc6a4eb
+P 9e9e7005e2104bed1d641e4417f9bae4ff1654e22c40563ed0fa3babf753a242
+R d04d822fa0a8d243c625ab17798afaa6
 U drh
-Z 35e326a7d5b6aea1810d515ebc0a8157
+Z f79f31f1ea383b26b31b1e5310009e34
 # Remove this line to create a well-formed Fossil manifest.
