@@ -1,5 +1,5 @@
-C Update\sthe\sbuild\sdocumentation\snow\sthat\spikchr.c\sand\spikchr.h\sare\sno\slonger\nprovided\sas\smanaged\sfiles.
-D 2025-03-06T12:54:47.816
+C Updates\sto\sthe\sdownload\spage\sto\sreflect\sthe\sfact\sthat\s"pikchr.c"\sis\sno\nlonger\sstored\sin\sthe\ssource\stree.
+D 2025-03-13T11:15:52.741
 F .fossil-settings/manifest 4598ba9e1e19cdadf19aa4881b2cb5a74fe4813ceea9bfe7e2fe382904cd14fe
 F Makefile 51601c00a57003e0fbcbdf2ecd59b6e939187aa03a711b1e9600fa1586846d3f
 F Makefile.msc 139ce5c50583f26313e100492faa0a652ad1a15ac868d519ef3e2c45dbffa6ca
@@ -19,7 +19,7 @@ F doc/copyright-release.html 16bd4968f6a61a33816759bc543ff0774d4e57ff59514d76dd6
 F doc/cylinderobj.md 579b37e1bba35660cccde60e8e73518063886a7a5bb42fced08e0e30a849b028
 F doc/diamondobj.md 747eac02358c6f5595ce73eb780d64afa05de367479cc9e44b2376110d30588d
 F doc/differences.md def648959e4da59b97d671ae83af6fef724187fc0616f44247cbc1e3ed15f2e8
-F doc/download.md 8747fce3179c69a265d24be1add6a837f8434b4094d73bebfc8a4f2a804d46dc
+F doc/download.md 2826e8dde4b8ee1e959f8039453e42193533f74dd61fbb34c704877fe7df40c8
 F doc/ellipseobj.md 5dd378d6b08a4523ce05ce5b38303764dfc537d8bc39d4e9abcb86326c31ce18
 F doc/examples.md b5fe6603e886439045daa4785916d63361d9dbc9e17b5a386e6849b08fa133ce
 F doc/fileobj.md 22e6acdd069f8d61a435f917f01db97d380e3369b3e030311b09ba76d84ef96b
@@ -171,8 +171,8 @@ F tests/test78.pikchr a4d490acada6a269b4cb8a243f86cdfded2268126305289ca75f49d66b
 F tests/test79.pikchr 98561bb7d0b015a1cf2d69c35a312e1c780f2e114bb9809bfe6d1f6695564b91
 F tests/test80.pikchr 7b54e2af03e6189deeaad7df410fe8a14c1636a13711ecbe676abcc5258c5007
 F tests/test81.pikchr 5e1d863651dda20e34c72b5b25b396a95622e0beafa594ab07a019b97779f61a
-P 052f07296e76ab2312caf2a4bf6237e574b3e533c7a36ee8f34db833baa3efb4
-R d6b92ea0e6bae91fc194e0f5ebc6a4eb
+P 9e9e7005e2104bed1d641e4417f9bae4ff1654e22c40563ed0fa3babf753a242
+R a3b028052c876452b915ae3aff235a5d
 U drh
-Z 35e326a7d5b6aea1810d515ebc0a8157
+Z b7db130288a8d68ac4af8b1fd4c8d145
 # Remove this line to create a well-formed Fossil manifest.

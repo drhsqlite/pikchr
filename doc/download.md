@@ -1,26 +1,31 @@
 # Download Options
 
-## The `pikchr.c` source file.
+## Building Pikchr from source code
 
-The latest trunk version of the C source file for Pikchr is always
-available from the following link:
+The `pikchr.c` source file and its accompanying `pikchr.h` header
+are build products.  They are not found directly in the version control
+system.  You have to download the source tree and run a makefile in order
+to construct those files.  Fortunately, that is not difficult.  There
+are no external dependencies apart from a C-compiler.
 
-  *  <https://pikchr.org/home/file/pikchr.c?ci=trunk>
+Once you have the source tree available, as described below,
+run one of the following "make" command to build pikchr.c on
+Unix-like systems including MacOS:
 
-This is everything you need if you just want to build the Pikchr
-command-line tool, or use the Pikchr library in another application.
-Compile this file using commands like these:
+> ~~~
+make pikchr.c
+~~~
 
-  *  `gcc -c pikchr.c`  &larr; to build the Pikchr library
+On Windows, using MSVC do:
 
-  *  `gcc -DPIKCHR_SHELL -o pikchr pikchr.c -lm` &larr; to build the
-     pikchr command-line tool
+> ~~~
+nmake /f Makefile.msc pikchr.c
+~~~
 
-See the [How To Compile Pikchr](./build.md) and the
-[How To Integrate Pikchr Into New Systems](./integrate.md) documents
-for more details on how to compile Pikchr.
+To build the Pikchr command-line shell, use the `pikchr` or `pikchr.exe`
+makefile target.  To run tests, use the `test` makefile target.
 
-## Complete Source Tree Tarball
+## Obtaining the complete Pikchr source tree
 
 A tarball or ZIP archive of the latest source code is available
 at the following links:
@@ -29,7 +34,7 @@ at the following links:
   *  <https://pikchr.org/home/zip/trunk/pikchr.zip>
 
 With the complete source tree on your local machine, you can run
-"`make test`" to build and test Pikchr.
+"`make`" or "`nmake`" to build and test Pikchr.
 
 ## Clone the Fossil Repository
 
