@@ -1021,11 +1021,11 @@ static void arcInit(Pik *p, PObj *pObj){
 ** mean based on available documentation.  (2) Arcs are rarely used,
 ** and so do not seem that important.
 */
-static PPoint arcControlPoint(int cw, PPoint f, PPoint t, PNum rScale){
+static PPoint arcControlPoint(int cw, PPoint f, PPoint t, PNum rScale, PNum rPct){
   PPoint m;
   PNum dx, dy;
-  m.x = 0.5*(f.x+t.x);
-  m.y = 0.5*(f.y+t.y);
+  m.x = rPct*(f.x+t.x);
+  m.y = rPct*(f.y+t.y);
   dx = t.x - f.x;
   dy = t.y - f.y;
   if( cw ){
@@ -1043,7 +1043,9 @@ static void arcCheck(Pik *p, PObj *pObj){
     pik_error(p, &pObj->errTok, "arc geometry error");
     return;
   }
-  m = arcControlPoint(pObj->cw, p->aTPath[0], p->aTPath[1], 0.5);
+  m = arcControlPoint(pObj->cw, p->aTPath[0], p->aTPath[1], 0.5, 0.25);
+  pik_bbox_add_xy(&pObj->bbox, m.x, m.y);
+  m = arcControlPoint(pObj->cw, p->aTPath[0], p->aTPath[1], 0.5, 0.75);
   pik_bbox_add_xy(&pObj->bbox, m.x, m.y);
 }
 static void arcRender(Pik *p, PObj *pObj){
@@ -1052,7 +1054,7 @@ static void arcRender(Pik *p, PObj *pObj){
   if( pObj->sw<0.0 ) return;
   f = pObj->aPath[0];
   t = pObj->aPath[1];
-  m = arcControlPoint(pObj->cw,f,t,1.0);
+  m = arcControlPoint(pObj->cw,f,t,1.0,0.5);
   if( pObj->larrow ){
     pik_draw_arrowhead(p,&m,&f,pObj);
   }
