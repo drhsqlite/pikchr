@@ -1021,32 +1021,45 @@ static void arcInit(Pik *p, PObj *pObj){
 ** mean based on available documentation.  (2) Arcs are rarely used,
 ** and so do not seem that important.
 */
-static PPoint arcControlPoint(int cw, PPoint f, PPoint t, PNum rScale, PNum rPct){
+static PPoint arcControlPoint(int cw, PPoint f, PPoint t){
   PPoint m;
   PNum dx, dy;
-  m.x = rPct*(f.x+t.x);
-  m.y = rPct*(f.y+t.y);
+  m.x = 0.5*(f.x+t.x);
+  m.y = 0.5*(f.y+t.y);
   dx = t.x - f.x;
   dy = t.y - f.y;
   if( cw ){
-    m.x -= 0.5*rScale*dy;
-    m.y += 0.5*rScale*dx;
+    m.x -= 0.5*dy;
+    m.y += 0.5*dx;
   }else{
-    m.x += 0.5*rScale*dy;
-    m.y -= 0.5*rScale*dx;
+    m.x += 0.5*dy;
+    m.y -= 0.5*dx;
   }
   return m;
 }
 static void arcCheck(Pik *p, PObj *pObj){
-  PPoint m;
+  PPoint f, m, t;
+  PNum sw;
+  int i;
   if( p->nTPath>2 ){
     pik_error(p, &pObj->errTok, "arc geometry error");
     return;
   }
-  m = arcControlPoint(pObj->cw, p->aTPath[0], p->aTPath[1], 0.5, 0.25);
-  pik_bbox_add_xy(&pObj->bbox, m.x, m.y);
-  m = arcControlPoint(pObj->cw, p->aTPath[0], p->aTPath[1], 0.5, 0.75);
-  pik_bbox_add_xy(&pObj->bbox, m.x, m.y);
+  f = p->aTPath[0];
+  t = p->aTPath[1];
+  m = arcControlPoint(pObj->cw, f, t);
+  sw = pObj->sw;
+  for(i=1; i<16; i++){
+    PNum t1, t2, a, b, c, x, y;
+    t1 = 0.0625*i;
+    t2 = 1.0 - t1;
+    a = t2*t2;
+    b = 2*t1*t2;
+    c = t1*t1;
+    x = a*f.x + b*m.x + c*t.x;
+    y = a*f.y + b*m.y + c*t.y;
+    pik_bbox_addellipse(&pObj->bbox, x, y, sw, sw);
+  }
 }
 static void arcRender(Pik *p, PObj *pObj){
   PPoint f, m, t;
@@ -1054,7 +1067,7 @@ static void arcRender(Pik *p, PObj *pObj){
   if( pObj->sw<0.0 ) return;
   f = pObj->aPath[0];
   t = pObj->aPath[1];
-  m = arcControlPoint(pObj->cw,f,t,1.0,0.5);
+  m = arcControlPoint(pObj->cw,f,t);
   if( pObj->larrow ){
     pik_draw_arrowhead(p,&m,&f,pObj);
   }
