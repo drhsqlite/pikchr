@@ -1,5 +1,5 @@
-C A\smore\sprecise\scomputation\sof\sthe\sbounding\sbox\sfor\san\sarc.
-D 2025-03-19T16:19:43.781
+C Add\stcl\sv8/9\scompatibility\s#defines\s(taken\sfrom\stclsqlite3.c)\sto\sget\spikchr.c\scompiling\sin\sthe\ssqlite\sdocsrc\stree\swith\stcl\s9.1.
+D 2025-03-21T21:55:05.771
 F .fossil-settings/manifest 4598ba9e1e19cdadf19aa4881b2cb5a74fe4813ceea9bfe7e2fe382904cd14fe
 F Makefile 51601c00a57003e0fbcbdf2ecd59b6e939187aa03a711b1e9600fa1586846d3f
 F Makefile.msc 139ce5c50583f26313e100492faa0a652ad1a15ac868d519ef3e2c45dbffa6ca
@@ -67,7 +67,7 @@ F lemon.c 5f999ac3801e8b585149a5fd5c7c2bbdde3baca98985ebe68e1a41b8e19d19a4
 F lempar.c bdffd3b233a4e4e78056c9c01fadd2bb3fe902435abde3bce3d769fdf0d5cca2
 F mkversion.c 74f96b457af2df1bd861fca4e60d2f67b07827f6f2e456fe4421b48a30292aa7
 F pikchr.h.in dd74b7dcb1a673476284d6dfdecc6a3fd890f1d32527c287ddbe71ad97c91bd3
-F pikchr.y 2ee4602ca6a6e5e4f49404de37a3c853978bfe6808d82c8978a4022b1871c1b0
+F pikchr.y 1c439eae698e5eeb01fb0ce7a3477d6b03c3a23345d753008a3b85af84e9725c
 F tests/autochop01.pikchr ed70028e588dc9f2f28ab13bedfaeadb09cd51fae300250d6e747f1b1cd3951f
 F tests/autochop02.pikchr ba0f7ddb85495420da0804831cb8094d511488e72271a66467b8e0fa33ffa9f4
 F tests/autochop03.pikchr 12c1a604cd0766aabbf73f5f3a93d8719a498460ef294cafb811d41e2a347e2f
@@ -171,8 +171,8 @@ F tests/test78.pikchr a4d490acada6a269b4cb8a243f86cdfded2268126305289ca75f49d66b
 F tests/test79.pikchr 98561bb7d0b015a1cf2d69c35a312e1c780f2e114bb9809bfe6d1f6695564b91
 F tests/test80.pikchr 7b54e2af03e6189deeaad7df410fe8a14c1636a13711ecbe676abcc5258c5007
 F tests/test81.pikchr 5e1d863651dda20e34c72b5b25b396a95622e0beafa594ab07a019b97779f61a
-P 9b9b3133644ff804f8312bb839ad4eb43d1eb1869558f7a3a50b788b2c4a706a
-R 8915c73c24aa1f494779a75f841a46e8
-U drh
-Z 89c0bab2a11d68d5dd8d04581d0c5fe8
+P 8a43b020141f772a0ac45291a7fd73041d2efba5e3665c6bd2f334ad9b2e9845
+R b380a98a55c7440e29653361a2df75b3
+U stephan
+Z 1b9c1a6841a36bea71f9030a0a171e33
 # Remove this line to create a well-formed Fossil manifest.

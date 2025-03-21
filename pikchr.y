@@ -5591,12 +5591,19 @@ int main(int argc, char **argv){
   if( !bSvgOnly ){
     printf("</body></html>\n");
   }
-  return exitCode ? EXIT_FAILURE : EXIT_SUCCESS; 
+  return exitCode ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 #endif /* PIKCHR_SHELL */
 
 #ifdef PIKCHR_TCL
 #include <tcl.h>
+/* Compatability between Tcl8.6 and Tcl9.0 */
+#if TCL_MAJOR_VERSION==9
+# define CONST const
+#elif !defined(Tcl_Size)
+  typedef int Tcl_Size;
+#endif
+
 /*
 ** An interface to TCL
 **
