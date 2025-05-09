@@ -1,7 +1,7 @@
-C Add\stcl\sv8/9\scompatibility\s#defines\s(taken\sfrom\stclsqlite3.c)\sto\sget\spikchr.c\scompiling\sin\sthe\ssqlite\sdocsrc\stree\swith\stcl\s9.1.
-D 2025-03-21T21:55:05.771
+C Make\sthe\sdefault\scompiler\s"cc"\sinstead\sof\s"gcc"\sfor\ssystems\sthat\sdon't\nhave\sgcc.
+D 2025-05-09T00:38:15.498
 F .fossil-settings/manifest 4598ba9e1e19cdadf19aa4881b2cb5a74fe4813ceea9bfe7e2fe382904cd14fe
-F Makefile 51601c00a57003e0fbcbdf2ecd59b6e939187aa03a711b1e9600fa1586846d3f
+F Makefile 3bf53fdef614e1f257a56d986b55dd4be676e4a465161f261201d6a63ad3f83a
 F Makefile.msc 139ce5c50583f26313e100492faa0a652ad1a15ac868d519ef3e2c45dbffa6ca
 F README.md a4b8e465ae8897812ef7698103483e0bd7806fba7075351167f55ee81686b056
 F VERSION eccf14463471b4105c12aa6105820e7ea1557f6c49b5d9aa7dde97c5df4d9ad6
@@ -171,8 +171,8 @@ F tests/test78.pikchr a4d490acada6a269b4cb8a243f86cdfded2268126305289ca75f49d66b
 F tests/test79.pikchr 98561bb7d0b015a1cf2d69c35a312e1c780f2e114bb9809bfe6d1f6695564b91
 F tests/test80.pikchr 7b54e2af03e6189deeaad7df410fe8a14c1636a13711ecbe676abcc5258c5007
 F tests/test81.pikchr 5e1d863651dda20e34c72b5b25b396a95622e0beafa594ab07a019b97779f61a
-P 8a43b020141f772a0ac45291a7fd73041d2efba5e3665c6bd2f334ad9b2e9845
-R b380a98a55c7440e29653361a2df75b3
-U stephan
-Z 1b9c1a6841a36bea71f9030a0a171e33
+P 2f0308002944f5335b9760eefc83a67a658c802ae7f458ab3b4056f47ad9da0d
+R c47037f816834f28bdec850ca9ff2835
+U drh
+Z 7217382fa9cc3352d165620390446a9c
 # Remove this line to create a well-formed Fossil manifest.

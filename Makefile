@@ -1,4 +1,4 @@
-CC = gcc
+CC = cc
 CFLAGS = -O0 -g -Wall -Wextra
 LIBS = -lm
 
