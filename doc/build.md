@@ -5,6 +5,9 @@
   *  Primary source file: "`pikchr.y`"
   *  Process "`pikchr.y`" using Lemon (sources provided in tree)
      to create "`pikchr.c`"
+  *  *(Not shown)* Use files `manifest`, `manifest.uuid`, and
+     `mkversion.c` to create the `VERSION.h` header file used by
+     `pikchr.c`.
   *  Compile "`pikchr.c`" into an object file, or add the
      "`-DPIKCHR_SHELL`" command-line option to generate a stand-alone
      executable.
@@ -26,7 +29,7 @@
               at 2nd vertex of previous
             arrow from Lempar chop down until even with CC1 \
               then to Lemon.ne rad 10px
-            " parser template" ljust " resource file" ljust \
+            " parser" ljust " template" ljust \
               at 2nd vertex of previous
   PikSrc:   file "pikchr.c" with .n at lineht below Lemon.s
             arrow from Lemon to PikSrc chop
@@ -42,8 +45,8 @@
             spline <- from 1mm west of PikSrc.w go 60% heading 250 \
                then go 40% heading 45 then go 60% heading 250 \
                thin color gray
-            box invis "Preprocessed" ljust small \
-              "C-code" ljust small "also in-tree" ljust small fit \
+            box invis "Generated" ljust small \
+              "C-code" ljust small fit \
                with .e at end of last spline width 90%
 ~~~
 
@@ -80,6 +83,17 @@ in the working directory.  The "`lempar.c`" template is also included
 in the Pikchr source repository for convenience.
 
 [lemon]: https://www.sqlite.org/lemon.html
+
+## Version information in `VERSION.h`
+
+Beginning with Pikchr version 1.1, the `pikchr.c` source file does
+a #include of a new version-information file named `VERSION.h`.
+`VERSION.h` is a short file that contains a handful of C-preprocessor
+macros definitions.  The `VERSION.h` files is built automatically
+from on information provide in the `manifest` and `manifest.uuid`
+files of the source tree - files that are automatically generated
+by the [Fossil version control system](https://fossil-scm.org/home)
+that manages the Pikchr source code.
 
 ## Preprocessed Sources: `pikchr.c` and `pikchr.h`
 
