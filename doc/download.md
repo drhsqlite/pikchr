@@ -9,17 +9,10 @@ to construct those files.  Fortunately, that is not difficult.  There
 are no external dependencies apart from a C-compiler.
 
 Once you have the source tree available, as described below,
-run one of the following "make" command to build pikchr.c on
-Unix-like systems including MacOS:
+run the following "make" command to build pikchr.c.
 
 > ~~~
 make pikchr.c
-~~~
-
-On Windows, using MSVC do:
-
-> ~~~
-nmake /f Makefile.msc pikchr.c
 ~~~
 
 To build the Pikchr command-line shell, use the `pikchr` or `pikchr.exe`
@@ -27,14 +20,12 @@ makefile target.  To run tests, use the `test` makefile target.
 
 ## Obtaining the complete Pikchr source tree
 
-A tarball or ZIP archive of the latest source code is available
-at the following links:
+A tarball or ZIP archive of the latest source code is available from:
 
-  *  <https://pikchr.org/home/tarball/trunk/pikchr.tar.gz>
-  *  <https://pikchr.org/home/zip/trunk/pikchr.zip>
+  *  <https://pikchr.org/home/rchvdwnld/trunk>
 
 With the complete source tree on your local machine, you can run
-"`make`" or "`nmake`" to build and test Pikchr.
+"`make`" to build and test Pikchr.
 
 ## Clone the Fossil Repository
 

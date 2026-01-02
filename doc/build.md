@@ -1,5 +1,15 @@
 # How To Compile Pikchr
 
+## You can just use "make"
+
+The entire build process is automated.
+Just run "<tt>make</tt>" with no arguments.
+That works on both unix and Windows.
+
+The purpose of this article is to describes the details of how Pikchr 
+is built from sources, for those who need to understand the low-level
+details, or who are simply curious.
+
 ## Overview
 
   *  Primary source file: "`pikchr.y`"
