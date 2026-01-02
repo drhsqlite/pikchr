@@ -53,8 +53,3 @@ See the [Fossil documentation][fossil-doc] for more information on how
 manage a Fossil repository.
 
 [fossil-doc]: https://fossil-scm.org/home/doc/trunk/www/permutedindex.html
-
-## Clone the GitHub Mirror
-
-There is a (read-only) mirror of this repository
-[on GitHub](https://github.com/drhsqlite/pikchr).
